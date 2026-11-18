@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
-import { db, clubPhotosTable, juniorPhotosTable } from "@workspace/db";
+import { db, clubPhotosTable, clubUploadsTable, juniorPhotosTable } from "@workspace/db";
 import { carouselSlideSlot, isRepeatSlot } from "@workspace/scorecard/kind-templates";
 import { readQueuedCarousel, type QueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import {
@@ -141,6 +141,18 @@ export async function juniorSafeDesign(
     .where(
       or(inArray(juniorPhotosTable.objectPath, keys), inArray(juniorPhotosTable.thumbPath, keys)),
     );
+  // An uploaded image (Uploads: PNG, JPEG, WebP) might be a photo of a child, so
+  // a junior design keeps none (round 3 retest, #8). A vector upload (cleaned SVG,
+  // no images inside) is a logo or graphic and is kept.
+  const uploadRows = await db
+    .select({ objectPath: clubUploadsTable.objectPath, thumbPath: clubUploadsTable.thumbPath })
+    .from(clubUploadsTable)
+    .where(
+      and(
+        eq(clubUploadsTable.kind, "image"),
+        or(inArray(clubUploadsTable.objectPath, keys), inArray(clubUploadsTable.thumbPath, keys)),
+      ),
+    );
   const stock = await presentPhotos(
     tenantId,
     rows.filter((r) => r.tenantId === tenantId && r.juniorStock && r.grade === null),
@@ -151,7 +163,10 @@ export async function juniorSafeDesign(
         .filter((p) => !p.playerIds.length)
         .flatMap((p) => [photoKey(p.url), photoKey(p.thumbUrl)]),
     ),
-    library: new Set(rows.flatMap((r) => [r.objectPath, r.thumbPath])),
+    library: new Set([
+      ...rows.flatMap((r) => [r.objectPath, r.thumbPath]),
+      ...uploadRows.flatMap((r) => [r.objectPath, r.thumbPath].filter((p): p is string => !!p)),
+    ]),
     juniorPlayers: new Set(
       juniorRows.flatMap((r) => [r.objectPath, r.thumbPath].filter((p): p is string => !!p)),
     ),

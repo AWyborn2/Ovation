@@ -612,7 +612,14 @@ function EditorApp({ draftId }: { draftId: number }) {
                 onSetPhoto={(url) => edit(setImage(doc, "photo", url))}
               />
             )}
-            {panel === "uploads" && <UploadsPanel size={format} onAdd={addFreeLayer} />}
+            {panel === "uploads" && (
+              // A junior design places vector uploads only (round 3 retest, #8).
+              <UploadsPanel
+                size={format}
+                onAdd={addFreeLayer}
+                vectorOnly={slideJunior || isJuniorDraft(draft)}
+              />
+            )}
             {panel === "live" && (
               <LiveStatsPanel
                 size={format}

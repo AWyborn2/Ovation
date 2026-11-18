@@ -246,6 +246,19 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
       sponsor that isn't also a major shows once the set is made again (older sets don't record which sponsor
       was presenting).
 
+### Decisions from the round 3 retest (Ash, 18 Nov 2026)
+
+13. **An over-full Team List shrinks to fit** (confirmed by Ash). A side too long for a look's rows is
+    drawn smaller, down to 70%, on the one slide or card, rather than split across two (#648).
+14. **Dark sponsor logos sit on white tiles** (confirmed by Ash). On a dark look a sponsor logo tile takes a
+    light plate (#FFFFFF), so a logo made for a light ground reads (#652).
+15. **Junior designs take vector uploads only** (decided while Ash was away; the safer, reversible choice).
+    On a junior card or set, the editor's Uploads panel lists and accepts SVG uploads only (logos and
+    graphics; the SVG cleaner lets no image inside). Uploaded PNG, JPEG and WebP images are hidden, because
+    one could be a photo of a child, which would get round the junior photo rule. The server enforces it:
+    a junior design keeps no uploaded image at create, design save and post. Senior designs are unchanged.
+    To allow a raster logo later, add a "logo, not a photo" mark on an upload and let marked uploads through.
+
 ### Not in this release
 
 - Option B's "This week" board.

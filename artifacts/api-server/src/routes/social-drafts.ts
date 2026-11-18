@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import {
   isJuniorDesignDraft,
+  isJuniorCarousel,
   juniorSafeDesign,
   stripUnapprovedJuniorSetPhotos,
   validJuniorStockSelection,
@@ -710,7 +711,12 @@ router.post(
         subjectPlayerId,
         ...(junior
           ? { sourceMatchIsJunior: true, ...(await photoColumns(tenantId, juniorPhoto)) }
-          : {}),
+          : carousel && isJuniorCarousel(carousel)
+            ? // A set made from junior data (Create → Juniors) is a junior draft: the
+              // Queue's Juniors filter and the fail-closed publishing gate see it
+              // (round 3 retest, #7). Its photos are already junior-safe (above).
+              { sourceMatchIsJunior: true }
+            : {}),
         ...(templated ?? {}),
       })
       .onConflictDoNothing()

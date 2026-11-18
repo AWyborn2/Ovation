@@ -147,7 +147,7 @@ export function CarouselFlow({
           >
             Next
           </Button>
-          <BlankCarouselButton />
+          <BlankCarouselButton junior={audience === "junior"} />
         </div>
       </section>
     );
@@ -233,7 +233,7 @@ export function CarouselFlow({
  * editor to add, duplicate, reorder and design pages. It waits for review like any
  * draft and is never posted automatically.
  */
-function BlankCarouselButton() {
+function BlankCarouselButton({ junior }: { junior: boolean }) {
   const [, navigate] = useLocation();
   const create = useCreateSocialDraft();
   const [error, setError] = useState<string | null>(null);
@@ -244,7 +244,8 @@ function BlankCarouselButton() {
     create.mutate(
       {
         data: {
-          cardInput: { kind },
+          // A blank set started from Juniors is a junior draft (round 3 retest, #7).
+          cardInput: junior ? { kind, junior: true } : { kind },
           packId: BLANK_PACK_ID,
           adjustments: set as unknown as CreateSocialDraftRequest["adjustments"],
         },
