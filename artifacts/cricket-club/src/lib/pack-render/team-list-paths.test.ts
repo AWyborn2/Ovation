@@ -28,6 +28,7 @@ import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { firstInitialOf, teamListPlayersToState } from "@/components/card-forms/prefill";
 import { DESCRIPTORS } from "@/components/card-forms/descriptors";
 import { tidyHandFilledState } from "@/components/card-forms/logic";
+import { sampleCardInput } from "@/lib/sample-card-inputs";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../lib/template-bundles");
 const LOOKS = readdirSync(BUNDLES).filter((d) =>
@@ -232,5 +233,29 @@ describe("junior team list headings (round 3 retest)", () => {
         expect(body).toMatch(/YEAR 9 GOLD|YEAR 9 BOYS SOUTH WEST/);
         expect(body).not.toContain("HALLS HEAD YEAR 9");
         expect(body).not.toContain("YEAR 9 — HALLS HEAD");
+      });
+});
+
+// Retest 5: saved-template thumbnails draw the global sample, which printed bare
+// surnames ("BURRAGE") beside real cards' "J. YOUNG". Its players carry initials.
+describe("the sample Team List prints initials like a real one (retest 5)", () => {
+  const sample = sampleCardInput("teamList") as unknown as {
+    players: { firstInitial?: string; surname: string; role?: string }[];
+  };
+
+  it("every sample player has a one-letter capital initial and none is withheld", () => {
+    for (const p of sample.players) {
+      expect(p.firstInitial, p.surname).toMatch(/^\p{Lu}$/u);
+      expect(p.surname).not.toMatch(/private player/i);
+    }
+  });
+
+  for (const look of LOOKS)
+    for (const size of ["square", "portrait", "story", "landscape"] as CardSize[])
+      it(`${look} ${size}: the sample thumbnail prints "J. BURRAGE"`, () => {
+        const body = text(sample, bundle(look), size);
+        expect(body).toContain("J. BURRAGE");
+        expect(body).toContain("M. MANUEL (C)");
+        expect(body).not.toMatch(/(^|[^.] )BURRAGE/);
       });
 });

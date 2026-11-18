@@ -13,6 +13,7 @@ import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
 import type { ShareCardInput } from "@/lib/share-card";
 import { selectClass } from "../model";
 import { useGradeOptions } from "@/hooks/use-club-grades";
+import { roundText } from "@/lib/utils";
 
 /** Pick one match (or every match in a round) as match-summary slides. */
 export function MatchSource({
@@ -66,7 +67,7 @@ export function MatchSource({
   });
 
   const matchLabel = (m: MatchSummaryDto) => {
-    const round = m.stage ?? (m.round != null ? `Round ${m.round}` : "Match");
+    const round = m.stage ?? roundText(m.round) ?? "Match";
     return `${round} — vs ${m.opponent ?? "Unknown"}${m.result ? ` (${m.result})` : ""}`;
   };
 

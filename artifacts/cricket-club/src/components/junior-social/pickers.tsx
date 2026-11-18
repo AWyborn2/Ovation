@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Image as ImageIcon, Trophy } from "lucide-react";
 import { juniorMatchToSummaryInput } from "@/lib/junior-match-summary";
 import { useBrand } from "@/lib/brand-context";
+import { roundText } from "@/lib/utils";
 import type { ShareCardInput } from "@/lib/share-card";
 import { CardGridSkeleton, QueryError, EmptyState, LoadingState } from "@/components/data-states";
 
@@ -70,7 +71,8 @@ export function FromJuniorMatch({
   });
 
   const matchLabel = (m: JuniorMatchSummary) => {
-    const round = m.round ? `Round ${m.round}` : "Match";
+    // A junior round is PlayHQ's label ("Round 5"), not a bare number.
+    const round = roundText(m.round) ?? "Match";
     const ag = m.ageGroup ? `${m.ageGroup} • ` : "";
     return `${ag}${round} — vs ${m.opponentName ?? "Unknown"}${
       m.hhResult ? ` (${m.hhResult})` : ""
