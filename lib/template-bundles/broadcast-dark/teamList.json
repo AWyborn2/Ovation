@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark teamList",
-  "version": 9,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1151,7 +1151,7 @@
                   "field": "number",
                   "x": 0,
                   "w": 8.18,
-                  "y": 9.8,
+                  "y": 14.76,
                   "h": 77.87,
                   "style": {
                     "fontSize": 1.91,
@@ -1261,7 +1261,7 @@
             "kind": "rows",
             "rows": {
               "repeat": "players",
-              "rowHeight": 1.54,
+              "rowHeight": 1.94,
               "gap": 0.17,
               "cells": [
                 {
@@ -1279,10 +1279,10 @@
                   "field": "number",
                   "x": 0,
                   "w": 7.2,
-                  "y": 7.59,
-                  "h": 79.35,
+                  "y": 10,
+                  "h": 80,
                   "style": {
-                    "fontSize": 0.81,
+                    "fontSize": 1.16,
                     "color": "var(--gold)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
@@ -1293,10 +1293,10 @@
                   "field": "listName",
                   "x": 7.2,
                   "w": 92.8,
-                  "y": 23.85,
-                  "h": 55.66,
+                  "y": 15,
+                  "h": 70,
                   "style": {
-                    "fontSize": 0.78,
+                    "fontSize": 1.12,
                     "color": "#F5F2E8",
                     "fontFamily": "'IBM Plex Sans',sans-serif",
                     "fontWeight": 600,
@@ -1311,8 +1311,8 @@
               "landscape": {
                 "x": 3.15,
                 "y": 30.44,
-                "w": 23.54,
-                "h": 38.75
+                "w": 32,
+                "h": 56
               }
             },
             "sig": "rows:0tvrs6v164ualu",

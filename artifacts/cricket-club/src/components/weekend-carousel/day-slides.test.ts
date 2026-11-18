@@ -136,6 +136,70 @@ describe("Match Day: junior same-day slides", () => {
     }
   });
 
+  it("gives a junior day slide its teams' own sponsors, as a senior slide has its team's (round 4)", () => {
+    // Club sponsor logos are no child's data: the junior slide's "Supported
+    // by" strip follows the same rule as the senior one (Ash's junior/senior
+    // consistency decision). Player sponsors never reach a team slide.
+    const sponsored = {
+      ...bundle,
+      settings: { ...bundle.settings, sponsorsEnabled: true },
+      activeSponsors: [
+        { name: "Club wide", logoUrl: "/club-wide.png", grades: [], cardKinds: [] },
+        { name: "Seniors Co", logoUrl: "/a-grade.png", grades: ["A Grade"], cardKinds: [] },
+        { name: "Juniors Co", logoUrl: "/u13.png", grades: ["U13", "U15"], cardKinds: [] },
+        { name: "Little Co", logoUrl: "/u11.png", grades: ["U11"], cardKinds: [] },
+      ],
+    } as unknown as SocialSettingsBundle;
+    const slides = buildWeekendSlides(
+      createTeamSlides(weekend, [], md(weekend)),
+      [],
+      sponsored,
+      "This weekend",
+      "2026-10-09",
+      "2026-10-11",
+      "Australia/Perth",
+      undefined,
+      undefined,
+      null,
+      on(),
+    );
+    const senior = slides.find((s) => s.id === "fixture-1")!;
+    const day = slides.find((s) => s.id === "day-2026-10-10-2")!;
+    expect(senior).toMatchObject({ sponsorsOn: true });
+    expect(senior.data.sponsors).toEqual([{ name: "Seniors Co", logoUrl: "/a-grade.png" }]);
+    // U13 and U15 share a sponsor (shown once); U11 has its own.
+    expect(day).toMatchObject({ junior: true, sponsorsOn: true });
+    expect(day.data.sponsors).toEqual([
+      { name: "Juniors Co", logoUrl: "/u13.png" },
+      { name: "Little Co", logoUrl: "/u11.png" },
+    ]);
+    expect(day.data.photoUrl).toBeFalsy();
+    for (const packId of ["broadcast-dark-v1", "club-kit-v1"]) {
+      const seniorHtml = render(senior, packId);
+      const dayHtml = render(day, packId);
+      expect(seniorHtml.toUpperCase(), packId).toContain("SUPPORTED BY");
+      expect(dayHtml.toUpperCase(), packId).toContain("SUPPORTED BY");
+      expect(dayHtml, packId).toContain("/u13.png");
+      expect(dayHtml, packId).not.toContain("/a-grade.png");
+      expect(dayHtml, packId).not.toContain("/club-wide.png");
+    }
+    // Sponsors off, or the team sponsor field hidden: no strip on either.
+    const off = buildWeekendSlides(
+      createTeamSlides(weekend, [], md(weekend)),
+      [],
+      { ...sponsored, settings: { ...sponsored.settings, sponsorsEnabled: false } },
+      "This weekend",
+      "2026-10-09",
+      "2026-10-11",
+      "Australia/Perth",
+      undefined,
+      undefined,
+      null,
+      on(),
+    );
+    expect(off.find((s) => s.id === "day-2026-10-10-2")).toMatchObject({ sponsorsOn: false });
+  });
+
   it("splits a day at the layout's capacity", () => {
     const juniors = Array.from({ length: 7 }, (_, i) => fixture(10 + i, `U${11 + i}`, SAT));
     const slides = build(juniors, on("matchDay", 4));

@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchDay",
-  "version": 8,
+  "version": 9,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -906,41 +906,6 @@
             },
             "sig": "text:1e5ghat04dwjok",
             "link": "fixture-l23"
-          },
-          {
-            "kind": "image",
-            "content": "{{clubLogo}}",
-            "showWhen": {
-              "photo": false
-            },
-            "id": "fixture-l27",
-            "geometry": {
-              "square": {
-                "x": 8.2,
-                "y": 66.73,
-                "w": 5.49,
-                "h": 5.49
-              },
-              "portrait": {
-                "x": 8.45,
-                "y": 70.93,
-                "w": 6.41,
-                "h": 5.13
-              },
-              "story": {
-                "x": 8.79,
-                "y": 55.11,
-                "w": 7.41,
-                "h": 4.17
-              },
-              "landscape": {
-                "x": 54.76,
-                "y": 21.49,
-                "w": 3.37,
-                "h": 6.41
-              }
-            },
-            "sig": "image:194ijcq0drv4o1"
           },
           {
             "kind": "image",
@@ -2906,41 +2871,6 @@
             },
             "sig": "shape:0pa4uz806z62fb",
             "link": "title-l11"
-          },
-          {
-            "kind": "image",
-            "content": "{{clubLogo}}",
-            "showWhen": {
-              "photo": false
-            },
-            "id": "title-l13",
-            "geometry": {
-              "square": {
-                "x": 8.2,
-                "y": 66.12,
-                "w": 9,
-                "h": 9
-              },
-              "portrait": {
-                "x": 8.45,
-                "y": 71.45,
-                "w": 9.54,
-                "h": 7.63
-              },
-              "story": {
-                "x": 8.79,
-                "y": 61.91,
-                "w": 10.26,
-                "h": 5.77
-              },
-              "landscape": {
-                "x": 59.5,
-                "y": 9.68,
-                "w": 6.14,
-                "h": 11.7
-              }
-            },
-            "sig": "image:194ijcq0drv4o1"
           },
           {
             "kind": "image",
