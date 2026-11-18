@@ -34,6 +34,7 @@ import {
 import { seasonLabel } from "@/lib/match-summary";
 import { plural } from "@/lib/plural";
 import { useClubGrades } from "@/hooks/use-club-grades";
+import { roundText } from "@/lib/utils";
 
 /** Most matches one "Draft past matches" run drafts (the API's cap). */
 export const BACKFILL_LIMIT = 60;
@@ -159,7 +160,7 @@ export function GenerateFromDataCard({ onDrafted }: { onDrafted: () => void }) {
 }
 
 function matchLabel(m: MatchSummary): string {
-  const round = m.stage ?? (m.round != null ? `Round ${m.round}` : "Match");
+  const round = m.stage ?? roundText(m.round) ?? "Match";
   return `${m.grade} · ${round} — vs ${m.opponent ?? "Unknown"}${m.result ? ` (${m.result})` : ""}`;
 }
 
