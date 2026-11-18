@@ -83,10 +83,13 @@ function open({
     size: null as string | null,
     stored: true,
   },
+  library = [] as unknown[],
 }: {
   newStudio?: boolean;
   draft?: Record<string, unknown>;
   design?: Record<string, unknown>;
+  /** Templates the library lists (Change look). */
+  library?: unknown[];
 } = {}) {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   const requests: Req[] = [];
@@ -104,6 +107,8 @@ function open({
             ? { ...draft, adjustments: (body as { document: unknown }).document }
             : design;
       else if (/social-drafts\/42$/.test(url)) payload = draft;
+      else if (/\/api\/template-library\?/.test(url)) payload = { templates: library };
+      else if (/\/api\/club-templates\?/.test(url)) payload = { templates: [] };
       else if (/tenant-plan/.test(url))
         payload = { plan: "club", newStudio, entitlements: { socialStudio: true } };
       else if (/social-settings/.test(url))
@@ -397,5 +402,51 @@ describe("saving a set with a blank added page (dev retest 3, item 11b)", () => 
         .getByRole("button", { name: /^4\. Page 1/ })
         .getAttribute("aria-current"),
     ).toBeTruthy();
+  });
+});
+
+describe("changing a set's look (dev retest 3, item 12)", () => {
+  const lookTemplate = (id: number, name: string, document: unknown) => ({
+    id,
+    version: 1,
+    name,
+    kind: "set:teamLists",
+    authorName: "Ovation",
+    look: { id, name },
+    document,
+  });
+  const NEW_LOOK = {
+    ...DOC,
+    pages: DOC.pages.map((p) => ({
+      ...p,
+      layers: p.layers.map((l) => ({ ...l, content: `NEW ${l.content}` })),
+    })),
+  };
+
+  it("keeps a page the admin added, saved or not, and says what goes", async () => {
+    const requests = open({
+      library: [lookTemplate(3, "Old look", DOC), lookTemplate(9, "New look", NEW_LOOK)],
+    });
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. B Grade/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Add a page" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Blank page/ }));
+    expect(await within(strip).findByRole("button", { name: /^4\. Page 1/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Change look/ }));
+    expect(await screen.findByText(/so do the pages you added/)).toBeTruthy();
+    expect(screen.getByText(/own layout \(Edit this slide\) goes back/)).toBeTruthy();
+    const uses = await screen.findAllByRole("button", { name: "Use this look" });
+    fireEvent.click(uses[uses.length - 1]!);
+    await waitFor(() => expect(requests.some((r) => r.method === "PUT")).toBe(true));
+    const body = requests.find((r) => r.method === "PUT")!.body as {
+      document: { pages: Array<{ id: string; slot: string; name?: string; layers: unknown[] }> };
+      templateRef: unknown;
+    };
+    expect(body.templateRef).toEqual({ libraryTemplateId: 9, version: 1 });
+    // The new look's pages, with the added page still after B Grade's team page.
+    expect(body.document.pages.map((p) => p.slot)).toEqual(["cover", "team", "page", "sponsors"]);
+    expect(body.document.pages[2]!.name).toBe("Page 1");
+    expect(JSON.stringify(body.document.pages[1]!.layers)).toContain("NEW TEAM");
   });
 });

@@ -536,3 +536,77 @@ export function blankSetBlockers(
   }
   return { messages, firstSlide };
 }
+
+// ── Change look (dev retest 3, item 12) ─────────────────────────────────────
+
+/**
+ * A set switched to another look's set template (`next`), keeping the pages
+ * the admin added to it (Add page: a blank page, a copy, a page from a
+ * template), which are the admin's own and no look's. A slide's own layout
+ * (S8/S9) was made from the old look's page, so it goes, as decision 7 says.
+ *
+ * An added page is a design page of `prev` that is no slide's layout and not
+ * one of the old look's own pages (`oldLook`, when known; else the new
+ * look's, by id). Each keeps its place after the page it followed, where the
+ * new look has a page in that slot, else goes at the end. A page id the new
+ * look already uses is renamed, and the arrangement follows it. The set's
+ * page limit holds: pages past it are left out (`dropped` counts them).
+ */
+export function keepAddedPages(
+  next: SetDocument,
+  prev: SetDocument,
+  oldLook?: Pick<SetDocument, "pages"> | null,
+): { doc: SetDocument; kept: number; dropped: number } {
+  const old = withoutStrandedLayouts(prev);
+  const layouts = layoutPageIds(old);
+  const lookIds = new Set((oldLook ?? next).pages.map((p) => p.id));
+  const added = old.pages.filter(
+    (p) => p.slot === "page" && !layouts.has(p.id) && !lookIds.has(p.id),
+  );
+  if (added.length === 0) return { doc: next, kept: 0, dropped: 0 };
+  const room = Math.max(0, MAX_SET_PAGES - next.pages.length);
+  const keep = added.slice(0, room);
+  const used = new Set(next.pages.map((p) => p.id));
+  const renamed: Record<string, string> = {};
+  const pages = [...next.pages];
+  for (const page of keep) {
+    let id = page.id;
+    for (let n = 2; used.has(id); n++) id = `${page.id.slice(0, 36)}-${n}`;
+    used.add(id);
+    if (id !== page.id) renamed[`page:${page.id}`] = `page:${id}`;
+    // After the page it followed in the old set, where the new look has that slot.
+    const before = old.pages.slice(0, old.pages.indexOf(page)).reverse();
+    let at = pages.length;
+    for (const b of before) {
+      const placed = keep.includes(b)
+        ? pages.findIndex((p) => p.id === (renamed[`page:${b.id}`]?.slice(5) ?? b.id))
+        : b.slot === "page"
+          ? -1
+          : pages.findIndex((p) => p.slot === b.slot);
+      if (placed >= 0) {
+        at = placed + 1;
+        break;
+      }
+    }
+    pages.splice(at, 0, { ...page, id });
+  }
+  const palettes = [...new Set([...(next.palettes ?? []), ...(old.palettes ?? [])])].sort();
+  const rename = (k: string) => renamed[k] ?? k;
+  const arrangement = next.arrangement
+    ? {
+        ...next.arrangement,
+        order: next.arrangement.order.map(rename),
+        removed: next.arrangement.removed.map(rename),
+      }
+    : undefined;
+  return {
+    doc: {
+      ...next,
+      pages,
+      ...(palettes.length ? { palettes } : {}),
+      ...(arrangement ? { arrangement } : {}),
+    },
+    kept: keep.length,
+    dropped: added.length - keep.length,
+  };
+}
