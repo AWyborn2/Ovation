@@ -5,6 +5,8 @@
  * test (needs DATABASE_URL).
  */
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { eq, inArray } from "drizzle-orm";
@@ -29,6 +31,12 @@ import {
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { documentCoverage } from "../lib/template-library/coverage";
+import { followLibraryUpdates } from "../lib/template-library/follow";
+
+const MIGRATION_0079 = path.resolve(
+  __dirname,
+  "../../../../lib/db/migrations/0079_orphan_layout_pages.sql",
+);
 
 const STAMP = Date.now();
 const LOOKS = [`sd-${STAMP}-a`, `sd-${STAMP}-b`];
@@ -606,5 +614,163 @@ describe("making a carousel set from one template (part 4)", () => {
       from: { libraryTemplateId: lib["l0:set:matchDay"], version: 1 },
     });
     expect(res.status).toBe(400);
+  });
+});
+
+/**
+ * Retest 5, item 5 (set 972): a page the admin added ("Page 1", Add page →
+ * Blank page, with a heading typed on it) is the admin's own and carries its
+ * own layers, whatever happens to the look it sits in. It keeps them when the
+ * look's templates take a new version (the bundle sync on start), when
+ * migration 0079 runs, when the set is read back, and on Change look.
+ */
+describe("an added page keeps its content (retest 5, set 972)", () => {
+  const heading = {
+    id: "heading-1",
+    kind: "text" as const,
+    name: "HEADING",
+    content: "OUR BIG WEEKEND",
+    style: { fontSize: 9, fontWeight: 800 },
+    geometry: { square: { x: 15, y: 40, w: 70, h: 18 } },
+    editedAt: { square: 1_763_000_000_000 },
+  };
+  const added = (layers: unknown[] = [heading]) => ({
+    id: "Page1",
+    role: "fixed" as const,
+    slot: "page" as const,
+    kind: "matchDay",
+    page: "fixture" as const,
+    name: "Page 1",
+    layers,
+  });
+  const pageOf = (doc: SetDocument) => doc.pages.find((p) => p.id === "Page1");
+
+  /** A new version of a look's template, passed and current: what a bundle bump syncs. */
+  async function bumpLibrary(templateId: number, document: unknown, kind: string) {
+    const [row] = await db
+      .select({ v: libraryTemplatesTable.currentVersion })
+      .from(libraryTemplatesTable)
+      .where(eq(libraryTemplatesTable.id, templateId));
+    const version = row!.v + 1;
+    await db.insert(libraryTemplateVersionsTable).values({
+      templateId,
+      version,
+      document,
+      coverage: documentCoverage(document, kind),
+      fitStatus: "pass",
+    });
+    await db
+      .update(libraryTemplatesTable)
+      .set({ currentVersion: version })
+      .where(eq(libraryTemplatesTable.id, templateId));
+    // What the bundle sync runs after it syncs (unedited copies follow).
+    await followLibraryUpdates([templateId]);
+  }
+
+  /** Migration 0079's SQL, verbatim, over this one draft only (a temp copy of its row). */
+  async function run0079On(id: number) {
+    const client = await db.$client.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `CREATE TEMP TABLE "social_drafts" ON COMMIT DROP AS SELECT * FROM public.social_drafts WHERE id = $1`.replace(
+          "$1",
+          String(id),
+        ),
+      );
+      await client.query(readFileSync(MIGRATION_0079, "utf8"));
+      const { rows } = await client.query(
+        `SELECT adjustments, card_input FROM "social_drafts" WHERE id = ${id}`,
+      );
+      await client.query("ROLLBACK");
+      return rows[0] as { adjustments: SetDocument; card_input: Record<string, unknown> };
+    } finally {
+      client.release();
+    }
+  }
+
+  it("a queued carousel's added page: through a look update, 0079, read back and Change look", async () => {
+    const id = await queuedCarousel();
+    const first = await api("get", `/social-drafts/${id}/set-design`);
+    const base = first.body.document as SetDocument;
+    // Add page → Blank page after the fixture page, a heading typed on it, saved.
+    const withPage: SetDocument = {
+      ...base,
+      pages: [...base.pages.slice(0, 2), added(), ...base.pages.slice(2)],
+    };
+    const saved = await api("put", `/social-drafts/${id}/set-design`).send({ document: withPage });
+    expect(saved.status).toBe(200);
+    expect(pageOf(saved.body.adjustments)?.layers).toEqual([heading]);
+    const slideIds = () =>
+      readQueuedCarousel((saved.body as { cardInput: unknown }).cardInput)!.slides.map((s) => s.id);
+    expect(slideIds()).toContain("page:Page1");
+
+    const drawsHeading = async () => {
+      const res = await api("get", `/social-drafts/${id}/set-design`);
+      expect(res.status).toBe(200);
+      expect(res.body.stored).toBe(true);
+      const doc = res.body.document as SetDocument;
+      expect(pageOf(doc)?.layers).toEqual([heading]);
+      const draft = (await api("get", `/social-drafts/${id}`)).body;
+      const drawn = mapCarouselSlides(doc, readQueuedCarousel(draft.cardInput)!.slides).slides;
+      const slide = drawn.find((s) => s.key === "page:Page1");
+      expect(slide?.page.layers).toEqual([heading]);
+      return { doc, draft };
+    };
+
+    // (a) The look's templates take a new version (today's dev update).
+    await bumpLibrary(lib["l0:matchDay"]!, DOCS("l0v2").matchDay, "matchDay");
+    await bumpLibrary(lib["l0:set:matchDay"]!, setOf("matchDay", "l0v2"), "set:matchDay");
+    await drawsHeading();
+
+    // (b) Migration 0079 changes nothing on this set.
+    const [row] = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.id, id));
+    const after = await run0079On(id);
+    expect(after.adjustments).toEqual(row!.adjustments);
+    expect(after.card_input).toEqual(row!.cardInput);
+
+    // (c) Read back, and saved again as the editor saves it unchanged.
+    const { doc } = await drawsHeading();
+    expect(
+      (await api("put", `/social-drafts/${id}/set-design`).send({ document: doc })).status,
+    ).toBe(200);
+    await drawsHeading();
+
+    // (d) Change look: the new look's set with the added page kept (what the
+    // editor sends, keepAddedPages), and the look's ref.
+    const other = setOf("matchDay", "l1");
+    const relooked: SetDocument = {
+      ...other,
+      pages: [...other.pages.slice(0, 2), pageOf(doc)!, ...other.pages.slice(2)],
+    };
+    const changed = await api("put", `/social-drafts/${id}/set-design`).send({
+      document: relooked,
+      templateRef: { libraryTemplateId: lib["l1:set:matchDay"], version: 1 },
+    });
+    expect(changed.status).toBe(200);
+    const { doc: now } = await drawsHeading();
+    expect(now.pages.find((p) => p.id === "fixture")?.layers).toEqual([shape("l1-md-fixture")]);
+  });
+
+  it("a club set template's added page survives the look's new version", async () => {
+    const [look] = await db
+      .select({ id: templateLooksTable.id })
+      .from(templateLooksTable)
+      .where(eq(templateLooksTable.slug, LOOKS[1]!));
+    const made = await api("post", "/club-templates/sets").send({
+      setType: "matchDay",
+      lookId: look!.id,
+    });
+    expect(made.status).toBe(201);
+    const doc = made.body.document as SetDocument;
+    const savedCopy = await api("put", `/club-templates/${made.body.id}`).send({
+      baseVersion: made.body.version,
+      document: { ...doc, pages: [...doc.pages, added()] },
+    });
+    expect(savedCopy.status).toBe(200);
+    expect(savedCopy.body.edited).toBe(true);
+    await bumpLibrary(lib["l1:set:matchDay"]!, setOf("matchDay", "l1v2"), "set:matchDay");
+    const again = await api("get", `/club-templates/${made.body.id}`);
+    expect(pageOf(again.body.document as SetDocument)?.layers).toEqual([heading]);
   });
 });
