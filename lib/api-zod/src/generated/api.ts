@@ -8562,23 +8562,27 @@ export const GetSocialSettingsResponse = zod.object({
   "matchDay": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "results": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "matchSummary": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "teamList": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
   "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.'),
@@ -8918,23 +8922,27 @@ export const UpdateSocialSettingsBody = zod.object({
   "matchDay": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "results": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "matchSummary": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "teamList": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.')
 }).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
   "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.'),
   "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.'),
@@ -9234,23 +9242,27 @@ export const UpdateSocialSettingsResponse = zod.object({
   "matchDay": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "results": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "matchSummary": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.'),
   "teamList": zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
-  "juniorConsolidateByDay": zod.boolean()
-}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+  "juniorConsolidateByDay": zod.boolean(),
+  "playerOrder": zod.enum(['selected', 'shirt', 'alpha']).optional().describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.')
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club\'s player order for senior and junior lists.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
   "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.'),
@@ -14162,7 +14174,8 @@ export const UpdateSocialDraftBody = zod.object({
   "photo": zod.record(zod.string(), zod.unknown()).optional(),
   "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
   "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional().describe('Editor overlay (see CardAdjustments); null clears every edit.')
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional().describe('Editor overlay (see CardAdjustments); null clears every edit.'),
+  "playerOrder": zod.union([zod.enum(['selected', 'shirt', 'alpha']).describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.'),zod.null()]).optional().describe('A Team List card\'s own player order (build decision 16), stored on the draft\'s card input as playerOrderOverride; null follows the order the card was made with (the club\'s default). It never changes the club\'s default. Team List drafts only.')
 })
 
 export const UpdateSocialDraftResponse = zod.object({

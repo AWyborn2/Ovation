@@ -14,7 +14,13 @@ const seen: Array<{ setType: string; audience: string }> = [];
 function fakeState() {
   const [generated, setGenerated] = useState(false);
   const [queuedId, setQueuedId] = useState<number | null>(null);
+  // The club's default is Shirt number; null follows it (as the real hook does).
+  const [order, setOrder] = useState<string | null>(null);
   return {
+    playerOrder: order ?? "shirt",
+    clubPlayerOrder: "shirt",
+    playerOrderChanged: order !== null,
+    setPlayerOrder: (next: string | null) => setOrder(next === "shirt" ? null : next),
     error: false,
     loading: false,
     retry: () => {},
@@ -97,6 +103,27 @@ describe("Create's carousel flow", () => {
       "/admin/social/create",
     );
     expect(screen.getByText("match day: what these cards show")).toBeInTheDocument();
+  });
+
+  it("a team list carousel can choose its own player order, and go back to the club's", () => {
+    renderWithHistory(
+      <CarouselFlow setType="teamList" audience="senior" step={4} onNext={() => {}} />,
+      "/admin/social/create",
+    );
+    expect(screen.getByTestId("create-player-order-shirt")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText(/Your club’s default/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("create-player-order-alpha"));
+    expect(screen.getByTestId("create-player-order-alpha")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText(/For this carousel only/)).toHaveTextContent("Shirt number");
+    fireEvent.click(screen.getByTestId("create-player-order-reset"));
+    expect(screen.getByTestId("create-player-order-shirt")).toHaveAttribute("aria-checked", "true");
+    cleanup();
+    // Only team lists have a player order.
+    renderWithHistory(
+      <CarouselFlow setType="results" audience="senior" step={4} onNext={() => {}} />,
+      "/admin/social/create",
+    );
+    expect(screen.queryByTestId("create-player-order")).toBeNull();
   });
 
   it("picks the games on step 3, then moves on", () => {

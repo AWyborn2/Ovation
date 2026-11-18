@@ -5,9 +5,27 @@
  * Photos, Uploads, Live stats and Brand panels, for a draft's design or a
  * draft made into pages.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Image as ImageIcon, Palette, Radio, Trophy, Upload, Users } from "lucide-react";
+import {
+  Image as ImageIcon,
+  ListOrdered,
+  Palette,
+  Radio,
+  Trophy,
+  Upload,
+  Users,
+} from "lucide-react";
+import {
+  DEFAULT_TEAM_LIST_ORDER,
+  TEAM_LIST_ORDER_LABELS,
+  isTeamListOrder,
+  readCardContentSettings,
+  teamListHasShirtNumbers,
+  teamListInputOrder,
+  type TeamListOrder,
+} from "@workspace/scorecard/card-content";
+import { PlayerOrderControl } from "@/components/social-studio/player-order";
 import {
   getGetSocialDraftQueryKey,
   getGetSocialSettingsQueryKey,
@@ -184,6 +202,97 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       ),
     },
   ];
+  // A Team List card's own player order (build decision 16): the Card panel.
+  if (input.kind === "teamList")
+    panels.unshift({
+      id: "card",
+      label: "Card",
+      icon: ListOrdered,
+      render: () => (
+        <TeamListCardPanel
+          input={input}
+          clubOrder={
+            readCardContentSettings(bundle?.settings.cardContent).teamList.playerOrder ??
+            DEFAULT_TEAM_LIST_ORDER
+          }
+          onOrder={async (playerOrder) => {
+            await updateSocialDraft(draft.id, { playerOrder });
+            refresh();
+          }}
+        />
+      ),
+    });
 
   return { input, data, bundle, theme, refresh, panels };
+}
+
+/**
+ * A single Team List card's own settings: its player order. It changes this
+ * design only; the club's default (Settings → What cards show) is untouched.
+ */
+export function TeamListCardPanel({
+  input,
+  clubOrder,
+  onOrder,
+}: {
+  input: Extract<ShareCardInput, { kind: "teamList" }>;
+  clubOrder: TeamListOrder;
+  onOrder: (order: TeamListOrder | null) => Promise<void>;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const own = isTeamListOrder(input.playerOrderOverride) ? input.playerOrderOverride : null;
+  const value = teamListInputOrder(input);
+  const save = async (order: TeamListOrder | null) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await onOrder(order);
+    } catch {
+      setError("Couldn't change the player order. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const numbered = teamListHasShirtNumbers(input.players ?? []);
+  return (
+    <div className="space-y-3 p-1" data-testid="team-list-card-panel">
+      <PlayerOrderControl
+        id="card-panel"
+        compact
+        value={value}
+        disabled={saving}
+        onChange={(order) => void save(order)}
+        hint={
+          <>
+            {value === "shirt" && !numbered
+              ? "This card shows no shirt numbers, so its rows stay in the order it was made with. "
+              : null}
+            {own ? (
+              <>
+                For this design only; your club&rsquo;s default is{" "}
+                {TEAM_LIST_ORDER_LABELS[clubOrder]}.{" "}
+                <button
+                  type="button"
+                  className="underline"
+                  disabled={saving}
+                  onClick={() => void save(null)}
+                  data-testid="card-panel-player-order-reset"
+                >
+                  Use the order it was made with
+                </button>
+              </>
+            ) : (
+              <>Changing it here changes this design only, never your club&rsquo;s default.</>
+            )}
+          </>
+        }
+      />
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }

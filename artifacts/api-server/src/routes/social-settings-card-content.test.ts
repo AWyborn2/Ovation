@@ -69,12 +69,14 @@ const patch = (i: number, body: object) =>
     .send(body);
 
 const STANDARD = { preset: "standard", fields: {}, juniorConsolidateByDay: true };
+/** Team List also carries the club's player order (build decision 16): As selected by default. */
+const TEAM_STANDARD = { ...STANDARD, playerOrder: "selected" };
 /** Every content kind (ADR-010 P7); a kind the club never chose is Standard. */
 const ALL = (matchDay = STANDARD, over: object = {}) => ({
   matchDay,
   results: STANDARD,
   matchSummary: STANDARD,
-  teamList: STANDARD,
+  teamList: TEAM_STANDARD,
   ...over,
 });
 
@@ -126,7 +128,7 @@ describe("cardContent", () => {
     // A key from another kind is dropped.
     const want = ALL(matchDay, {
       results,
-      teamList: { ...teamList, fields: { "team.shirtNumbers": false } },
+      teamList: { ...TEAM_STANDARD, ...teamList, fields: { "team.shirtNumbers": false } },
     });
     expect(res.body.cardContent).toEqual(want);
     expect((await get(0).expect(200)).body.settings.cardContent).toEqual(want);
@@ -135,6 +137,27 @@ describe("cardContent", () => {
   it("other saves leave the content choices alone", async () => {
     await patch(0, { sizeLandscape: true }).expect(200);
     expect((await get(0).expect(200)).body.settings.cardContent.matchDay.preset).toBe("minimal");
+  });
+
+  it("saves the club's Team List player order, in the same JSON (build decision 16)", async () => {
+    const before = (await get(0).expect(200)).body.settings.cardContent;
+    const teamList = { ...before.teamList, playerOrder: "shirt" };
+    const res = await patch(0, { cardContent: { ...before, teamList } }).expect(200);
+    expect(res.body.cardContent.teamList.playerOrder).toBe("shirt");
+    const [row] = await db
+      .select({ cardContent: socialSettingsTable.cardContent })
+      .from(socialSettingsTable)
+      .where(eq(socialSettingsTable.tenantId, tenantIds[0]!));
+    expect(row!.cardContent.teamList?.playerOrder).toBe("shirt");
+    expect((await get(0).expect(200)).body.settings.cardContent.teamList.playerOrder).toBe("shirt");
+    // Only the known orders.
+    await patch(0, {
+      cardContent: { ...before, teamList: { ...before.teamList, playerOrder: "random" } },
+    }).expect(400);
+    // Another club keeps As selected.
+    expect((await get(1).expect(200)).body.settings.cardContent.teamList.playerOrder).toBe(
+      "selected",
+    );
   });
 });
 

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardAdjustments } from './cardAdjustments';
+import type { TeamListPlayerOrder } from './teamListPlayerOrder';
 
 export interface UpdateSocialDraftRequest {
   caption?: string;
@@ -21,4 +22,6 @@ export interface UpdateSocialDraftRequest {
   photoPlayerId?: number | null;
   /** Editor overlay (see CardAdjustments); null clears every edit. */
   adjustments?: CardAdjustments | null;
+  /** A Team List card's own player order (build decision 16), stored on the draft's card input as playerOrderOverride; null follows the order the card was made with (the club's default). It never changes the club's default. Team List drafts only. */
+  playerOrder?: TeamListPlayerOrder | null;
 }

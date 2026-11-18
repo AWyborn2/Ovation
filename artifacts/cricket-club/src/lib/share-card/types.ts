@@ -3,7 +3,7 @@
 // its siblings so every other module can depend on it without cycles.
 import type { CardTemplate, CardLayoutLayer } from "@workspace/api-client-react";
 import type { HallsHeadBrand } from "@workspace/scorecard";
-import type { DayFixtureRow, DayResultRow } from "@workspace/scorecard/card-content";
+import type { DayFixtureRow, DayResultRow, TeamListOrder } from "@workspace/scorecard/card-content";
 
 export const SIZES = {
   square: { w: 1080, h: 1080, label: "Feed square", code: "1080x1080" },
@@ -372,6 +372,13 @@ export type ShareCardInput =
       players: TeamListPlayer[];
       /** "shirt": rows print season shirt numbers, never the batting order (KTD10). */
       numbering?: TeamListNumbering;
+      /**
+       * The player order the card was built in (build decision 16): the club's
+       * default when it was made. Absent: As selected.
+       */
+      playerOrder?: TeamListOrder;
+      /** This design's own player order, chosen in the editor; wins over `playerOrder`. */
+      playerOrderOverride?: TeamListOrder;
       squadPhotoUrl?: string | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;

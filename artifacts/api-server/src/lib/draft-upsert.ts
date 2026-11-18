@@ -9,6 +9,7 @@ import {
   type SocialDraftRow,
 } from "@workspace/db";
 import { seasonStartYearFor } from "@workspace/db/seasons";
+import { isTeamListOrder } from "@workspace/scorecard/card-content";
 import { getShirtNumberSettings, shirtNumberCategoryForGrade } from "@workspace/db/shirt-numbers";
 import { shirtNumberForCategory } from "./player-shirt-numbers";
 import { logger } from "./logger";
@@ -284,19 +285,36 @@ async function lookupShirtNumber(input: DraftUpsert): Promise<DraftShirtNumberLo
   return loadDraftShirtNumberFacts(input.tenantId, input.playerId!, season, input.grade);
 }
 
+/**
+ * A Team List design's own player order (build decision 16) kept across a
+ * data refresh: the admin chose it for this design, so new data never undoes
+ * it, and an unchanged side is still "unchanged". Pure.
+ */
+export function keepDesignPlayerOrder(
+  cardInput: Record<string, unknown>,
+  existingCardInput: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const kept = existingCardInput?.playerOrderOverride;
+  if (cardInput.kind !== "teamList" || existingCardInput?.kind !== "teamList") return cardInput;
+  if (!isTeamListOrder(kept)) return cardInput;
+  return { ...cardInput, playerOrderOverride: kept };
+}
+
 /** `raw` with its card input stamped (or cleared) per KTD11, against the existing draft. */
 const stampedFor = (
   raw: DraftUpsert,
   lookup: DraftShirtNumberLookup,
   existing: { cardInput: unknown } | null | undefined,
-): DraftUpsert => ({
-  ...raw,
-  cardInput: stampShirtNumberForUpsert(
-    raw.cardInput,
-    lookup,
-    existing?.cardInput as Record<string, unknown> | null | undefined,
-  ),
-});
+): DraftUpsert => {
+  const previous = existing?.cardInput as Record<string, unknown> | null | undefined;
+  return {
+    ...raw,
+    cardInput: keepDesignPlayerOrder(
+      stampShirtNumberForUpsert(raw.cardInput, lookup, previous),
+      previous,
+    ),
+  };
+};
 
 export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertResult> {
   // Stamp the season shirt number on every call, BEFORE the change comparison:

@@ -19,7 +19,7 @@ import { formatFixtureDate, formatFixtureTime } from "./match-day";
 import { TEAM_LIST_LEAD_MS, type TeamListResult, type TeamListShirtNumbers } from "./team-list";
 import { teamListDraftInput } from "@workspace/scorecard/card-content";
 import { buildJuniorTeamListContent, juniorShirtNumberReader } from "../card-content/team-list";
-import { contentVisibleFields } from "../card-content/visible-fields";
+import { teamListContentChoices } from "../card-content/visible-fields";
 
 /**
  * Junior team-list cards (junior PlayHQ sync plan U8; KTD13, R17, R20, R21, F2).
@@ -191,12 +191,12 @@ export async function generateJuniorTeamListDrafts(
   if (!sides.length) return result;
   // The card comes from the team list content builder (ADR-010 P7), the same
   // one the team list carousel uses.
-  const [contents, visible] = await Promise.all([
+  const [contents, { visible, order }] = await Promise.all([
     buildJuniorTeamListContent(tenantId, sides, {
       naming,
       numbersFor: juniorShirtNumberReader(tenantId),
     }),
-    contentVisibleFields(tenantId, "teamList"),
+    teamListContentChoices(tenantId),
   ]);
 
   for (const [i, { fixture, players }] of sides.entries()) {
@@ -217,7 +217,7 @@ export async function generateJuniorTeamListDrafts(
       family: "matchday",
       sourceKey,
       cardInput: {
-        ...teamListDraftInput(contents[i]!, visible),
+        ...teamListDraftInput(contents[i]!, visible, order),
         ...photo.cardInput,
         // The junior teams this card covers, for the per-team publishing gate (ADR-006).
         juniorTeams: [{ ageGroup: fixture.ageGroup ?? null, teamName: fixture.teamName ?? null }],

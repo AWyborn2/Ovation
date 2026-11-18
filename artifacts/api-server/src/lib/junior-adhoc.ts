@@ -7,7 +7,7 @@ import {
 } from "@workspace/db";
 import { teamListDraftInput } from "@workspace/scorecard/card-content";
 import { buildJuniorTeamListContent, juniorShirtNumberReader } from "./card-content/team-list";
-import { contentVisibleFields } from "./card-content/visible-fields";
+import { teamListContentChoices } from "./card-content/visible-fields";
 import { loadJuniorNaming } from "./junior-helpers";
 import { juniorPhotoFields, juniorPhotoLoader, pickJuniorCardPhoto } from "./junior-photos";
 import { juniorTeamListKey } from "./junior-publishing";
@@ -62,15 +62,15 @@ export async function juniorTeamListPrefill(
     tenantId,
     players.map((p) => p.participantId),
   );
-  const [contents, visible] = await Promise.all([
+  const [contents, { visible, order }] = await Promise.all([
     buildJuniorTeamListContent(tenantId, [{ fixture, players }], {
       naming,
       numbersFor: juniorShirtNumberReader(tenantId),
     }),
-    contentVisibleFields(tenantId, "teamList"),
+    teamListContentChoices(tenantId),
   ]);
   const input = {
-    ...teamListDraftInput(contents[0]!, visible),
+    ...teamListDraftInput(contents[0]!, visible, order),
     junior: true,
     juniorFixtureId: fixture.id,
   };

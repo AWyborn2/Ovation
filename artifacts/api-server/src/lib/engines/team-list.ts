@@ -24,7 +24,7 @@ import { autoDebutPlayerIds, isDebut } from "../team-list-debuts";
 import { PRIVATE_PLAYER } from "../selection-published-players";
 import { teamListDraftInput } from "@workspace/scorecard/card-content";
 import { buildTeamListContent } from "../card-content/team-list";
-import { contentVisibleFields } from "../card-content/visible-fields";
+import { teamListContentChoices } from "../card-content/visible-fields";
 
 /**
  * Team lists are usually named a few days out, so look further ahead than the
@@ -361,9 +361,9 @@ export async function generateTeamListDrafts(
   );
   result.skipped += rows.length - sides.length;
   if (!sides.length) return result;
-  const [contents, visible] = await Promise.all([
+  const [contents, { visible, order }] = await Promise.all([
     buildTeamListContent(tenantId, sides),
-    contentVisibleFields(tenantId, "teamList"),
+    teamListContentChoices(tenantId),
   ]);
   for (const [i, { fixture, list }] of sides.entries()) {
     const players = list.players;
@@ -380,7 +380,7 @@ export async function generateTeamListDrafts(
       engine: "teamlist",
       family: "matchday",
       sourceKey,
-      cardInput: teamListDraftInput(contents[i]!, visible),
+      cardInput: teamListDraftInput(contents[i]!, visible, order),
       appPath: "/fixtures",
       playerId: featured,
       // The photo: one of the selected side, rotating towards the players and
