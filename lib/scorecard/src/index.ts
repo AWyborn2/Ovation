@@ -32,7 +32,13 @@ export {
 } from "./colors";
 export { formatDismissal, dismissalWithoutNames } from "./dismissal";
 export { oversToBalls, ballsToOvers, sumOvers, economy } from "./overs";
-export { GAMES_MILESTONE_HEADING, milestoneCardHeading } from "./milestone-heading";
+export {
+  GAMES_MILESTONE_HEADING,
+  centuryCardFeat,
+  centuryCardText,
+  milestoneCardHeading,
+  type InningsFeat,
+} from "./milestone-heading";
 export { buildScorecard } from "./mapping";
 export { FILL_IN_THRESHOLD, isFillInPlayerId } from "./fill-in";
 export { isJuniorGradeLabel } from "./junior-grade";
