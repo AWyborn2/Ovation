@@ -30,8 +30,12 @@ type Fields = Record<string, unknown>;
 
 const text = (v: unknown): string => (v == null ? "" : String(v));
 
-const roundOf = (round: unknown): string =>
-  round != null && round !== "" ? `Round ${String(round)}` : "";
+/** "Round 5" from 5 or "5"; a label that already says so (a junior "Round 5") as it is. */
+const roundOf = (round: unknown): string => {
+  const value = round == null ? "" : String(round).trim();
+  if (!value) return "";
+  return /^round\b/i.test(value) ? value : `Round ${value}`;
+};
 
 const ordinal = (n: number): string => {
   const mod100 = n % 100;

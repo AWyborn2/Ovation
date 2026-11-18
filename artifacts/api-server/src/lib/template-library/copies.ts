@@ -133,15 +133,16 @@ function present(
   const view: ClubTemplateView = {
     id: row.id,
     kind,
-    // A name made from the kind's key before retest 4 reads with its label.
-    name: templateDisplayName(row.name, kind),
+    // A name made from the kind's key (before retest 4, or copied from a
+    // library name that still had it) reads with its label.
+    name: templateDisplayName(row.name, kind, origin?.look?.name),
     version: row.version,
     isDefault: row.isKindDefault,
     basedOn: origin
       ? {
           templateId: origin.templateId,
           version: row.originVersion ?? 0,
-          name: origin.name,
+          name: templateDisplayName(origin.name, kind, origin.look?.name),
           authorName: origin.authorName,
           look: origin.look,
         }
@@ -351,7 +352,10 @@ export async function duplicateCopy(
     .insert(cardTemplatesTable)
     .values({
       tenantId,
-      name: `${src.name} (copy)`.slice(0, MAX_TEMPLATE_NAME),
+      name: `${templateDisplayName(src.name, src.baseKind ?? "")} (copy)`.slice(
+        0,
+        MAX_TEMPLATE_NAME,
+      ),
       source: KIND_SOURCE,
       baseKind: src.baseKind,
       cardKinds: src.cardKinds,

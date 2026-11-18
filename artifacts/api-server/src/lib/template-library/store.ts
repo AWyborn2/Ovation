@@ -26,7 +26,7 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
-import { SET_KIND_PREFIX } from "@workspace/scorecard/kind-templates";
+import { SET_KIND_PREFIX, templateDisplayName } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import {
   db,
@@ -139,7 +139,7 @@ function present(row: ViewRow): LibraryTemplateView {
     id: row.id,
     slug: row.slug,
     kind: row.kind,
-    name: row.name,
+    name: templateDisplayName(row.name, row.kind, row.lookName),
     origin: row.origin,
     authorName: row.authorName ?? OVATION_AUTHOR,
     look:
@@ -510,7 +510,7 @@ export async function listLibraryLooks(): Promise<LibraryLookView[]> {
         .map((t) => ({
           id: t.id,
           kind: t.kind,
-          name: t.name,
+          name: templateDisplayName(t.name, t.kind, look.name),
           version: t.version,
           coverage: t.coverage ?? { pages: [], sizes: [] },
         })),

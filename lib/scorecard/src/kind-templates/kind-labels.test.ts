@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   bundleTemplateName,
+  CARD_KIND_LABELS,
   fallbackTemplateName,
+  KIND_KEY_IN_NAME,
   kindDisplayLabel,
   templateDisplayName,
 } from "./kind-labels";
@@ -24,6 +26,33 @@ describe("template kind labels (dev retest 4)", () => {
     expect(templateDisplayName("Our trading card", "tradingCard")).toBe("Our trading card");
     expect(templateDisplayName("Club Kit Match Day", "matchDay")).toBe("Club Kit Match Day");
     expect(templateDisplayName("Matchday special", "matchDay")).toBe("Matchday special");
+  });
+
+  it("reads a stored legacy '<Look> <kind key>' name with the kind's label (retest 5, I)", () => {
+    expect(templateDisplayName("Bold Type teamList", "teamList")).toBe("Bold Type Team List");
+    expect(templateDisplayName("Broadcast Dark matchSummary", "matchSummary")).toBe(
+      "Broadcast Dark Match Summary",
+    );
+    expect(templateDisplayName("Bold Type teamList (copy)", "teamList")).toBe(
+      "Bold Type Team List (copy)",
+    );
+    // A lower-case key reads as a label only after the look's own name.
+    expect(templateDisplayName("Bold Type player", "player", "Bold Type")).toBe("Bold Type Player");
+    expect(templateDisplayName("Bold Type players", "player", "Bold Type")).toBe(
+      "Bold Type players",
+    );
+    expect(templateDisplayName("Our player card", "player")).toBe("Our player card");
+    // A longer key is never read as a shorter one inside it.
+    expect(templateDisplayName("Duotone teamListRound", "teamListRound")).toBe(
+      "Duotone Round Team Lists",
+    );
+    for (const kind of Object.keys(CARD_KIND_LABELS)) {
+      for (const name of [`Bold Type ${kind}`, `${kind} template`, `Bold Type ${kind} (copy)`]) {
+        const shown = templateDisplayName(name, kind, "Bold Type");
+        expect(shown, name).not.toMatch(KIND_KEY_IN_NAME);
+        expect(shown, name).toContain(CARD_KIND_LABELS[kind]!);
+      }
+    }
   });
 
   it("names a bundle's '<Look> <kind>' template with the kind's label", () => {

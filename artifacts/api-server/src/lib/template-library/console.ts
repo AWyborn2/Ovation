@@ -24,7 +24,11 @@ import {
   tenantsTable,
   type TemplateOrigin,
 } from "@workspace/db";
-import { kindFields, templateDocumentErrors } from "@workspace/scorecard/kind-templates";
+import {
+  kindFields,
+  templateDisplayName,
+  templateDocumentErrors,
+} from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { libraryAssetPolicyErrors } from "./assets";
 import { documentCoverage } from "./coverage";
@@ -98,7 +102,7 @@ function present(row: Row): ConsoleTemplateView {
     id: row.id,
     slug: row.slug,
     kind: row.kind,
-    name: row.name,
+    name: templateDisplayName(row.name, row.kind, row.lookName),
     origin: row.origin,
     authorName: row.authorName ?? OVATION_AUTHOR,
     look:

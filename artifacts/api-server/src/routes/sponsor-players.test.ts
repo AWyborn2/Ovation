@@ -19,7 +19,10 @@ import {
   sponsorsTable,
   tenantsTable,
 } from "@workspace/db";
+import pino from "pino";
+import { cardSponsors } from "@workspace/scorecard/card-sponsors";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { loadActiveSponsors } from "../lib/active-sponsors";
 
 const STAMP = Date.now();
 const tenantIds: number[] = [];
@@ -211,5 +214,33 @@ describe("player sponsors: tags on a sponsor", () => {
       .from(sponsorPlayersTable)
       .where(eq(sponsorPlayersTable.sponsorId, sponsorId));
     expect(tags).toEqual([]);
+  });
+});
+
+// Retest 5 (H): a junior grade's own sponsor reaches the Studio's bundle (the
+// Weekend Carousel's junior day slides read it there) and the server's post
+// render rule for a junior card of that grade. Club sponsor logos are no
+// child's data; nothing in the sponsor path drops a junior grade.
+describe("a junior grade sponsor (retest 5, H)", () => {
+  it("is stored with its junior grade and served to the Studio and the post render", async () => {
+    const created = await as(0)
+      .post(
+        "/api/sponsors",
+        sponsor({ name: `Blue Bakery ${STAMP}`, grades: [" U13 Blue ", "U13 Blue"] }),
+      )
+      .expect(201);
+    expect(created.body.grades).toEqual(["U13 Blue"]);
+    const bundle = await as(0).get("/api/social-settings").expect(200);
+    const live = bundle.body.activeSponsors.find((s: { id: number }) => s.id === created.body.id);
+    expect(live).toMatchObject({ name: `Blue Bakery ${STAMP}`, grades: ["U13 Blue"] });
+
+    // The post render's rule: a junior team list of that grade carries it,
+    // matched whatever the case or spacing; another grade's list does not.
+    const active = await loadActiveSponsors(tenantIds[0], pino({ level: "silent" }));
+    const strip = (grade: string) =>
+      cardSponsors(active, { kind: "teamList", grade }).sponsors.map((s) => s.id);
+    expect(strip("u13-blue")).toContain(created.body.id);
+    expect(strip("U15 Gold")).not.toContain(created.body.id);
+    await as(0).delete(`/api/sponsors/${created.body.id}`).expect(204);
   });
 });
