@@ -27,6 +27,7 @@ import {
   setTemplateKind,
   type DataSetType,
   type SetDocument,
+  type SetPage,
 } from "@workspace/scorecard/kind-templates";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
@@ -634,14 +635,14 @@ describe("an added page keeps its content (retest 5, set 972)", () => {
     geometry: { square: { x: 15, y: 40, w: 70, h: 18 } },
     editedAt: { square: 1_763_000_000_000 },
   };
-  const added = (layers: unknown[] = [heading]) => ({
+  const added = (layers: unknown[] = [heading]): SetPage => ({
     id: "Page1",
     role: "fixed" as const,
     slot: "page" as const,
     kind: "matchDay",
     page: "fixture" as const,
     name: "Page 1",
-    layers,
+    layers: layers as SetPage["layers"],
   });
   const pageOf = (doc: SetDocument) => doc.pages.find((p) => p.id === "Page1");
 
