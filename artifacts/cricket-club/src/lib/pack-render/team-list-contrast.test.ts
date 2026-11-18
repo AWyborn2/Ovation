@@ -8,6 +8,12 @@
  * rendered) against the colour behind the glyphs (the card's ground and every
  * panel, scrim or chip drawn under them, gradients included).
  *
+ * Every Duotone kind is held to the same measure for every line of text it
+ * draws, not just the names (Ash's round 3 retest, Nov 2026: Duotone's Match
+ * Day printed its club, opposition and fixture lines in the dark stage colour
+ * on a dark panel): every page, size, photo state and senior or junior card,
+ * every text layer and every list cell's first row.
+ *
  * WCAG AA: 4.5:1, or 3:1 for large text (24 px, or 18.66 px bold). Text that
  * sits on the photo or a logo has no single colour behind it and isn't
  * measured here.
@@ -17,7 +23,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   flattenLayers,
+  pageForInput,
   rowsColumns,
+  slideInputFor,
+  type PageKey,
   type TemplateDocumentV2,
   type TemplateLayerV2,
 } from "@workspace/scorecard/kind-templates";
@@ -29,6 +38,7 @@ import {
   type PackCardData,
 } from "@/lib/pack-render";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
+import { sampleCardInput } from "@/lib/sample-card-inputs";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../lib/template-bundles");
 const SIDE = 14;
@@ -49,24 +59,31 @@ const BRANDS: Record<string, PackCardData["brand"]> = {
   dark: { name: "Navy Point CC", primaryColour: "#0B1F4B", backgroundColour: "#0B1F4B" },
 };
 
-/** Every listed Team List bundle (`teamList`, `teamListRound`). */
-function teamListBundles(): Array<{ name: string; doc: TemplateDocumentV2 }> {
-  const out: Array<{ name: string; doc: TemplateDocumentV2 }> = [];
+type Bundle = { name: string; kind: string; doc: TemplateDocumentV2 };
+
+/** Every listed bundle of a look matching `looks`, its file matching `files`. */
+function listedBundles(looks: RegExp, files: RegExp): Bundle[] {
+  const out: Bundle[] = [];
   for (const look of readdirSync(BUNDLES).sort()) {
     const dir = path.join(BUNDLES, look);
+    if (!looks.test(look)) continue;
     if (!statSync(dir).isDirectory() || !existsSync(path.join(dir, "look.json"))) continue;
     for (const file of readdirSync(dir).sort()) {
-      if (!/^teamList\w*\.json$/.test(file)) continue;
+      if (file === "look.json" || !files.test(file)) continue;
       const bundle = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {
         listed?: boolean;
         document: TemplateDocumentV2;
       };
       if (bundle.listed === false) continue;
-      out.push({ name: `${look}/${file.replace(/\.json$/, "")}`, doc: bundle.document });
+      const kind = file.replace(/\.json$/, "");
+      out.push({ name: `${look}/${kind}`, kind, doc: bundle.document });
     }
   }
   return out;
 }
+
+/** Every listed Team List bundle (`teamList`, `teamListRound`). */
+const teamListBundles = () => listedBundles(/./, /^teamList\w*\.json$/);
 
 const TEAM: Record<string, unknown> = {
   kind: "teamList",
@@ -85,7 +102,8 @@ const TEAM: Record<string, unknown> = {
 
 /**
  * The card drawn with `brand`, with or without its photo, as a senior or a
- * junior card (a junior's photo is approved junior stock, cleared by the server).
+ * junior card (a junior's photo is approved junior stock, cleared by the
+ * server): a Team List's team page, or `page` of a sample card of `kind`.
  */
 function render(
   doc: TemplateDocumentV2,
@@ -93,6 +111,8 @@ function render(
   brand: string,
   photo: boolean,
   junior = false,
+  kind = "teamList",
+  page = "team",
 ): string {
   const data: PackCardData = {
     brand: { ...BRANDS[brand], logoUrl: "https://cdn.example.org/crest.png" },
@@ -101,7 +121,8 @@ function render(
     ...(photo ? { photoUrl: "https://cdn.example.org/photo.jpg" } : {}),
   } as PackCardData;
   const tokens = resolveCardTokens({ theme: null, junior, data, packId: BLANK_PACK_ID });
-  const input = junior ? { ...TEAM, junior: true, juniorPhotoAllowed: photo } : TEAM;
+  const base: object = kind === "teamList" ? TEAM : sampleCardInput(kind as ShareCardInput["kind"]);
+  const input = junior ? { ...base, junior: true, juniorPhotoAllowed: photo } : base;
   return renderPackCard(
     input as unknown as ShareCardInput,
     size,
@@ -111,7 +132,7 @@ function render(
     data,
     BLANK_PACK_ID,
     doc as unknown as CardAdjustments,
-    { page: "team" },
+    { page: page as PageKey },
   );
 }
 
@@ -287,10 +308,14 @@ function coversPoint(l: TemplateLayerV2, b: Box, x: number, y: number): boolean 
   return inside;
 }
 
+/** What's behind a point when it is a logo (a crest or sponsor image), not one colour. */
+const ON_LOGO = "logo";
+
 /**
  * The colour behind a point (card %): the card's ground (`--ink`), then every
- * layer drawn before `upTo` that paints there. Null where the photo or a logo
- * shows through (a scrim over it doesn't make one colour; a solid panel does).
+ * layer drawn before `upTo` that paints there. Null where the photo shows
+ * through (a scrim over it doesn't make one colour; a solid panel does), and
+ * `ON_LOGO` where a logo does (a faint watermark, 30% or less, is ground).
  */
 function backgroundAt(
   layers: TemplateLayerV2[],
@@ -300,9 +325,10 @@ function backgroundAt(
   junior: boolean,
   [x, y]: Pt,
   vars: Map<string, string>,
-): Rgba | null {
+): Rgba | null | typeof ON_LOGO {
   const { w: W, h: H } = SIZES[size];
   let bg: Rgba | null = parseColour(resolveVars("var(--ink)", vars));
+  let logo = false;
   for (const l of layers.slice(0, upTo)) {
     const b = drawnBox(l, size, photo, junior);
     if (!b || !coversPoint(l, b, x, y)) continue;
@@ -310,6 +336,7 @@ function backgroundAt(
     const opacity = typeof style.opacity === "number" ? style.opacity : 1;
     if (l.kind === "photo" || (l.kind === "image" && opacity > 0.3)) {
       bg = null;
+      logo = l.kind === "image";
       continue;
     }
     const fill = l.kind === "shape" ? style.fill : l.kind === "text" ? style.background : null;
@@ -327,18 +354,29 @@ function backgroundAt(
           );
     if (!colour) continue;
     if (bg) bg = over(colour, bg, opacity);
-    else if (colour[3] * opacity >= 0.99) bg = over(colour, colour);
+    else if (colour[3] * opacity >= 0.99) {
+      bg = over(colour, colour);
+      logo = false;
+    }
   }
-  return bg;
+  return bg ?? (logo ? ON_LOGO : null);
 }
 
 /** The name cells a Team List prints. */
 const NAME_FIELDS = ["listName", "surname", "name", "playerName"];
 
-type TextStyle = { color?: string; fontSize?: number; fontWeight?: number; opacity?: number };
+type TextStyle = {
+  color?: string;
+  fontSize?: number;
+  fontWeight?: number;
+  opacity?: number;
+  align?: string;
+  background?: unknown;
+  textFill?: unknown;
+};
 type Sample = {
   label: string;
-  /** The layer's index in draw order: what's behind it is drawn before it. */
+  /** What's behind it: the layers drawn before this index. */
   index: number;
   style: TextStyle;
   opacity: number;
@@ -346,7 +384,88 @@ type Sample = {
   px: number;
   /** Where the glyphs are sure to be, in card percent. */
   points: Pt[];
+  /** A list cell's own row backgrounds (earlier cells' fills) under its glyphs. */
+  under?: string[];
 };
+
+/** Where a line's glyphs start or centre, by its alignment, across `[x, x + w]`. */
+const alignedX = (align: string | undefined, x: number, w: number) =>
+  align === "right" ? x + w - 1 : align === "left" ? x + 1 : x + w / 2;
+
+/**
+ * Every text layer, and every text cell of a list's first row, on `size`
+ * (`every`: the Duotone sweep). A Team List's names are measured as the
+ * Team List check does, so they're left out here.
+ */
+function everyText(
+  layers: TemplateLayerV2[],
+  size: CardSize,
+  photo: boolean,
+  junior: boolean,
+): Sample[] {
+  const { w: W, h: H } = SIZES[size];
+  const out: Sample[] = [];
+  for (const [index, l] of layers.entries()) {
+    const b = drawnBox(l, size, photo, junior);
+    if (!b) continue;
+    const opacity = Number((l.style as { opacity?: unknown } | undefined)?.opacity ?? 1);
+    if (l.kind === "text") {
+      const st = (l.style ?? {}) as TextStyle;
+      const content = String(l.content ?? "");
+      if (!content.trim() || typeof st.color !== "string" || st.textFill) continue;
+      if (content.includes("{{gradeRound}}")) continue; // measured with the names
+      out.push({
+        label: `${size} ${l.id} "${String(l.content).slice(0, 24)}"`,
+        // Its own background (a chip) is behind its glyphs too.
+        index: index + 1,
+        style: st,
+        opacity,
+        px: ((st.fontSize ?? 5) / 100) * W,
+        points: [[alignedX(st.align, b.x, b.w), b.y + b.h / 2]],
+      });
+    }
+    if (l.kind === "rows") {
+      const spec = l.rows;
+      const cols = rowsColumns(spec);
+      const colGap = cols > 1 ? Math.min(50, Math.max(0, Number(spec.columnGap ?? 4))) : 0;
+      const colW = (100 - colGap * (cols - 1)) / cols;
+      const rowHeight = Number(spec.rowHeight ?? 7);
+      for (const [ci, cell] of spec.cells.entries()) {
+        if (cell.show) continue;
+        if (spec.repeat === "players" && NAME_FIELDS.includes(cell.field)) continue;
+        const st = (cell.style ?? {}) as TextStyle;
+        if (typeof st.color !== "string" || st.textFill) continue;
+        const [cx, cw] = [Number(cell.x ?? 0), Number(cell.w ?? 100)];
+        const [cy, ch] = [Number(cell.y ?? 0), Number(cell.h ?? 100)];
+        const inRow: Pt = [alignedX(st.align, cx, cw), cy + ch / 2];
+        // Earlier cells that fill the row under this one (a chip, a band).
+        const under = spec.cells
+          .slice(0, ci)
+          .filter((u) => {
+            const s = u.style as TextStyle | undefined;
+            if (typeof s?.background !== "string") return false;
+            const [ux, uw, uy, uh] = [u.x ?? 0, u.w ?? 100, u.y ?? 0, u.h ?? 100].map(Number);
+            return (
+              ux! <= inRow[0] && inRow[0] <= ux! + uw! && uy! <= inRow[1] && inRow[1] <= uy! + uh!
+            );
+          })
+          .map((u) => (u.style as TextStyle).background as string);
+        const left = (inRow[0] * colW) / 100;
+        const top = (inRow[1] / 100) * rowHeight * (W / 100);
+        out.push({
+          label: `${size} ${l.id} ${cell.field}`,
+          index,
+          style: st,
+          opacity: opacity * Number(st.opacity ?? 1),
+          px: ((st.fontSize ?? 5) / 100) * W,
+          points: [[b.x + (left / 100) * b.w, b.y + (top / H) * 100]],
+          under,
+        });
+      }
+    }
+  }
+  return out;
+}
 
 /** The grade line and every name column's first and last name, on `size`. */
 function samples(
@@ -362,16 +481,14 @@ function samples(
     if (!b) continue;
     const opacity = Number((l.style as { opacity?: unknown } | undefined)?.opacity ?? 1);
     if (l.kind === "text" && String(l.content ?? "").includes("{{gradeRound}}")) {
-      const st = (l.style ?? {}) as TextStyle & { align?: string };
-      const cx =
-        st.align === "right" ? b.x + b.w - 1 : st.align === "left" ? b.x + 1 : b.x + b.w / 2;
+      const st = (l.style ?? {}) as TextStyle;
       out.push({
         label: `${size} ${l.id} grade line`,
         index,
         style: st,
         opacity,
         px: ((st.fontSize ?? 5) / 100) * W,
-        points: [[cx, b.y + b.h / 2]],
+        points: [[alignedX(st.align, b.x, b.w), b.y + b.h / 2]],
       });
     }
     if (l.kind === "rows" && l.rows.repeat === "players") {
@@ -411,8 +528,15 @@ function samples(
   return out;
 }
 
-/** Every name or grade line below its floor, with its ratio. */
-function lowContrast(name: string, doc: TemplateDocumentV2): string[] {
+/**
+ * Every name or grade line below its floor, with its ratio; with `every`, every
+ * line of text the card draws (a card of `kind`, each of its pages).
+ */
+function lowContrast(
+  name: string,
+  doc: TemplateDocumentV2,
+  opts: { kind?: string; every?: boolean } = {},
+): string[] {
   const out: string[] = [];
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
     const layers = flattenLayers(p?.layers ?? []);
@@ -420,9 +544,12 @@ function lowContrast(name: string, doc: TemplateDocumentV2): string[] {
       for (const photo of [true, false])
         for (const junior of [false, true])
           for (const brand of Object.keys(BRANDS)) {
-            const found = samples(layers, size, photo, junior);
+            const found = [
+              ...samples(layers, size, photo, junior),
+              ...(opts.every ? everyText(layers, size, photo, junior) : []),
+            ];
             if (found.length === 0) continue;
-            const vars = cardVars(render(doc, size, brand, photo, junior));
+            const vars = cardVars(render(doc, size, brand, photo, junior, opts.kind, page));
             for (const s of found) {
               const fg = parseColour(resolveVars(s.style.color ?? "#000000", vars));
               if (!fg) {
@@ -432,8 +559,23 @@ function lowContrast(name: string, doc: TemplateDocumentV2): string[] {
               const large = s.px >= 24 || (s.px >= 18.66 && (s.style.fontWeight ?? 400) >= 700);
               const floor = large ? AA_LARGE : AA;
               for (const pt of s.points) {
-                const bg = backgroundAt(layers, s.index, size, photo, junior, pt, vars);
-                if (!bg) continue; // on the photo or a logo
+                const behind = backgroundAt(layers, s.index, size, photo, junior, pt, vars);
+                // The Duotone sweep: no line of text is drawn over a logo (round 4
+                // retest: the Team lists cover's title ran over a second crest, dark
+                // on dark, and went unmeasured because a logo has no one colour).
+                if (behind === ON_LOGO && opts.every) {
+                  out.push(
+                    `${name} ${page} ${s.label} (${junior ? "junior, " : ""}` +
+                      `${photo ? "photo" : "no photo"}): drawn over a logo`,
+                  );
+                  break;
+                }
+                if (!behind || behind === ON_LOGO) continue; // on the photo or a logo
+                let bg: Rgba = behind;
+                for (const fill of s.under ?? []) {
+                  const c = parseColour(resolveVars(fill, vars));
+                  if (c) bg = over(c, bg);
+                }
                 const ratio = contrast(over(fg, bg, s.opacity), bg);
                 if (ratio < floor) {
                   out.push(
@@ -481,5 +623,66 @@ describe("Team List names and grade line contrast", () => {
     expect(gradientAt(fade, 0.5, 1, 100, 100, vars)![0]).toBeCloseTo(255, 6);
     // Dark grey on near-black, as Duotone's list was: about 1.1:1.
     expect(contrast(parseColour("#101216")!, parseColour("#10151B")!)).toBeLessThan(1.2);
+  });
+});
+
+describe("Duotone text contrast on every kind", () => {
+  const bundles = listedBundles(/^duotone$/, /\.json$/);
+
+  it("reads every listed Duotone kind", () => {
+    expect(bundles.map((b) => b.kind)).toEqual(
+      expect.arrayContaining(["matchDay", "matchSummary", "teamList"]),
+    );
+  });
+
+  for (const { name, kind, doc } of bundles)
+    it(`${name}: every line of text clears WCAG AA on every page and size, for any club colours`, () => {
+      expect(lowContrast(name, doc, { kind, every: true })).toEqual([]);
+    });
+
+  it("would catch Match Day's fixture as it was (stage-coloured type on an accent-ink panel)", () => {
+    const md = bundles.find((b) => b.kind === "matchDay")!;
+    const was = structuredClone(md.doc);
+    for (const l of flattenLayers(was.pages.fixture!.layers)) {
+      const st = l.style as { fill?: unknown; color?: unknown } | undefined;
+      if (l.kind === "shape" && st?.fill === "#FFFFFF") st.fill = "var(--accent-ink)";
+      if (l.kind === "text" && st?.color === "var(--dt-ink)") st.color = "var(--ink)";
+    }
+    const found = lowContrast("duotone/matchDay", was, { kind: "matchDay", every: true });
+    expect(found.some((f) => f.includes('"{{opposition.name}}" (default brand, photo)'))).toBe(
+      true,
+    );
+  });
+
+  it("covers the Team lists cover: a list set's cover is Match Day's title page", () => {
+    // A Team lists carousel's cover is the Match Day bundle's `title` page with
+    // the set's title ("Team lists", set-slides.ts), so the sweep above holds it.
+    const md = bundles.find((b) => b.kind === "matchDay")!;
+    expect(Object.keys(md.doc.pages)).toContain("title");
+    const cover = slideInputFor(
+      { kind: "matchDay", page: "title", slot: "cover" },
+      { kind: "teamListRound", date: "Sat 14 Nov", roundLabel: "ROUND 6" },
+    );
+    expect(pageForInput(cover as { kind: string })).toBe("title");
+    expect(cover).toMatchObject({ carouselPage: { page: "title", title: "Team lists" } });
+  });
+
+  it("would catch the Team lists cover as it was (its title over a second club crest)", () => {
+    const md = bundles.find((b) => b.kind === "matchDay")!;
+    const was = structuredClone(md.doc);
+    const title = was.pages.title!;
+    const crest = flattenLayers(title.layers).find(
+      (l) => l.kind === "image" && l.content === "{{clubLogo}}",
+    )!;
+    // The stray no-photo crest (title-l13): 6.5% lower than the real one, over the title.
+    const stray = structuredClone(crest);
+    stray.id = "title-l13";
+    stray.showWhen = { photo: false };
+    for (const g of Object.values(stray.geometry as Record<string, Box>)) g.y += 6.51;
+    title.layers.splice(title.layers.indexOf(crest), 0, stray);
+    const found = lowContrast("duotone/matchDay", was, { kind: "matchDay", every: true });
+    expect(
+      found.some((f) => f.includes('square title-l24 "{{weekendTitle}}" (no photo): drawn over')),
+    ).toBe(true);
   });
 });
