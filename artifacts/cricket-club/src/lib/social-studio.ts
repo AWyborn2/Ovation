@@ -16,8 +16,19 @@ export type CardKind = ShareCardInput["kind"];
 /** Gallery thumbnails render square — the cheapest format to rasterise. */
 export const THUMB_SIZE: CardSize = "square";
 
+/**
+ * Kinds retired from the catalogue (plan 2026-10-15-001 R5): no new cards, but
+ * posted cards and saved designs of them still show, so they keep a name.
+ */
+const RETIRED_KIND_LABELS: Record<string, string> = {
+  gradeLeader: "Grade Leader",
+  countdown: "Countdown",
+  tradingCard: "Trading Card",
+};
+
+/** A card kind's readable name; the raw kind only for one nothing names. */
 export const kindLabel = (k: string): string =>
-  CARD_KIND_OPTIONS.find((o) => o.value === k)?.label ?? k;
+  CARD_KIND_OPTIONS.find((o) => o.value === k)?.label ?? RETIRED_KIND_LABELS[k] ?? k;
 
 /**
  * Every card kind, in gallery order.
