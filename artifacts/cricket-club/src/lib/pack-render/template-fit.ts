@@ -36,6 +36,7 @@ import {
   type PageKey,
   type TemplateDocumentV2,
   type TemplateFitReport,
+  type TemplateLayerV2,
   type TemplateSize,
   type WorstCaseCard,
 } from "@workspace/scorecard/kind-templates";
@@ -172,6 +173,8 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
     if (layer.kind === "vector" && el.querySelector(UNSAFE_VECTOR))
       issues.push({ ...at, reason: "vector-unsafe", layerId });
   }
+  // Team List kinds (`teamList`, `teamListRound`): their players list keeps clear of the photo.
+  if (/^teamList/.test(ctx.kind)) issues.push(...rowsOverlapIssues(root, art, layers, at));
 
   for (const img of Array.from(root.querySelectorAll("img"))) {
     const src = img.getAttribute("src") ?? "";
@@ -183,6 +186,173 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
       ...(owner ? { layerId: owner.getAttribute("data-layer-id") ?? undefined } : {}),
       detail: src.slice(0, 80),
     });
+  }
+  return issues;
+}
+
+/**
+ * How far a Team List's rows keep from the card photo, as a share of the
+ * card's shorter side (32 px on a 1080-wide card). Bold Type's story list once
+ * ended 26 px above its photo, and its last names read as running into it.
+ */
+export const ROWS_PHOTO_CLEARANCE = 0.03;
+/** A layer this close to the whole artboard is a background, which a list may sit on. */
+const FULL_BLEED = 0.9;
+
+type Pt = [number, number];
+type Rect = { left: number; top: number; right: number; bottom: number };
+
+/** A layer's painted area on the page: its box, cut to its clip polygon if it has one. */
+function paintedArea(layer: TemplateLayerV2, box: DOMRect): Pt[] {
+  const poly = (layer.style as { clip?: { polygon?: Pt[] } } | undefined)?.clip?.polygon;
+  const corners: Pt[] = [
+    [box.left, box.top],
+    [box.right, box.top],
+    [box.right, box.bottom],
+    [box.left, box.bottom],
+  ];
+  if (!Array.isArray(poly) || poly.length < 3) return corners;
+  return poly.map(([x, y]) => [box.left + (x / 100) * box.width, box.top + (y / 100) * box.height]);
+}
+
+function pointInPolygon([px, py]: Pt, poly: Pt[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]!;
+    const [xj, yj] = poly[j]!;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function segmentsCross(a: Pt, b: Pt, c: Pt, d: Pt): boolean {
+  const cross = (o: Pt, p: Pt, q: Pt) =>
+    (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+  const d1 = cross(c, d, a);
+  const d2 = cross(c, d, b);
+  const d3 = cross(a, b, c);
+  const d4 = cross(a, b, d);
+  return d1 * d2 < 0 && d3 * d4 < 0;
+}
+
+/** Whether a rectangle and a polygon share any area. */
+export function rectMeetsPolygon(r: Rect, poly: Pt[]): boolean {
+  if (r.right <= r.left || r.bottom <= r.top || poly.length < 3) return false;
+  const corners: Pt[] = [
+    [r.left, r.top],
+    [r.right, r.top],
+    [r.right, r.bottom],
+    [r.left, r.bottom],
+  ];
+  if (poly.some(([x, y]) => x > r.left && x < r.right && y > r.top && y < r.bottom)) return true;
+  // A corner just inside the polygon (nudged in, so shared edges don't count).
+  const mid: Pt = [(r.left + r.right) / 2, (r.top + r.bottom) / 2];
+  const nudge = (p: Pt): Pt => [
+    p[0] + Math.sign(mid[0] - p[0]) * 0.5,
+    p[1] + Math.sign(mid[1] - p[1]) * 0.5,
+  ];
+  if ([...corners.map(nudge), mid].some((p) => pointInPolygon(p, poly))) return true;
+  for (let i = 0; i < 4; i++)
+    for (let j = 0; j < poly.length; j++)
+      if (segmentsCross(corners[i]!, corners[(i + 1) % 4]!, poly[j]!, poly[(j + 1) % poly.length]!))
+        return true;
+  return false;
+}
+
+/** Whether a shape paints its box solidly enough to hide what's under it (a panel, a scrim). */
+export function paintsOver(layer: TemplateLayerV2): boolean {
+  if (layer.kind !== "shape") return false;
+  const style = (layer.style ?? {}) as { fill?: unknown; opacity?: unknown };
+  if (typeof style.opacity === "number" && style.opacity < 0.5) return false;
+  const fill = style.fill;
+  if (fill && typeof fill === "object") return true;
+  if (typeof fill !== "string" || !fill.trim() || fill.trim() === "transparent") return false;
+  const alpha = /^#[0-9a-f]{6}([0-9a-f]{2})$/i.exec(fill.trim());
+  return !alpha || parseInt(alpha[1]!, 16) >= 0x80;
+}
+
+const contains = (outer: DOMRect, inner: Rect) =>
+  outer.left <= inner.left + 1 &&
+  outer.top <= inner.top + 1 &&
+  outer.right >= inner.right - 1 &&
+  outer.bottom >= inner.bottom - 1;
+
+/**
+ * Team List rows clear of the photo and the card's other foreground (Ash's
+ * round 3 retest, Nov 2026: Bold Type's story list ran into its photo). Every
+ * drawn row of a `players` list, at the size it's drawn (squeezed or not),
+ * must keep {@link ROWS_PHOTO_CLEARANCE} from a photo's painted area (its clip
+ * polygon, not just its box) and must not touch a logo, sponsor or other
+ * image, or a text layer that prints data. A background that bleeds over the
+ * whole card, a faint watermark, decoration (shapes, data-free text) and a
+ * layer hidden from the row by an opaque panel or scrim drawn between them
+ * don't count.
+ */
+function rowsOverlapIssues(
+  root: HTMLElement,
+  art: DOMRect,
+  layers: Map<string, TemplateLayerV2>,
+  at: { variant: string; page: PageKey; size: TemplateSize },
+): FitIssue[] {
+  const drawn = Array.from(root.querySelectorAll<HTMLElement>("[data-layer-id]"))
+    .map((el) => ({ el, layer: layers.get(el.getAttribute("data-layer-id") ?? "") }))
+    .filter((d): d is { el: HTMLElement; layer: TemplateLayerV2 } => !!d.layer);
+  const short = Math.min(art.width, art.height);
+  const issues: FitIssue[] = [];
+  for (const [ri, list] of drawn.entries()) {
+    if (list.layer.kind !== "rows" || list.layer.rows?.repeat !== "players") continue;
+    const rows = Array.from(list.el.querySelectorAll<HTMLElement>("[data-row-index]"))
+      .map((row) => ({
+        index: Number(row.getAttribute("data-row-index")),
+        box: row.getBoundingClientRect(),
+      }))
+      .filter((r) => r.box.width > 0 && r.box.height > 0);
+    for (const [oi, other] of drawn.entries()) {
+      if (oi === ri) continue;
+      const { layer, el } = other;
+      const opacity = (layer.style as { opacity?: unknown } | undefined)?.opacity;
+      if (typeof opacity === "number" && opacity <= WATERMARK_OPACITY) continue;
+      const data = layerTokens(layer).length > 0;
+      const photo = layer.kind === "photo";
+      if (!photo && !(data && (layer.kind === "image" || layer.kind === "text"))) continue;
+      const box = el.getBoundingClientRect();
+      if (!(box.width > 0 && box.height > 0)) continue;
+      if (box.width >= art.width * FULL_BLEED && box.height >= art.height * FULL_BLEED) continue;
+      const area = paintedArea(layer, box);
+      const clearance = photo ? ROWS_PHOTO_CLEARANCE * short : 0;
+      // Panels and scrims drawn over this layer but under the list.
+      const between =
+        oi < ri
+          ? drawn
+              .slice(oi + 1, ri)
+              .filter((d) => paintsOver(d.layer))
+              .map((d) => d.el.getBoundingClientRect())
+          : [];
+      const hit = rows.find((r) => {
+        if (between.some((p) => contains(p, r.box))) return false;
+        // Shared edges (a list ending where a box starts) are within a pixel.
+        const pad = clearance > 0 ? clearance : -1;
+        return rectMeetsPolygon(
+          {
+            left: r.box.left - pad,
+            top: r.box.top - pad,
+            right: r.box.right + pad,
+            bottom: r.box.bottom + pad,
+          },
+          area,
+        );
+      });
+      if (hit)
+        issues.push({
+          ...at,
+          reason: "rows-overlap",
+          layerId: list.layer.id,
+          row: hit.index,
+          detail: photo
+            ? `row ${hit.index + 1} within ${Math.round(clearance)} px of the photo (${layer.id})`
+            : `row ${hit.index + 1} runs into ${layer.id}`,
+        });
+    }
   }
   return issues;
 }

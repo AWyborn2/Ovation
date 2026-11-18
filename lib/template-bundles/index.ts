@@ -269,7 +269,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "player", hash: "e9436f93a6f27e6a935522cc01eb9c43f8a4b7502f38f6439b419675997820ef", file: look0_12 },
       { kind: "premiership", hash: "502f282af18e2ea201cd1773b47b992e2b0809da882bd5951b8899fc3882c83c", file: look0_13 },
       { kind: "record", hash: "2fb26814ee503491b044e4161116a86ab78ce25265678b99f82c56685d612c2d", file: look0_14 },
-      { kind: "teamList", hash: "ac778d78fe2da565906ba788996fda05b8b35e53e928fef65091ed3931cad732", file: look0_15 },
+      { kind: "teamList", hash: "7314422382183ad4ce19b5481b7ab57665b804ce33251f5d93d4579550c83e9d", file: look0_15 },
       { kind: "weekendWrap", hash: "4d625b3d9da0ea6b01784afb9152357038c1a6b3b345336b20671109d29dc53c", file: look0_16 },
     ],
   },
