@@ -1,6 +1,6 @@
 {
   "name": "Neon Night matchSummary",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1037,6 +1037,67 @@
             "sig": "image:1574rm20ot3tpt"
           },
           {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#EAFBFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.96,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-square",
+            "link": "result-opp-name",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 13.26,
+                "y": 33.45,
+                "w": 42.19,
+                "h": 3.7
+              }
+            },
+            "sig": "text:11j0q5c1umhbpv"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.oversLabel}}",
+            "style": {
+              "color": "#EAFBFF9E",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.32,
+              "fontWeight": 500,
+              "letterSpacing": 0.14,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-overs-square",
+            "link": "result-opp-overs",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 13.26,
+                "y": 37.59,
+                "w": 42.19,
+                "h": 1.76
+              }
+            },
+            "sig": "text:0dqcvr01oaiu7l"
+          },
+          {
             "kind": "image",
             "content": "{{opposition.logo}}",
             "style": {
@@ -1063,6 +1124,68 @@
             "sig": "image:0jbbed30l4ca9y"
           },
           {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#EAFBFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-story",
+            "link": "result-opp-name",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 15.68,
+                "y": 55.51,
+                "w": 34.24,
+                "h": 2.77
+              }
+            },
+            "sig": "text:1k0hhiv1pai5ao"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#EAFBFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-portrait",
+            "link": "result-opp-name",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 15.68,
+                "y": 36.72,
+                "w": 34.24,
+                "h": 3.94
+              }
+            },
+            "sig": "text:1k0hhiv1pai5ao"
+          },
+          {
             "kind": "image",
             "content": "{{opposition.logo}}",
             "style": {
@@ -1081,6 +1204,67 @@
               }
             },
             "sig": "image:0laa5yz0e6hsu4"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#EAFBFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.08,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-landscape",
+            "link": "result-opp-name",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 6.96,
+                "y": 33.48,
+                "w": 22.13,
+                "h": 3.65
+              }
+            },
+            "sig": "text:0xf0a5u1194jdh"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.oversLabel}}",
+            "style": {
+              "color": "#EAFBFF9E",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.69,
+              "fontWeight": 500,
+              "letterSpacing": 0.14,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-overs-landscape",
+            "link": "result-opp-overs",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 6.96,
+                "y": 37.46,
+                "w": 22.13,
+                "h": 1.75
+              }
+            },
+            "sig": "text:13pphw30fhs5g6"
           },
           {
             "kind": "text",
@@ -1507,6 +1691,66 @@
               }
             },
             "sig": "image:09na3ff1f0lcc0"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "#EAFBFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-story",
+            "link": "result-club-name",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 15.68,
+                "y": 70.85,
+                "w": 36.76,
+                "h": 2.77
+              }
+            },
+            "sig": "text:0meg5ij14mghjy"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "#EAFBFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-portrait",
+            "link": "result-club-name",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 15.68,
+                "y": 58.54,
+                "w": 36.76,
+                "h": 3.94
+              }
+            },
+            "sig": "text:0meg5ij14mghjy"
           },
           {
             "kind": "image",

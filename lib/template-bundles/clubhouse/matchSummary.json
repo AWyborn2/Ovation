@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match summary",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -887,7 +887,7 @@
             "id": "scores-club-name-1",
             "kind": "text",
             "name": "Club name",
-            "content": "{{club.barName}}",
+            "content": "{{club.name}}",
             "style": {
               "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 3.2,
@@ -917,13 +917,13 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:1wk0ovm0o5ga9b"
+            "sig": "text:0oqd5sd0dc4fey"
           },
           {
             "id": "scores-club-name-2",
             "kind": "text",
             "name": "Club name",
-            "content": "{{club.barName}}",
+            "content": "{{club.name}}",
             "style": {
               "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.68,
@@ -941,7 +941,7 @@
               }
             },
             "sizes": ["landscape"],
-            "sig": "text:00djv7y0nnb5ch"
+            "sig": "text:07azren0opk5ra"
           },
           {
             "id": "scores-club-score-1",
@@ -1040,7 +1040,7 @@
             "id": "scores-opposition-name-1",
             "kind": "text",
             "name": "Opposition name",
-            "content": "{{opposition.barName}}",
+            "content": "{{opposition.name}}",
             "style": {
               "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 3.2,
@@ -1070,13 +1070,13 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:0ivegzm1mn3e6z"
+            "sig": "text:0hpna0l1hxlqsi"
           },
           {
             "id": "scores-opposition-name-2",
             "kind": "text",
             "name": "Opposition name",
-            "content": "{{opposition.barName}}",
+            "content": "{{opposition.name}}",
             "style": {
               "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.68,
@@ -1094,7 +1094,7 @@
               }
             },
             "sizes": ["landscape"],
-            "sig": "text:12mpie6083wrrh"
+            "sig": "text:02ytl7r1mphj9a"
           },
           {
             "id": "scores-opposition-score-1",

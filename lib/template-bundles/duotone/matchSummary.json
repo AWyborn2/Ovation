@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchSummary",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1395,6 +1395,65 @@
             },
             "sig": "text:16ixwpk0gzbn8d",
             "link": "result-l40"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--dt-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.58,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-story",
+            "link": "result-l34",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.39,
+                "y": 51.13,
+                "w": 46.87,
+                "h": 3.73
+              }
+            },
+            "sig": "text:1njbl9j1kepzos"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.17,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-overs-story",
+            "link": "result-l37",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.39,
+                "y": 55.3,
+                "w": 48.28,
+                "h": 1.35
+              }
+            },
+            "sig": "text:1n2wq280f9plmz"
           },
           {
             "kind": "text",
