@@ -471,3 +471,68 @@ export function withSlideDesign(
   };
   return storedSetDocument({ ...next, pages: pages as TemplateDoc["pages"] });
 }
+
+// ── Save checks and restore names (dev retest 3, item 11) ───────────────────
+
+/**
+ * Whether a set page is a design page of its own (a page added with Add
+ * page, or a copy): a page with no data, not a slide's own layout.
+ */
+export function isOwnDesignPage(doc: EditorTemplateDoc, id: string): boolean {
+  const meta = doc.setDesign?.pages.find((p) => p.id === id);
+  return !!meta && meta.slot === "page" && !layoutPages(doc).has(id);
+}
+
+/** A slide key without its internal prefix: what a slide no longer drawn is called. */
+const bareKey = (key: string) => key.replace(/^detail:[a-z]+:|^page:/, "");
+
+/**
+ * The slides a set draft has deleted, each with the name its tile had, for
+ * "Restore a deleted slide". `slides` draws the set's slides.
+ */
+export function deletedSlides(
+  set: SetDocument,
+  slides: (doc: SetDocument) => ReadonlyArray<{ key: string; label: string }>,
+): Array<{ key: string; label: string }> {
+  const removed = set.arrangement?.removed ?? [];
+  if (removed.length === 0) return [];
+  const all = slides({ ...set, arrangement: { ...set.arrangement!, removed: [] } });
+  return removed.map((key) => ({
+    key,
+    label: all.find((s) => s.key === key)?.label.trim() || bareKey(key),
+  }));
+}
+
+/**
+ * Why a set can't be saved yet: each slide (or, outside a draft, each page)
+ * with nothing on it, said so the admin knows which and what to do. The
+ * first blank slide's key comes with it, so the editor can show it.
+ */
+export function blankSetBlockers(
+  doc: EditorTemplateDoc,
+  pages: ReadonlyArray<Pick<EditorPage, "id" | "label">>,
+  slides: ReadonlyArray<{ key: string; label: string; page: { id: string } }> | null,
+): { messages: string[]; firstSlide: string | null } {
+  const blank = (id: string) =>
+    !(doc.pages as Record<string, { layers?: unknown[] } | undefined>)[id]?.layers?.length;
+  const messages: string[] = [];
+  let firstSlide: string | null = null;
+  const drawn = new Set<string>();
+  if (slides) {
+    slides.forEach((s, i) => {
+      drawn.add(s.page.id);
+      if (!blank(s.page.id)) return;
+      firstSlide ??= s.key;
+      messages.push(
+        `Not saved: slide ${i + 1} ("${s.label}") is blank. Add something to it, or delete the slide, then save.`,
+      );
+    });
+  }
+  for (const p of pages) {
+    if (drawn.has(p.id) || !blank(p.id)) continue;
+    messages.push(
+      `Not saved: the page "${p.label}" is blank. Add something to it, or delete the page, then save.`,
+    );
+  }
+  return { messages, firstSlide };
+}

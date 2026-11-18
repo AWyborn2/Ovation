@@ -348,4 +348,54 @@ describe("a queued carousel holding orphaned slide layouts (dev retest 3, draft 
     ).document;
     expect(saved.pages.map((p) => p.id)).toEqual(["cover", "fixture", "sponsors"]);
   });
+
+  it("offers a deleted slide back by its name, not its key (item 11a)", async () => {
+    open({
+      draft: CAROUSEL,
+      design: {
+        draftId: 42,
+        setType: "matchDay",
+        layout: "carousel",
+        document: SET,
+        templateRef: CAROUSEL.templateRef,
+        size: "square",
+        stored: true,
+      },
+    });
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    fireEvent.click(within(strip).getByRole("button", { name: /^2\. A Grade v Waroona/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Delete A Grade v Waroona" }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Add a page" }));
+    const restore = await screen.findByRole("button", { name: /Restore a deleted slide/ });
+    expect(restore.textContent).toContain("A Grade v Waroona");
+    expect(restore.textContent).not.toContain("fixture-7");
+    fireEvent.click(restore);
+    expect(within(strip).getByRole("button", { name: /^\d\. A Grade v Waroona/ })).toBeTruthy();
+  });
+});
+
+describe("saving a set with a blank added page (dev retest 3, item 11b)", () => {
+  it("says which slide is blank, shows it, and gives no false player rows warning", async () => {
+    const requests = open();
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    // Added from a team slide: drawn like the team page, the page that shows player rows.
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. B Grade/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Add a page" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Blank page/ }));
+    // The blank page shows no card's data, so it has no player rows to lose.
+    expect(await screen.findByRole("button", { name: /^4\. Page 1/ })).toBeTruthy();
+    expect(screen.queryByText(/no longer shows/)).toBeNull();
+
+    // Back on another slide, then Save: the blank one is named and shown.
+    fireEvent.click(within(strip).getByRole("button", { name: /^1\. Cover/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    const alert = await screen.findByText(/Not saved: slide 4 \("Page 1"\) is blank/);
+    expect(alert.getAttribute("role")).toBe("alert");
+    expect(requests.some((r) => r.method === "PUT")).toBe(false);
+    expect(
+      within(strip)
+        .getByRole("button", { name: /^4\. Page 1/ })
+        .getAttribute("aria-current"),
+    ).toBeTruthy();
+  });
 });

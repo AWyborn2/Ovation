@@ -23,6 +23,7 @@ import {
   photoLayerKey,
   primaryPage,
   rowsColumns,
+  rowsShrinkToFit,
   textTokens,
   tileGrid,
   type DerivedPalette,
@@ -548,7 +549,7 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
   // down together until the longest column fits the box (ADR-009: compress,
   // never drop). Other lists split onto slides by their capacity instead.
   const squeeze =
-    tiles || spec.repeat !== "players" ? 1 : rowsSqueeze(ctx, perColumn, rowHeight, gap, art);
+    tiles || !rowsShrinkToFit(spec) ? 1 : rowsSqueeze(ctx, perColumn, rowHeight, gap, art);
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
