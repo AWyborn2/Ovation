@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   CONTENT_KINDS,
+  DEFAULT_TEAM_LIST_ORDER,
   readCardContentSettings,
   resolveVisibleFields,
   type CardContentSettings,
@@ -25,6 +26,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ContentFieldPicker } from "./content-field-picker";
 import { SponsorsBackgroundPicker } from "./sponsors-background-picker";
 import { SponsorsPerSlideSetting } from "./sponsors-per-slide";
+import { PlayerOrderControl } from "./player-order";
 
 /** A preset change starts its field choices afresh; a toggle back to the preset's own value clears it. */
 export function choose(
@@ -162,6 +164,20 @@ export function CardContentSection() {
                 setDraft({ ...draft, ...choose(draft, { key, on }, kind) });
               }}
             />
+            {kind === "teamList" && (
+              <div className="border-t pt-4">
+                <PlayerOrderControl
+                  id="content-settings"
+                  value={draft.playerOrder ?? DEFAULT_TEAM_LIST_ORDER}
+                  disabled={update.isPending}
+                  onChange={(playerOrder) => {
+                    setSavedOk(false);
+                    setDraft({ ...draft, playerOrder });
+                  }}
+                  hint="One order for senior and junior team lists. A design can choose its own when you make it."
+                />
+              </div>
+            )}
             <div className="flex items-start justify-between gap-4 border-t pt-4">
               <div className="space-y-1">
                 <Label htmlFor="content-settings-junior-day">

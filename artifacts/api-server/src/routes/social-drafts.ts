@@ -887,7 +887,13 @@ router.patch(
       res.status(409).json({ error: "Reopen the draft before editing it" });
       return;
     }
-    const { caption, photoUrl, photoPlayerId } = parsed.data;
+    const { caption, photoUrl, photoPlayerId, playerOrder } = parsed.data;
+    const cardInput = draft.cardInput as Record<string, unknown>;
+    // A Team List design's own player order (build decision 16): this draft only.
+    if (playerOrder !== undefined && cardInput.kind !== "teamList") {
+      res.status(400).json({ error: "Only a Team List card has a player order." });
+      return;
+    }
     // A junior card's photo is the server's to pick (ADR-007): the admin can
     // clear it, never put a club library photo on it (fails closed).
     if (photoUrl != null && photoUrl !== draft.photoUrl && isJuniorDesignDraft(draft)) {
@@ -923,6 +929,13 @@ router.patch(
       if (photoUrl !== draft.photoUrl || photoPlayerId !== undefined)
         patch.photoFocus = await draftPhotoFocus(tenantId, photoUrl, photoPlayerId ?? null);
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
+    }
+    if (playerOrder !== undefined) {
+      // Stored on the card input, where the renderer reads it; null follows the
+      // order the card was made with (the club's). Data refreshes keep it.
+      const { playerOrderOverride: _previous, ...rest } = cardInput;
+      void _previous;
+      patch.cardInput = playerOrder === null ? rest : { ...rest, playerOrderOverride: playerOrder };
     }
     if (adjustments !== undefined) {
       // Editor overlay (U15): stored as-is; the web renderer applies it. A

@@ -20962,7 +20962,7 @@ components:
 
     CardContentKindSettings:
       type: object
-      description: "What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day."
+      description: "What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club's player order for senior and junior lists."
       required: [preset, fields, juniorConsolidateByDay]
       properties:
         preset:
@@ -20975,6 +20975,8 @@ components:
             type: boolean
         juniorConsolidateByDay:
           type: boolean
+        playerOrder:
+          $ref: "#/components/schemas/TeamListPlayerOrder"
 
     CardContentSettings:
       type: object
@@ -25307,6 +25309,22 @@ components:
           anyOf:
             - $ref: "#/components/schemas/CardAdjustments"
             - type: "null"
+        playerOrder:
+          description: >-
+            A Team List card's own player order (build decision 16), stored on the draft's
+            card input as playerOrderOverride; null follows the order the card was made with
+            (the club's default). It never changes the club's default. Team List drafts only.
+          anyOf:
+            - $ref: "#/components/schemas/TeamListPlayerOrder"
+            - type: "null"
+
+    TeamListPlayerOrder:
+      type: string
+      enum: [selected, shirt, alpha]
+      description: >-
+        How a Team List orders its players: as selected (the default), by shirt number
+        (players with no number last, by surname), or alphabetically by surname then first
+        initial. A withheld junior (Private Player) is always last.
 
     CreateSocialDraftRequest:
       type: object

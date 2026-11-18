@@ -26,6 +26,7 @@ import {
   type MatchDayFixtureContent,
   type ResultContent,
   type TeamListContent,
+  type TeamListOrder,
   sponsorOnClubPage,
 } from "@workspace/scorecard/card-content";
 
@@ -128,6 +129,8 @@ export type WeekendSlide = {
   content?: CardContent;
   visibleFields?: string[];
   photoId?: number | null;
+  /** A team slide's player order (build decision 16); absent, As selected. Saved with it. */
+  playerOrder?: TeamListOrder;
   /** A junior day slide (P3): the fixtures it holds, for the team editor. Not saved. */
   fixtureIds?: number[];
 };
@@ -416,6 +419,11 @@ export function buildWeekendSlides(
   kindVisible?: ReadonlySet<string>,
   /** This carousel's sponsors per slide; absent, the club's default. */
   sponsorsPerSlide?: number,
+  /**
+   * Team list slides' player order (build decision 16): this carousel's own,
+   * else the club's default. As selected (or absent) leaves them as picked.
+   */
+  playerOrder?: TeamListOrder,
 ): WeekendSlide[] {
   if (!teams.length || !validRange(from, to)) return [];
   const show = (field: string) => visible.has(field);
@@ -606,7 +614,15 @@ export function buildWeekendSlides(
       sponsorsOn: !!teamSponsor,
       data,
     };
-    return contentSlide({ ...slide, content, photoId: photo?.id ?? null });
+    return contentSlide({
+      ...slide,
+      content,
+      photoId: photo?.id ?? null,
+      // Frozen on the slide, like its fields: what was approved is what posts.
+      ...(content.kind === "teamList" && playerOrder && playerOrder !== "selected"
+        ? { playerOrder }
+        : {}),
+    });
   };
   // A junior day slide (P3): the day's games as compact rows. No photo and no
   // team sponsor (a slide covers several teams); every row is junior.

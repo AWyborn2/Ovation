@@ -19,6 +19,11 @@ import {
 } from "../card-names";
 import { isJuniorGradeLabel } from "../junior-grade";
 import { CLUB_TIME_ZONE, clubDay, normaliseRoundLabel } from "./match-day";
+import {
+  DEFAULT_TEAM_LIST_ORDER,
+  orderTeamListPlayers,
+  type TeamListOrder,
+} from "./team-list-order";
 import type { TeamListContent, TeamListSource } from "./types";
 
 /** The fixture a team list is for (a `fixtures` or `junior_fixtures` row fits). */
@@ -104,11 +109,28 @@ const TEAM_LIST_INPUT_FIELDS = [
   "team.debuts",
 ] as const;
 
+/**
+ * The side in `order` (build decision 16), sorted while the shirt numbers are
+ * still there, so a card that hides them is still in shirt order. As selected
+ * is the side exactly as it came; any other order is stamped as `playerOrder`
+ * so the binder draws it the same way.
+ */
+function orderedSource(c: TeamListContent, order: TeamListOrder): TeamListContent["source"] {
+  if (order === DEFAULT_TEAM_LIST_ORDER) return c.source;
+  return {
+    ...c.source,
+    players: orderTeamListPlayers(c.source.players, order),
+    playerOrder: order,
+  };
+}
+
 /** A team list card with only `visible` fields shown, names final. */
 function teamListProjection(
-  c: TeamListContent,
+  content: TeamListContent,
   visible: ReadonlySet<string>,
+  order: TeamListOrder,
 ): Record<string, unknown> {
+  const c = { ...content, source: orderedSource(content, order) };
   const round = visible.has("team.round") ? c.roundLabel : "";
   const numbers = visible.has("team.shirtNumbers") && c.source.numbering === "shirt";
   const crest = visible.has("team.oppositionCrest") ? c.opposition.crestUrl : null;
@@ -140,18 +162,22 @@ function teamListProjection(
 export function teamListDraftInput(
   content: TeamListContent,
   visible?: ReadonlySet<string> | null,
+  /** The club's player order (build decision 16); As selected leaves the input as it was. */
+  order: TeamListOrder = DEFAULT_TEAM_LIST_ORDER,
 ): Record<string, unknown> {
-  if (!visible || TEAM_LIST_INPUT_FIELDS.every((f) => visible.has(f))) return content.source;
-  return teamListProjection(content, visible);
+  if (!visible || TEAM_LIST_INPUT_FIELDS.every((f) => visible.has(f)))
+    return orderedSource(content, order);
+  return teamListProjection(content, visible, order);
 }
 
-/** A team list's carousel slide input, with only `visible` fields shown. */
+/** A team list's carousel slide input, with only `visible` fields shown, in `order`. */
 export function teamListSlideInput(
   c: TeamListContent,
   visible: ReadonlySet<string>,
+  order: TeamListOrder = DEFAULT_TEAM_LIST_ORDER,
 ): Record<string, unknown> {
   return {
-    ...teamListProjection(c, visible),
+    ...teamListProjection(c, visible, order),
     junior: c.junior,
     ...(c.junior && c.juniorTeamName ? { juniorTeamName: c.juniorTeamName } : {}),
   };

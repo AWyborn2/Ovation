@@ -51,7 +51,9 @@ import {
   readContentOverride,
   resolveVisibleFields,
   shortDateRange,
+  DEFAULT_TEAM_LIST_ORDER,
   type ContentOverride,
+  type TeamListOrder,
 } from "@workspace/scorecard/card-content";
 
 export const WEEKEND_PACK_ID = "club-kit-v1";
@@ -154,6 +156,13 @@ export function useWeekendCarousel(
   // list set (New Studio's look step); empty follows the club's setting for the kind.
   // The slides carry the fields they show, so nothing else stores it.
   const [kindOverride, setKindOverride] = useState<ContentOverride>({});
+  // Team list slides' player order (build decision 16): the club's default for
+  // every Team List, or this carousel's own; null follows the club's.
+  const clubPlayerOrder: TeamListOrder =
+    readCardContentSettings(bundle?.settings.cardContent).teamList.playerOrder ??
+    DEFAULT_TEAM_LIST_ORDER;
+  const [orderOverride, setOrderOverride] = useState<TeamListOrder | null>(null);
+  const playerOrder = setType === "teamList" ? (orderOverride ?? clubPlayerOrder) : undefined;
   const kindVisible = useMemo(
     () => (setKind ? resolveVisibleFields(setKind, kindContent, kindOverride) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -392,6 +401,7 @@ export function useWeekendCarousel(
       grouping,
       kindVisible,
       sponsorsPerSlide,
+      playerOrder,
     );
   }, [
     generated,
@@ -406,12 +416,19 @@ export function useWeekendCarousel(
     grouping,
     kindVisible,
     sponsorsPerSlide,
+    playerOrder,
   ]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
   const caption =
     captionEdit ??
-    carouselCaption(setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag);
+    carouselCaption(
+      setType,
+      generated?.teams ?? [],
+      title,
+      bundle?.settings.clubHashtag,
+      playerOrder,
+    );
   const assembly = useCarouselAssembly(setType, slides, picked);
   const queueKey = JSON.stringify([slides, size, caption, picked?.ref ?? null, perSlideOverride]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
@@ -517,6 +534,7 @@ export function useWeekendCarousel(
           grouping,
           kindVisible,
           sponsorsPerSlide,
+          playerOrder,
         );
       }
       // Swapped photos ride in the content override (ADR-010 P4).
@@ -575,6 +593,12 @@ export function useWeekendCarousel(
   };
 
   return {
+    // Team list player order: this carousel's (an override of the club's default).
+    playerOrder: playerOrder ?? DEFAULT_TEAM_LIST_ORDER,
+    clubPlayerOrder,
+    playerOrderChanged: orderOverride !== null,
+    setPlayerOrder: (order: TeamListOrder | null) =>
+      !busy && setOrderOverride(order === null || order === clubPlayerOrder ? null : order),
     // Sponsors per slide: this carousel's (an override of the club's default).
     sponsorsPerSlide,
     clubSponsorsPerSlide,
@@ -598,6 +622,7 @@ export function useWeekendCarousel(
       // A carousel's content override belongs to the Match Day set it was made on.
       setContentOverride({});
       setKindOverride({});
+      setOrderOverride(null);
       setCoverSwapped(false);
       setGenerated(null);
       setGenerationError(null);

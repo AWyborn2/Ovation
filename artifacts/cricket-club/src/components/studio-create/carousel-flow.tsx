@@ -25,6 +25,8 @@ import {
   SetKindContentPanel,
 } from "@/components/weekend-carousel/weekend-carousel";
 import { SponsorsPerSlideControl } from "@/components/social-studio/sponsors-per-slide";
+import { PlayerOrderControl } from "@/components/social-studio/player-order";
+import { TEAM_LIST_ORDER_LABELS } from "@workspace/scorecard/card-content";
 import { CarouselTemplatePicker } from "@/components/weekend-carousel/template-choice";
 import type { CarouselAudience } from "@/components/weekend-carousel/model";
 import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
@@ -185,6 +187,33 @@ export function CarouselFlow({
       <CarouselTemplatePicker s={s} />
       {/* What these cards show: this carousel's own Minimal / Standard / Full. */}
       {setType === "matchDay" ? <ContentOverridePanel s={s} /> : <SetKindContentPanel s={s} />}
+      {setType === "teamList" && (
+        <PlayerOrderControl
+          id="create"
+          value={s.playerOrder}
+          disabled={busy}
+          onChange={(order) => s.setPlayerOrder(order)}
+          hint={
+            s.playerOrderChanged ? (
+              <>
+                For this carousel only; your club&rsquo;s default is{" "}
+                {TEAM_LIST_ORDER_LABELS[s.clubPlayerOrder]}.{" "}
+                <button
+                  type="button"
+                  className="underline"
+                  disabled={busy}
+                  onClick={() => s.setPlayerOrder(null)}
+                  data-testid="create-player-order-reset"
+                >
+                  Use the default
+                </button>
+              </>
+            ) : (
+              <>Your club&rsquo;s default. Changing it here changes this carousel only.</>
+            )
+          }
+        />
+      )}
       {s.pageSponsorCount > 0 && (
         <SponsorsPerSlideControl
           id="create-sponsors-per-slide"

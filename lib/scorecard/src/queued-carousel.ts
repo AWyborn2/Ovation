@@ -17,6 +17,7 @@ import { contentInput } from "./card-content/render-input";
 import { readCardContent } from "./card-content/validate";
 import { readContentOverride, type ContentOverride } from "./card-content/settings";
 import type { CardContent } from "./card-content/types";
+import { isTeamListOrder, type TeamListOrder } from "./card-content/team-list-order";
 import {
   LEGACY_CAROUSEL_PACK_ID,
   isCarouselPackId,
@@ -77,6 +78,11 @@ export interface QueuedCarouselSlide {
   /** Version 2: the photo chosen for the slide (a junior stock image's id authorises it). */
   photoId?: number | null;
   /**
+   * A team slide's player order (build decision 16), frozen when the set was
+   * made: the club's default or this set's own. Absent: As selected.
+   */
+  playerOrder?: TeamListOrder;
+  /**
    * Version 3 drawn with a set design (carousel set editor plan, part 3): the
    * set page that draws this slide. Absent: the page of its slot. A slide with
    * a page and no content is a design page (the club's brand only).
@@ -121,11 +127,15 @@ export function contentSlideInput(slide: {
   photoId?: number | null;
   data: Record<string, unknown>;
   junior: boolean;
+  playerOrder?: TeamListOrder;
 }): Record<string, unknown> {
   const { content, data } = slide;
   const visible = new Set(slide.visibleFields);
   const hasPhoto = !!data.photoUrl;
-  const input = contentInput(content, visible, { hasCoverPhoto: hasPhoto });
+  const input = contentInput(content, visible, {
+    hasCoverPhoto: hasPhoto,
+    ...(slide.playerOrder ? { playerOrder: slide.playerOrder } : {}),
+  });
   // One match per slide (a fixture, result or team list); bookends and day slides are as built.
   if (content.page !== "fixture" && content.page !== "result" && content.page !== "team")
     return input;
@@ -155,6 +165,9 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
     (s.photoId != null && (!Number.isSafeInteger(s.photoId) || Number(s.photoId) <= 0)) ||
     !object(s.data) ||
     typeof s.junior !== "boolean" ||
+    // A player order only on a team slide, and only a known one.
+    (s.playerOrder !== undefined &&
+      (content.kind !== "teamList" || !isTeamListOrder(s.playerOrder))) ||
     // Juniors isolation: a slide's junior flag is its content's.
     ("junior" in content && content.junior !== s.junior)
   )
@@ -167,6 +180,7 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
       photoId: s.photoId as number | null | undefined,
       data: s.data,
       junior: s.junior,
+      playerOrder: s.playerOrder as TeamListOrder | undefined,
     }),
   };
 }

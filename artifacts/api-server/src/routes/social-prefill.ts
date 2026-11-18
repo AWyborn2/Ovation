@@ -29,7 +29,7 @@ import { dataSource } from "../lib/tenant";
 import { loadCentralMatchDetail, loadMatchDetail } from "../lib/match-detail";
 import { buildMatchSummaryContent } from "../lib/card-content/results";
 import { buildTeamListContent } from "../lib/card-content/team-list";
-import { contentVisibleFields } from "../lib/card-content/visible-fields";
+import { contentVisibleFields, teamListContentChoices } from "../lib/card-content/visible-fields";
 
 /**
  * Social Studio prefill reads for the fixture/stats-driven Pack A cards
@@ -305,10 +305,10 @@ router.get(
       { onWarning: (_fixture, warning) => warnings.push(warning) },
     );
     if (!list?.players.length) warnings.push("This fixture has no saved team list yet.");
-    const visible = await contentVisibleFields(tenantId, "teamList");
+    const { visible, order } = await teamListContentChoices(tenantId);
     res.json(
       GetSocialTeamListPrefillResponse.parse({
-        input: teamListDraftInput(content!, visible),
+        input: teamListDraftInput(content!, visible, order),
         warnings,
       }),
     );
