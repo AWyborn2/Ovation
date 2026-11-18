@@ -1,3 +1,4 @@
+import { redactRenderRequest } from "../lib/junior-name-redaction";
 import { Router, type IRouter } from "express";
 import { and, eq, isNull } from "drizzle-orm";
 import {
@@ -492,9 +493,16 @@ router.post(
       return;
     }
     try {
-      const { buffer, contentType } = await renderCardStill(
+      // A junior card downloads with today's privacy, whatever the open tab
+      // holds (P0 2): a junior made private since is withheld.
+      const safe = await redactRenderRequest(
+        getTenantId(req),
         parsed.data.input,
         parsed.data.options,
+      );
+      const { buffer, contentType } = await renderCardStill(
+        safe.input,
+        safe.options,
         harnessOriginFromHeaders(req.headers),
         { format: parsed.data.format, scale: parsed.data.scale },
       );

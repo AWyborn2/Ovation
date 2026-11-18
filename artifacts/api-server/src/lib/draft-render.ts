@@ -1,4 +1,5 @@
 import { juniorSafeCarousel, juniorSafeDesign } from "./junior-stock-photos";
+import { loadWithheldJuniorNames, redactDraftRow } from "./junior-name-redaction";
 import {
   landscapeSummary,
   planCardSet,
@@ -134,6 +135,9 @@ export async function renderDraftSlides(
   log: Logger,
 ): Promise<RenderedSlide[]> {
   const tenantId = saved.tenantId;
+  // A junior who is private now is withheld now, whenever the draft was built
+  // (fails closed, round 3 retest P0 2).
+  saved = redactDraftRow(saved, await loadWithheldJuniorNames(tenantId));
   // A junior card or set posts no club library photo in its design that isn't
   // approved junior stock, whenever the draft was made (fails closed, ADR-007).
   const safe = await juniorSafeDesign(tenantId, saved, saved.adjustments);
