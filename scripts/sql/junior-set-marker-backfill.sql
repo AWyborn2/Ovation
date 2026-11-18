@@ -24,6 +24,9 @@ WHERE d.source_match_is_junior = false
     SELECT 1 FROM jsonb_array_elements(d.card_input -> 'weekendCarousel' -> 'slides') s
     WHERE (s ->> 'junior')::boolean IS NOT TRUE
       AND coalesce(s ->> 'id', '') NOT LIKE 'page:%'
+      -- A cover or sponsors slide. Version 3 sets keep these as content, with
+      -- no input.carouselPage, so their ids say what they are.
+      AND coalesce(s ->> 'id', '') !~ '^(title|sponsors(-[0-9]+)?)$'
       AND coalesce(s -> 'input' -> 'carouselPage' ->> 'page', '') NOT IN ('title', 'sponsors')
   );
 
@@ -40,5 +43,8 @@ WHERE d.source_match_is_junior = false
     SELECT 1 FROM jsonb_array_elements(d.card_input -> 'weekendCarousel' -> 'slides') s
     WHERE (s ->> 'junior')::boolean IS NOT TRUE
       AND coalesce(s ->> 'id', '') NOT LIKE 'page:%'
+      -- A cover or sponsors slide. Version 3 sets keep these as content, with
+      -- no input.carouselPage, so their ids say what they are.
+      AND coalesce(s ->> 'id', '') !~ '^(title|sponsors(-[0-9]+)?)$'
       AND coalesce(s -> 'input' -> 'carouselPage' ->> 'page', '') NOT IN ('title', 'sponsors')
   );
