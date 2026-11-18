@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
+  clubUploadsTable,
   tenantsTable,
   adminsTable,
   clubPhotosTable,
@@ -632,6 +633,33 @@ describe("photos inside a junior card's or set's design (fails closed)", () => {
     );
     expect(safe.removed).toBe(1);
     expect(ids(safe.design)).toEqual(["p", "stock", "logo"]);
+  });
+
+  it("removes an uploaded image from a junior design, keeping a vector upload (retest 3, #8)", async () => {
+    const path = `/objects/uploads/jr-upload-${STAMP}`;
+    const [row] = await db
+      .insert(clubUploadsTable)
+      .values({
+        tenantId: club,
+        name: "Team photo",
+        kind: "image",
+        objectPath: path,
+        width: 800,
+        height: 600,
+      })
+      .returning();
+    try {
+      const vector = { id: "crest", kind: "vector", svg: "<svg viewBox='0 0 1 1'/>" };
+      const uploaded = image("upload", `/api/storage${path}`);
+      const safe = await juniorSafeDesign(club, junior, design(uploaded, vector));
+      expect(safe.removed).toBe(1);
+      expect(ids(safe.design)).toEqual(["p", "crest"]);
+      // A senior design keeps it.
+      const senior = { sourceMatchIsJunior: false, cardInput: { kind: "matchDay" } };
+      expect((await juniorSafeDesign(club, senior, design(uploaded))).removed).toBe(0);
+    } finally {
+      await db.delete(clubUploadsTable).where(eq(clubUploadsTable.id, row!.id));
+    }
   });
 
   it("removes a graded, tagged or another club's photo, and a thumbnail, from a junior set", async () => {

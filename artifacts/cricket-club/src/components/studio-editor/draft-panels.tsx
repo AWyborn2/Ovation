@@ -154,7 +154,10 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       id: "uploads",
       label: "Uploads",
       icon: Upload,
-      render: ({ size, add }) => <UploadsPanel size={size} onAdd={(l) => add([l])} />,
+      render: ({ size, add }) => (
+        // A junior design places vector uploads only (round 3 retest, #8).
+        <UploadsPanel size={size} onAdd={(l) => add([l])} vectorOnly={isJuniorDraft(draft)} />
+      ),
     },
     {
       id: "live",

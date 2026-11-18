@@ -374,6 +374,17 @@ export function withSlideLayout(
 }
 
 /**
+ * A layout page's name, at most 60 characters. A long slide name is cut
+ * before its " layout" ending, which marks the page as a slide's layout
+ * (`strandedLayoutPageIds`), so a let-go layout is still known as one.
+ */
+function layoutName(name: string): string {
+  if (name.length <= 60) return name;
+  const end = / layout$/i.exec(name);
+  return end ? `${name.slice(0, 60 - end[0].length).trimEnd()}${end[0]}` : name.slice(0, 60);
+}
+
+/**
  * A new layout for slide `key` alone: a copy of the page it draws with now
  * (`fromId`), as a design page of the same kind page, mapped to the slide.
  */
@@ -387,7 +398,7 @@ export function newSlideLayout(
   const body = (doc.pages as Record<string, PageBody | undefined>)[fromId];
   const r = addSetPage(
     doc,
-    { role: "fixed", slot: "page", kind: from.kind, page: from.page, name: name.slice(0, 60) },
+    { role: "fixed", slot: "page", kind: from.kind, page: from.page, name: layoutName(name) },
     body?.layers ?? [],
   );
   const pages = { ...(r.doc.pages as Record<string, PageBody | undefined>) };
@@ -459,4 +470,143 @@ export function withSlideDesign(
     [id]: { layers: body.layers, ...(body.background ? { background: body.background } : {}) },
   };
   return storedSetDocument({ ...next, pages: pages as TemplateDoc["pages"] });
+}
+
+// ── Save checks and restore names (dev retest 3, item 11) ───────────────────
+
+/**
+ * Whether a set page is a design page of its own (a page added with Add
+ * page, or a copy): a page with no data, not a slide's own layout.
+ */
+export function isOwnDesignPage(doc: EditorTemplateDoc, id: string): boolean {
+  const meta = doc.setDesign?.pages.find((p) => p.id === id);
+  return !!meta && meta.slot === "page" && !layoutPages(doc).has(id);
+}
+
+/** A slide key without its internal prefix: what a slide no longer drawn is called. */
+const bareKey = (key: string) => key.replace(/^detail:[a-z]+:|^page:/, "");
+
+/**
+ * The slides a set draft has deleted, each with the name its tile had, for
+ * "Restore a deleted slide". `slides` draws the set's slides.
+ */
+export function deletedSlides(
+  set: SetDocument,
+  slides: (doc: SetDocument) => ReadonlyArray<{ key: string; label: string }>,
+): Array<{ key: string; label: string }> {
+  const removed = set.arrangement?.removed ?? [];
+  if (removed.length === 0) return [];
+  const all = slides({ ...set, arrangement: { ...set.arrangement!, removed: [] } });
+  return removed.map((key) => ({
+    key,
+    label: all.find((s) => s.key === key)?.label.trim() || bareKey(key),
+  }));
+}
+
+/**
+ * Why a set can't be saved yet: each slide (or, outside a draft, each page)
+ * with nothing on it, said so the admin knows which and what to do. The
+ * first blank slide's key comes with it, so the editor can show it.
+ */
+export function blankSetBlockers(
+  doc: EditorTemplateDoc,
+  pages: ReadonlyArray<Pick<EditorPage, "id" | "label">>,
+  slides: ReadonlyArray<{ key: string; label: string; page: { id: string } }> | null,
+): { messages: string[]; firstSlide: string | null } {
+  const blank = (id: string) =>
+    !(doc.pages as Record<string, { layers?: unknown[] } | undefined>)[id]?.layers?.length;
+  const messages: string[] = [];
+  let firstSlide: string | null = null;
+  const drawn = new Set<string>();
+  if (slides) {
+    slides.forEach((s, i) => {
+      drawn.add(s.page.id);
+      if (!blank(s.page.id)) return;
+      firstSlide ??= s.key;
+      messages.push(
+        `Not saved: slide ${i + 1} ("${s.label}") is blank. Add something to it, or delete the slide, then save.`,
+      );
+    });
+  }
+  for (const p of pages) {
+    if (drawn.has(p.id) || !blank(p.id)) continue;
+    messages.push(
+      `Not saved: the page "${p.label}" is blank. Add something to it, or delete the page, then save.`,
+    );
+  }
+  return { messages, firstSlide };
+}
+
+// ── Change look (dev retest 3, item 12) ─────────────────────────────────────
+
+/**
+ * A set switched to another look's set template (`next`), keeping the pages
+ * the admin added to it (Add page: a blank page, a copy, a page from a
+ * template), which are the admin's own and no look's. A slide's own layout
+ * (S8/S9) was made from the old look's page, so it goes, as decision 7 says.
+ *
+ * An added page is a design page of `prev` that is no slide's layout and not
+ * one of the old look's own pages (`oldLook`, when known; else the new
+ * look's, by id). Each keeps its place after the page it followed, where the
+ * new look has a page in that slot, else goes at the end. A page id the new
+ * look already uses is renamed, and the arrangement follows it. The set's
+ * page limit holds: pages past it are left out (`dropped` counts them).
+ */
+export function keepAddedPages(
+  next: SetDocument,
+  prev: SetDocument,
+  oldLook?: Pick<SetDocument, "pages"> | null,
+): { doc: SetDocument; kept: number; dropped: number } {
+  const old = withoutStrandedLayouts(prev);
+  const layouts = layoutPageIds(old);
+  const lookIds = new Set((oldLook ?? next).pages.map((p) => p.id));
+  const added = old.pages.filter(
+    (p) => p.slot === "page" && !layouts.has(p.id) && !lookIds.has(p.id),
+  );
+  if (added.length === 0) return { doc: next, kept: 0, dropped: 0 };
+  const room = Math.max(0, MAX_SET_PAGES - next.pages.length);
+  const keep = added.slice(0, room);
+  const used = new Set(next.pages.map((p) => p.id));
+  const renamed: Record<string, string> = {};
+  const pages = [...next.pages];
+  for (const page of keep) {
+    let id = page.id;
+    for (let n = 2; used.has(id); n++) id = `${page.id.slice(0, 36)}-${n}`;
+    used.add(id);
+    if (id !== page.id) renamed[`page:${page.id}`] = `page:${id}`;
+    // After the page it followed in the old set, where the new look has that slot.
+    const before = old.pages.slice(0, old.pages.indexOf(page)).reverse();
+    let at = pages.length;
+    for (const b of before) {
+      const placed = keep.includes(b)
+        ? pages.findIndex((p) => p.id === (renamed[`page:${b.id}`]?.slice(5) ?? b.id))
+        : b.slot === "page"
+          ? -1
+          : pages.findIndex((p) => p.slot === b.slot);
+      if (placed >= 0) {
+        at = placed + 1;
+        break;
+      }
+    }
+    pages.splice(at, 0, { ...page, id });
+  }
+  const palettes = [...new Set([...(next.palettes ?? []), ...(old.palettes ?? [])])].sort();
+  const rename = (k: string) => renamed[k] ?? k;
+  const arrangement = next.arrangement
+    ? {
+        ...next.arrangement,
+        order: next.arrangement.order.map(rename),
+        removed: next.arrangement.removed.map(rename),
+      }
+    : undefined;
+  return {
+    doc: {
+      ...next,
+      pages,
+      ...(palettes.length ? { palettes } : {}),
+      ...(arrangement ? { arrangement } : {}),
+    },
+    kept: keep.length,
+    dropped: added.length - keep.length,
+  };
 }

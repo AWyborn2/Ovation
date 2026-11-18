@@ -24,6 +24,7 @@ import { runTemplateFit } from "@/lib/pack-render/template-fit";
 import { waitForImages } from "@/lib/pack-render/wait-images";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 import type { CaptureApi } from "@/lib/pack-render/capture";
+import { CARD_RENDER_CONTRACT } from "@workspace/scorecard/render-contract";
 
 // The pack converter's capture (social template library, L4-A1) exists on the
 // dev server, in tests and in `vite build --mode capture` (CI) only. The mode
@@ -84,6 +85,8 @@ type StillMeta = {
 
 type HarnessApi = {
   ready: boolean;
+  /** This build's render contract: the server refuses a harness from another build. */
+  contract: number;
   init: (payload: { input: ShareCardInput; options: RenderOptions }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
   /** Pack-card clips: pause every animation at `t` (0..1) of the clip. */
@@ -144,6 +147,7 @@ export default function CardRenderHarness() {
 
     const api: HarnessApi = {
       ready: true,
+      contract: CARD_RENDER_CONTRACT,
       async init(payload) {
         handle?.cleanup();
         const packOptions = payload.options as unknown as PackClipOptions;

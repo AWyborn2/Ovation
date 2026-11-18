@@ -143,3 +143,17 @@ describe("UploadsPanel", () => {
     expect(uploadLayer(tall, "landscape").geometry.landscape!.h).toBe(90);
   });
 });
+
+describe("UploadsPanel on a junior design (round 3 retest, #8)", () => {
+  it("lists and places vector uploads only, and says why", () => {
+    const onAdd = vi.fn();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <UploadsPanel size="square" onAdd={onAdd} vectorOnly />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText(/SVG logos and graphics only/)).toBeTruthy();
+    expect(screen.queryByText("Club logo")).toBeNull();
+    expect(screen.getByText("Speech bubble")).toBeTruthy();
+  });
+});

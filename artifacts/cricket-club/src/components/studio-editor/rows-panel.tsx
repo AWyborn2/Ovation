@@ -9,7 +9,9 @@ import {
   MAX_PICK_MIN_WICKETS,
   pageRepeat,
   pickStat,
+  MIN_ROWS_SQUEEZE,
   rowsCapacity,
+  rowsFitCapacity,
   rowsColumns,
   type PageKey,
   type RowsPick,
@@ -274,6 +276,9 @@ export function RowsPanel({
   const cell = spec.cells[cellIndex] ?? null;
   const live = layersOf(doc).find((l) => l.id === layer.id) ?? layer;
   const capacity = rowsCapacity(live, size);
+  // A Team List draws a longer side smaller rather than drop a player (#648),
+  // so it shows more rows than fit at full size: counted as the renderer draws.
+  const fits = rowsFitCapacity(live, size);
   const num = (v: string, fallback: number) => {
     const n = Number(v);
     return Number.isFinite(n) && v.trim() !== "" ? n : fallback;
@@ -320,7 +325,9 @@ export function RowsPanel({
           />
         </label>
         <span className="text-xs text-[var(--ed-ink2)]">
-          {capacity} {capacity === 1 ? "row fits" : "rows fit"} on this size
+          {fits > capacity
+            ? `Up to ${fits} rows fit on this size (${capacity} at full size; more draw smaller, down to ${Math.round(MIN_ROWS_SQUEEZE * 100)}%)`
+            : `${capacity} ${capacity === 1 ? "row fits" : "rows fit"} on this size`}
         </span>
       </div>
 

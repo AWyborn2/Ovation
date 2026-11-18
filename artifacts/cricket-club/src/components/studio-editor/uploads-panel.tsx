@@ -57,8 +57,16 @@ export function UploadsPanel({
   size,
   onAdd,
   wide = false,
+  vectorOnly = false,
 }: {
   size: CardSize;
+  /**
+   * A junior design (round 3 retest, #8): only vector uploads (logos and
+   * graphics, which can't hold a photo) can be placed. An uploaded image might
+   * be a photo of a child, so it is neither listed nor uploadable here; the
+   * server strips one from a junior design at save and post too.
+   */
+  vectorOnly?: boolean;
   /** Put the upload on the card; without it (Studio → Photos → Uploads) tiles only manage. */
   onAdd?: (layer: FreeLayer) => void;
   /** More tiles to a row, for a full page rather than the editor's rail. */
@@ -83,7 +91,7 @@ export function UploadsPanel({
   const uploadsQ = useListClubUploads(params, {
     query: { queryKey: getListClubUploadsQueryKey(params) },
   });
-  const uploads = uploadsQ.data ?? [];
+  const uploads = (uploadsQ.data ?? []).filter((u) => !vectorOnly || u.kind === "svg");
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubUploadsQueryKey() });
   // Only uploads still listed count as picked (a search or a delete can hide some).
   const shownPicked = uploads.filter((u) => picked.has(u.id));
@@ -125,7 +133,11 @@ export function UploadsPanel({
   };
 
   const onFiles = async (list: FileList | null) => {
-    const files = Array.from(list ?? []);
+    const all = Array.from(list ?? []);
+    // A junior design takes vector files only, whatever the file picker allowed.
+    const files = vectorOnly ? all.filter((f) => fileType(f) === "image/svg+xml") : all;
+    if (files.length < all.length)
+      setStatus("A junior card can use SVG logos and graphics only, not uploaded images.");
     if (files.length === 0) return;
     setBusy(true);
     setStatus(`Uploading ${files.length === 1 ? files[0]!.name : `${files.length} files`}…`);
@@ -160,6 +172,12 @@ export function UploadsPanel({
 
   return (
     <div className="mt-3 space-y-3">
+      {vectorOnly && (
+        <p className="text-xs text-[var(--ed-ink2)]">
+          Junior card: SVG logos and graphics only. Uploaded images can&rsquo;t go on a junior card,
+          because they could be photos of players.
+        </p>
+      )}
       <label className="flex h-28 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[var(--ed-line)] text-sm hover:bg-[var(--ed-card)]">
         {busy ? (
           <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
@@ -171,7 +189,7 @@ export function UploadsPanel({
         <input
           type="file"
           multiple
-          accept="image/*,.svg,.heic,.heif"
+          accept={vectorOnly ? ".svg,image/svg+xml" : "image/*,.svg,.heic,.heif"}
           className="sr-only"
           aria-label="Upload files"
           disabled={busy}
@@ -245,7 +263,11 @@ export function UploadsPanel({
         <p className="text-sm text-[var(--ed-ink2)]">Loading your uploads…</p>
       ) : uploads.length === 0 ? (
         <p className="text-sm text-[var(--ed-ink2)]">
-          {query ? "No uploads match that name." : "Nothing uploaded yet."}
+          {query
+            ? "No uploads match that name."
+            : vectorOnly
+              ? "No vector uploads yet. A junior card can use SVG logos and graphics only."
+              : "Nothing uploaded yet."}
         </p>
       ) : (
         <ul

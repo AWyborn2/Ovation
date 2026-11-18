@@ -40,14 +40,16 @@ import {
   type TemplateSize,
   type WorstCaseCard,
 } from "@workspace/scorecard/kind-templates";
+import { MIN_ROWS_SQUEEZE } from "@workspace/scorecard/kind-templates";
 import { ROWS_SQUEEZE_ATTR } from "./adjustments";
 import { fitLayersInDom } from "./layer-fit";
 
 /**
  * The smallest a list may draw to show every row: a side of 14 on a box
  * designed for 12 (two columns of 7 on 6) draws at 86%, one for 10 at 71%.
+ * Shared with the editor's list settings, which count rows by it.
  */
-export const MIN_ROWS_SQUEEZE = 0.7;
+export { MIN_ROWS_SQUEEZE };
 
 /**
  * The side sizes a Team List is drawn with beyond its box's capacity (ADR-009:

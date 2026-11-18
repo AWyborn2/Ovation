@@ -280,6 +280,77 @@ describe("a queued carousel's set design", () => {
     expect(resaved.body.adjustments.arrangement.pageFor).toEqual({ "fx-1": "own" });
   });
 
+  it("saves a big set's own layouts (a 2 to 3 MB body), and still refuses one over the cap (413)", async () => {
+    // Twelve slides: a cover, ten games and sponsors.
+    const games = Array.from({ length: 10 }, (_, i) =>
+      slide(`fx-${i + 1}`, { kind: "matchDay", grade: `Grade ${i + 1}` }),
+    );
+    const id = await queuedCarousel([bookend("title"), ...games, bookend("sponsors")]);
+    const { body } = await api("get", `/social-drafts/${id}/set-design`);
+    const doc = body.document as SetDocument;
+    const fixture = doc.pages.find((p) => p.id === "fixture")!;
+    // A club crest as SVG: a long path, as a converted logo is (about 50 KB).
+    const crest = (n: number) =>
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="var(--gold)" d="M0 0${" L12.345 67.891".repeat(n)} Z"/></svg>`;
+    const vector = (layerId: string) => ({
+      id: layerId,
+      kind: "vector" as const,
+      svg: crest(3300),
+      geometry: { square: box, portrait: box, story: box, landscape: box },
+    });
+    const heavy = (tag: string) => [
+      ...Array.from({ length: 5 }, (_, i) => vector(`${tag}-v${i}`)),
+      shape(`${tag}-s`),
+    ];
+    // Six slides given their own layout, each a full copy of the fixture page.
+    const own = Array.from({ length: 6 }, (_, i) => ({
+      ...fixture,
+      id: `own-${i + 1}`,
+      role: "fixed" as const,
+      slot: "page" as const,
+      name: `Grade ${i + 1} layout`,
+      layers: heavy(`own${i + 1}`),
+    }));
+    const big: SetDocument = {
+      ...doc,
+      pages: [...doc.pages.map((p) => ({ ...p, layers: heavy(p.id) })), ...own],
+      arrangement: {
+        order: [],
+        removed: [],
+        pageFor: Object.fromEntries(own.map((p, i) => [`fx-${i + 1}`, p.id])),
+      },
+    };
+    const bytes = JSON.stringify({ document: big }).length;
+    expect(bytes).toBeGreaterThan(2 * 1024 * 1024);
+    expect(bytes).toBeLessThan(3 * 1024 * 1024);
+    const res = await api("put", `/social-drafts/${id}/set-design`).send({ document: big });
+    expect(res.status).toBe(200);
+    expect(res.body.cardInput.weekendCarousel.slides).toHaveLength(12);
+    expect(Object.keys(res.body.adjustments.arrangement.pageFor)).toHaveLength(6);
+    expect(res.body.adjustments.pages).toHaveLength(doc.pages.length + 6);
+
+    // Twenty full pages (the most a set holds) is past the body cap: refused before validation.
+    const over: SetDocument = {
+      ...big,
+      pages: Array.from({ length: 20 }, (_, i) => ({
+        ...fixture,
+        id: `p${i}`,
+        role: "fixed" as const,
+        slot: "page" as const,
+        layers: [...heavy(`p${i}`), ...heavy(`q${i}`)],
+      })),
+    };
+    expect(JSON.stringify({ document: over }).length).toBeGreaterThan(4 * 1024 * 1024);
+    const refused = await api("put", `/social-drafts/${id}/set-design`).send({ document: over });
+    expect(refused.status).toBe(413);
+    // Unsigned, a big body is turned away before it is read.
+    const anonymous = await request(app)
+      .put(`/api/social-drafts/${id}/set-design`)
+      .set("x-tenant-id", String(tenantId))
+      .send({ document: big });
+    expect(anonymous.status).toBe(401);
+  });
+
   it("refuses a carousel with every game deleted: only a cover and sponsors (S4)", async () => {
     const id = await queuedCarousel();
     const { body } = await api("get", `/social-drafts/${id}/set-design`);

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import {
   isJuniorDesignDraft,
+  isJuniorCarousel,
   juniorSafeDesign,
   stripUnapprovedJuniorSetPhotos,
   validJuniorStockSelection,
@@ -37,6 +38,7 @@ import {
   UpdateSocialDraftBody,
 } from "@workspace/api-zod";
 import { familyOfKind } from "../lib/social-families";
+import { loadWithheldJuniorNames, redactDraftRow } from "../lib/junior-name-redaction";
 import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
 import { generateRecapDrafts } from "../lib/roundup";
 import {
@@ -194,11 +196,16 @@ router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
   if (typeof req.query.grade === "string" && req.query.grade) {
     conditions.push(sql`${socialDraftsTable.cardInput}->>'grade' = ${req.query.grade}`);
   }
-  const rows = await db
-    .select()
-    .from(socialDraftsTable)
-    .where(and(...conditions))
-    .orderBy(desc(socialDraftsTable.createdAt));
+  // Every draft as it may be drawn now: a junior made private since it was
+  // built is withheld in its thumbnail, preview and editor (P0 2).
+  const withheld = await loadWithheldJuniorNames(tenantId);
+  const rows = (
+    await db
+      .select()
+      .from(socialDraftsTable)
+      .where(and(...conditions))
+      .orderBy(desc(socialDraftsTable.createdAt))
+  ).map((r) => redactDraftRow(r, withheld));
   // Status filters on the effective state, so it's applied after presenting.
   const autoPost = await loadAutoPost(tenantId);
   const now = new Date();
@@ -251,11 +258,12 @@ router.get("/social-drafts/:id", requireAdmin, async (req, res, next): Promise<v
     return;
   }
   const tenantId = getTenantId(req);
-  const row = await loadDraft(tenantId, id);
-  if (!row) {
+  const stored = await loadDraft(tenantId, id);
+  if (!stored) {
     res.status(404).json({ error: "Not found" });
     return;
   }
+  const row = redactDraftRow(stored, await loadWithheldJuniorNames(tenantId));
   const autoPost = await loadAutoPost(tenantId);
   const pubs = await publicationsByDraft(tenantId, [row.id]);
   const names = await creatorNames(tenantId, [row]);
@@ -703,7 +711,12 @@ router.post(
         subjectPlayerId,
         ...(junior
           ? { sourceMatchIsJunior: true, ...(await photoColumns(tenantId, juniorPhoto)) }
-          : {}),
+          : carousel && isJuniorCarousel(carousel)
+            ? // A set made from junior data (Create → Juniors) is a junior draft: the
+              // Queue's Juniors filter and the fail-closed publishing gate see it
+              // (round 3 retest, #7). Its photos are already junior-safe (above).
+              { sourceMatchIsJunior: true }
+            : {}),
         ...(templated ?? {}),
       })
       .onConflictDoNothing()
@@ -961,7 +974,8 @@ router.get("/social-drafts/:id/set-design", requireAdmin, async (req, res): Prom
     return;
   }
   try {
-    res.json(await loadDraftSetDesign(tenantId, draft));
+    const safe = redactDraftRow(draft, await loadWithheldJuniorNames(tenantId));
+    res.json(await loadDraftSetDesign(tenantId, safe));
   } catch (err) {
     if (err instanceof TemplateLibraryError) {
       res.status(err.status).json(err.body);

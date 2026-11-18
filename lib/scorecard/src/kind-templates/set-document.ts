@@ -134,6 +134,17 @@ type LayoutView = {
 };
 
 /**
+ * The `pageFor` entries a live slide holds: a deleted slide's (`removed`) no
+ * longer draws, so its layout page is let go with it.
+ */
+export function livePageFor(arrangement: SetArrangement | undefined): Record<string, string> {
+  const removed = new Set(arrangement?.removed ?? []);
+  return Object.fromEntries(
+    Object.entries(arrangement?.pageFor ?? {}).filter(([k]) => !removed.has(k)),
+  );
+}
+
+/**
  * Layout pages a slide let go of without the page going too (studio-create
  * S9, fixed 17 Nov 2026). Before the fix, deleting or moving a slide in the
  * set editor dropped `pageFor`, so each layout page was left as a design page
@@ -144,7 +155,7 @@ type LayoutView = {
  * the admin added (Blank page, a copy) is named otherwise and stays a slide.
  */
 export function strandedLayoutPageIds(doc: LayoutView): Set<string> {
-  const mapped = new Set(Object.values(doc.arrangement?.pageFor ?? {}));
+  const mapped = new Set(Object.values(livePageFor(doc.arrangement)));
   const pages = doc.pages ?? [];
   const out = new Set<string>();
   for (const p of pages) {
@@ -175,7 +186,33 @@ export function withoutStrandedLayouts<D extends Pick<SetDocument, "arrangement"
 ): D {
   const stranded = strandedLayoutPageIds(doc);
   if (stranded.size === 0 || stranded.size >= doc.pages.length) return doc;
-  return { ...doc, pages: doc.pages.filter((p) => !stranded.has(p.id)) };
+  const pages = doc.pages.filter((p) => !stranded.has(p.id));
+  if (!doc.arrangement?.pageFor) return { ...doc, pages };
+  // A map entry naming a page that went (a deleted slide's) goes too.
+  const kept = new Set(pages.map((p) => p.id));
+  const { pageFor: all, ...rest } = doc.arrangement;
+  const pageFor = Object.fromEntries(Object.entries(all).filter(([, id]) => kept.has(id)));
+  return {
+    ...doc,
+    pages,
+    arrangement: Object.keys(pageFor).length ? { ...rest, pageFor } : rest,
+  };
+}
+
+/**
+ * Whether a queued carousel's stored slide was made for a design page
+ * (`page:<id>`) that draws no slide of its own: a slide's layout page, or a
+ * page the set no longer holds (a let-go layout shed on open). Such a slide is
+ * never drawn, counted or posted; it would otherwise fall back to its slot's
+ * page and draw as a blank team slide (draft 962).
+ */
+export function isOrphanPageSlide(
+  doc: LayoutView,
+  slide: { id: string; pageId?: string },
+  layouts: Set<string> = layoutPageIds(doc),
+): boolean {
+  if (typeof slide.pageId !== "string" || slide.id !== `page:${slide.pageId}`) return false;
+  return layouts.has(slide.pageId) || !(doc.pages ?? []).some((p) => p.id === slide.pageId);
 }
 
 /**

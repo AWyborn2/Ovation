@@ -22,6 +22,7 @@ import type { TemplateDocumentV2 } from "./format";
 import { templateKindFor } from "./pages";
 import {
   isRepeatSlot,
+  isOrphanPageSlide,
   layoutPageIds,
   setPageRenderDocument,
   setPageLabel,
@@ -292,8 +293,9 @@ export function mapCarouselSlides(
   const layouts = layoutPageIds(doc);
   for (const s of slides) {
     // A slide made for a layout page (saved before the 17 Nov 2026 fix, when a
-    // let-go layout drew as a design page) is no slide: the page is a layout.
-    if (s.pageId && s.id === `page:${s.pageId}` && layouts.has(s.pageId)) continue;
+    // let-go layout drew as a design page) is no slide: the page is a layout,
+    // or was shed as one on open (`withoutStrandedLayouts`).
+    if (isOrphanPageSlide(doc, s, layouts)) continue;
     const slot = carouselSlideSlot(s.input);
     const page =
       (s.pageId ? doc.pages.find((p) => p.id === s.pageId) : undefined) ?? pageForSlot(doc, slot);

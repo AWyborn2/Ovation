@@ -1,3 +1,4 @@
+import { redactRenderRequest } from "../lib/junior-name-redaction";
 import { Router, type IRouter } from "express";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
@@ -25,8 +26,14 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { input, options, fps, format, scale } = parsed.data;
+    const { fps, format, scale } = parsed.data;
     const tenantId = getTenantId(req);
+    // A junior clip downloads with today's privacy (round 3 retest, P0 2).
+    const { input, options } = await redactRenderRequest(
+      tenantId,
+      parsed.data.input,
+      parsed.data.options,
+    );
     const [tenant] = await db
       .select({ slug: tenantsTable.slug })
       .from(tenantsTable)

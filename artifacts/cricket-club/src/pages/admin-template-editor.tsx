@@ -138,11 +138,14 @@ import {
   addBlankPage,
   addRepeatPage,
   addSetPage,
+  blankSetBlockers,
   deleteSetPage,
+  deletedSlides,
   deleteSlide,
   duplicateSetPage,
   editorPageList,
   firstPageId,
+  isOwnDesignPage,
   missingRepeatSlots,
   moveSetPage,
   openSetTemplate,
@@ -602,6 +605,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     () => (slidesMode && setNow ? slidesMode.slides(setNow) : []),
     [slidesMode, setNow],
   );
+  // The slides deleted from it, by name (Restore a deleted slide).
+  const deletedOnes = useMemo(
+    () => (slidesMode && setNow ? deletedSlides(setNow, slidesMode.slides) : []),
+    [slidesMode, setNow],
+  );
   const [slideKey, setSlideKey] = useState<string | null>(null);
   const slide = realSlides.find((x) => x.key === slideKey) ?? realSlides[0] ?? null;
   // What the page on show may show as its photo: a junior card or set takes
@@ -957,12 +965,21 @@ export function TemplateEditorV2<T extends EditorTemplate>({
 
   const onSave = async () => {
     if (full.setDesign) {
-      // A set saves every page, and each needs something on it.
-      const blockers = pageList
-        .filter((p) => !pageDoc(full, p.id).layers?.length)
-        .map((p) => `"${p.label}" has nothing on it yet.`);
-      setBlocked(blockers);
-      if (blockers.length) return;
+      // A set saves every page, and each needs something on it: say which
+      // slide is blank, and show it.
+      const { messages, firstSlide } = blankSetBlockers(
+        full,
+        pageList,
+        slidesMode ? realSlides : null,
+      );
+      setBlocked(messages);
+      if (messages.length) {
+        if (firstSlide) {
+          setSlideKey(firstSlide);
+          enterScope(null);
+        }
+        return;
+      }
     }
     const v2 = sourceFormat === 2 || !!full.setDesign || needsV2(full, kind);
     // A version 1 template keeps version 1's rule: every size has something on it.
@@ -1323,17 +1340,6 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 onStyle={(patch) => edit(setTextStyle(doc, single.id, patch))}
               />
             )}
-            {single?.kind === "rows" && single.rows && (
-              <RowsPanel
-                doc={doc}
-                layer={single}
-                kind={pageKind}
-                page={page}
-                size={format}
-                clubLabel={values["club.short"]}
-                onEdit={edit}
-              />
-            )}
             {single?.kind === "element" && (
               <ElementPropsEditor
                 layer={single}
@@ -1570,13 +1576,17 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 ))}
               </ul>
             )}
-            {page === primaryPage(pageKind) && keyField && !showsKeyField(pageFull, pageKind) && (
-              <p role="status" className="flex items-center gap-2 text-amber-300">
-                <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-                This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t
-                say who or what they&apos;re about.
-              </p>
-            )}
+            {page === primaryPage(pageKind) &&
+              keyField &&
+              // A page of its own (Add page) shows no card's data, so it has none to lose.
+              !(full.setDesign && isOwnDesignPage(full, cur.id)) &&
+              !showsKeyField(pageFull, pageKind) && (
+                <p role="status" className="flex items-center gap-2 text-amber-300">
+                  <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+                  This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t
+                  say who or what they&apos;re about.
+                </p>
+              )}
             {blocked.map((b) => (
               <p key={b} role="alert" className="text-[var(--ed-danger)]">
                 {b}
@@ -1607,6 +1617,24 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               </p>
             )}
           </div>
+
+          {single?.kind === "rows" && single.rows && (
+            // Docked at the foot of the canvas area, after the canvas, so
+            // opening it never moves the card being edited (dev retest 3).
+            <div className="sticky bottom-0 z-20 mt-auto w-full max-w-3xl pt-3">
+              <div className="max-h-[45vh] overflow-auto rounded-xl shadow-xl">
+                <RowsPanel
+                  doc={doc}
+                  layer={single}
+                  kind={pageKind}
+                  page={page}
+                  size={format}
+                  clubLabel={values["club.short"]}
+                  onEdit={edit}
+                />
+              </div>
+            </div>
+          )}
 
           {layersOpen && (
             <LayersDrawer
@@ -1711,10 +1739,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 ? `A page drawn like ${cur.label}`
                 : `A page drawn like ${cur.label}, no data`,
             },
-            ...(setNow?.arrangement?.removed ?? []).map((key) => ({
+            ...deletedOnes.map(({ key, label }) => ({
               id: `restore:${key}`,
               label: "Restore a deleted slide",
-              detail: key.replace(/^detail:[a-z]+:|^page:/, ""),
+              // Its name, as its tile had it ("A Grade v Waroona"), not its key.
+              detail: label,
             })),
           ]}
           onAdd={(option) => {

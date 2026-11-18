@@ -7,7 +7,10 @@
 import { describe, expect, it } from "vitest";
 import {
   fitMatrix,
+  MIN_ROWS_SQUEEZE,
   normaliseDocument,
+  rowsCapacity,
+  rowsFitCapacity,
   type TemplateDocumentV2,
   type TemplateLayerV2,
   type WorstCaseCard,
@@ -424,6 +427,18 @@ describe("Team List sides of 12 to 14", () => {
         visible: null,
       }),
     ).toEqual([expect.objectContaining({ reason: "rows-squeezed", layerId: "list" })]);
+  });
+
+  it("counts the rows that fit as the renderer draws them, down to 70% (list settings)", () => {
+    const list = (teamDoc().pages.team!.layers as TemplateLayerV2[]).find((l) => l.id === "list")!;
+    expect(rowsCapacity(list, "portrait")).toBe(10);
+    const fits = rowsFitCapacity(list, "portrait");
+    expect(fits).toBeGreaterThan(10);
+    const squeezeAt = (n: number) =>
+      Number(draw(n).querySelector("[data-rows-squeeze]")?.getAttribute("data-rows-squeeze") ?? 1);
+    // The count it gives draws at 70% or more; one column row more would not.
+    expect(squeezeAt(fits)).toBeGreaterThanOrEqual(MIN_ROWS_SQUEEZE);
+    expect(squeezeAt(fits + 2)).toBeLessThan(MIN_ROWS_SQUEEZE);
   });
 });
 

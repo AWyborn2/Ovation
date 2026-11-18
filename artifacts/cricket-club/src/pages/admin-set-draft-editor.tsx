@@ -65,7 +65,7 @@ import { SharePanel } from "@/components/studio-editor/export/share-panel";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
 import { SlideLayoutPanel } from "@/components/studio-editor/slide-layout";
 import { EditSlideButton } from "@/components/studio-editor/edit-slide-button";
-import { storedSetDocument } from "@/components/studio-editor/set-doc";
+import { keepAddedPages, storedSetDocument } from "@/components/studio-editor/set-doc";
 import type { CardSize } from "@/lib/share-card";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
@@ -176,6 +176,9 @@ function SetDraftEditor({
   const newStudio = useNewStudio();
   // The design as last saved here: a look switch keeps its slide order.
   const saved = useRef(design.document as unknown as SetDocument);
+  // The set as it stands in the editor, saved or not: a look switch keeps its
+  // order and the pages added to it, even one added since the last save.
+  const live = useRef<EditorTemplateDoc | null>(null);
   // A free set (Pick by hand) is a carousel the admin fills: named for its day.
   const label = design.setType === "free" ? "Carousel" : SET_TYPE_LABELS[design.setType];
   const round = (draft.cardInput as { roundLabel?: unknown } | null)?.roundLabel;
@@ -238,8 +241,9 @@ function SetDraftEditor({
         template={template}
         viewport={viewport}
         host={host}
-        actions={({ set, setDesign, dirty }) =>
-          newStudio ? (
+        actions={({ set, setDesign, dirty }) => {
+          live.current = setDesign?.doc ?? null;
+          return newStudio ? (
             <>
               {set && setDesign && (
                 <SlideLayoutPanel
@@ -252,8 +256,8 @@ function SetDraftEditor({
               {set && <SharePanel set={set} name={template.name} />}
               <SendToReview draftId={draft.id} dirty={dirty} />
             </>
-          ) : null
-        }
+          ) : null;
+        }}
         draftMode={
           pages
             ? {
@@ -283,12 +287,15 @@ function SetDraftEditor({
         open={lookOpen}
         onClose={() => setLookOpen(false)}
         design={design}
-        onPicked={async (document, templateRef) => {
+        onPicked={async (document, templateRef, oldLook) => {
           // Keep the set's slide order and deletions on the new look; a slide's
-          // own layout (S9) was a page of the old look, so it goes.
-          const kept = saved.current.arrangement;
+          // own layout (S9) was a page of the old look, so it goes. The pages
+          // the admin added are their own, so they stay (dev retest 3, item 12).
+          const now = live.current ? storedSetDocument(live.current) : saved.current;
+          const kept = now.arrangement;
           const arrangement = kept ? { order: kept.order, removed: kept.removed } : undefined;
-          const next: SetDocument = arrangement ? { ...document, arrangement } : document;
+          const relooked: SetDocument = arrangement ? { ...document, arrangement } : document;
+          const next = keepAddedPages(relooked, now, oldLook).doc;
           await saveDraftSetDesign(draft.id, {
             document: next,
             templateRef,
@@ -312,7 +319,8 @@ function ChangeLookDialog({
   open: boolean;
   onClose: () => void;
   design: DraftSetDesign;
-  onPicked: (document: SetDocument, ref: TemplateRef) => Promise<void>;
+  /** The new look's set, its ref, and the old look's set when it is listed here. */
+  onPicked: (document: SetDocument, ref: TemplateRef, oldLook: SetDocument | null) => Promise<void>;
 }) {
   const kind = setTemplateKind(design.setType);
   const preview = useLibraryPreviewData();
@@ -341,7 +349,8 @@ function ChangeLookDialog({
     setBusy(o.key);
     setError(null);
     try {
-      await onPicked(o.document, o.ref);
+      const was = options.find((x) => isCurrent(x.ref))?.document;
+      await onPicked(o.document, o.ref, isSetDocument(was) ? was : null);
       onClose();
     } catch (err) {
       setError(errorOf(err) ?? "Couldn't switch the look. Try again.");
@@ -358,8 +367,10 @@ function ChangeLookDialog({
         <DialogHeader>
           <DialogTitle>Change the set&apos;s look</DialogTitle>
           <DialogDescription>
-            Every slide takes the new look; the teams, fixtures and results stay as they are. Edits
-            made to this set&apos;s design are replaced.
+            Every slide takes the new look; the teams, fixtures and results stay as they are, and so
+            do the pages you added. Other edits to this set&apos;s design are replaced, and a slide
+            with its own layout (Edit this slide) goes back to the new look&apos;s layout, because
+            that layout was made from the old look.
           </DialogDescription>
         </DialogHeader>
         {libQ.isLoading ? (
