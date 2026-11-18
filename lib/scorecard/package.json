@@ -19,7 +19,8 @@
     "./pack-capture": "./src/pack-capture.ts",
     "./kiosk-display": "./src/kiosk-display.ts",
     "./photo-focus": "./src/photo-focus.ts",
-    "./card-sponsors": "./src/card-sponsors.ts"
+    "./card-sponsors": "./src/card-sponsors.ts",
+    "./render-contract": "./src/render-contract.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

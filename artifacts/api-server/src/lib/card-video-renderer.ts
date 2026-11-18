@@ -6,6 +6,7 @@ import puppeteer, { type Browser, type Page } from "puppeteer-core";
 import type { LayoutWarning, TemplateFitReport } from "@workspace/scorecard/kind-templates";
 import { logger } from "./logger";
 import { env } from "../config";
+import { CARD_RENDER_CONTRACT } from "@workspace/scorecard/render-contract";
 
 // The frontend exposes a hidden harness route that runs the EXACT same renderer
 // the browser preview uses, so server-rendered MP4s are pixel-identical to the
@@ -180,6 +181,8 @@ type StillMeta = {
 };
 type HarnessApi = {
   ready: boolean;
+  /** The render contract the harness was built with; absent on harnesses built before it. */
+  contract?: number;
   init: (payload: { input: unknown; options: unknown }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
   seek: (t: number) => Promise<void>;
@@ -191,6 +194,37 @@ type HarnessApi = {
 type HarnessGlobal = typeof globalThis & {
   __cardRenderHarness?: HarnessApi;
 };
+
+/** The harness answered from a different build than this server (see render-contract.ts). */
+export class HarnessContractError extends Error {
+  constructor(url: string, found: number | null) {
+    let host = url;
+    try {
+      host = new URL(url).host;
+    } catch {
+      /* keep the raw URL */
+    }
+    super(
+      `The card renderer at ${host} is a different version of the app ` +
+        `(render contract ${found ?? "none"}, this server needs ${CARD_RENDER_CONTRACT}), ` +
+        `so the card would draw with missing names or logos. Nothing was rendered.`,
+    );
+    this.name = "HarnessContractError";
+  }
+}
+
+/** Fail closed when the harness page is not this build's renderer. */
+export function checkHarnessContract(url: string, found: unknown): void {
+  const value = typeof found === "number" ? found : null;
+  if (value !== CARD_RENDER_CONTRACT) throw new HarnessContractError(url, value);
+}
+
+async function assertHarnessContract(page: Page, url: string): Promise<void> {
+  const found = await page.evaluate(
+    () => (globalThis as HarnessGlobal).__cardRenderHarness?.contract ?? null,
+  );
+  checkHarnessContract(url, found);
+}
 
 // Where finished clips live until the admin downloads them.
 export function outputDir(): string {
@@ -229,6 +263,7 @@ export async function renderCardVideo(params: RenderParams): Promise<RenderResul
       () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
       { timeout: 30_000 },
     );
+    await assertHarnessContract(page, url);
 
     // Prepare the animation in-page (preloads every image/font), get its metrics.
     const meta = (await page.evaluate(
@@ -348,6 +383,7 @@ export async function renderCardStill(
       () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
       { timeout: 30_000 },
     );
+    await assertHarnessContract(page, url);
 
     // Mount the pack card at native size in-page (preloads fonts), get its box.
     const meta = (await page.evaluate(
@@ -421,11 +457,13 @@ export async function renderFitCheck(
     page.on("pageerror", (err) =>
       logger.warn({ err: String(err) }, "fit-check harness page error"),
     );
-    await page.goto(harnessUrl(harnessOrigin), { waitUntil: "load", timeout: 30_000 });
+    const fitUrl = harnessUrl(harnessOrigin);
+    await page.goto(fitUrl, { waitUntil: "load", timeout: 30_000 });
     await page.waitForFunction(
       () => typeof (globalThis as HarnessGlobal).__cardRenderHarness?.fitCheck === "function",
       { timeout: 30_000, polling: 200 },
     );
+    await assertHarnessContract(page, fitUrl);
     // The check holds the shared render queue, so it may never hang it.
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(
