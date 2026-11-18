@@ -13,6 +13,7 @@ import figmaCallbacksRouter from "./routes/figma-callbacks";
 import internalPublishSweepRouter from "./routes/internal-publish-sweep";
 import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
+import { MAX_SET_DOCUMENT_BYTES } from "@workspace/scorecard/kind-templates";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin, ensureSeedPlatformAdmin } from "./lib/auth";
 import { env } from "./config";
@@ -110,6 +111,13 @@ const socialDraftBodies = express.Router();
 const socialDraftJson = express.json({ limit: "2mb" });
 socialDraftBodies.post("/", tenantContext, requireAdmin, socialDraftJson);
 socialDraftBodies.patch("/:id", tenantContext, requireAdmin, socialDraftJson);
+// A carousel set's own design (the set editor's save) is a whole set document:
+// every page's layers, plus a full page for each slide given its own layout. The
+// set validator allows up to MAX_SET_DOCUMENT_BYTES (3 MB), so this one route
+// takes that plus a little room for the rest of the body; anything larger still
+// gets a 413 here, and the handler still validates the document.
+const setDesignJson = express.json({ limit: MAX_SET_DOCUMENT_BYTES + 512 * 1024 });
+socialDraftBodies.put("/:id/set-design", tenantContext, requireAdmin, setDesignJson);
 app.use("/api/social-drafts", socialDraftBodies);
 
 // Explicit body ceilings, pinned at body-parser's own default rather than left
