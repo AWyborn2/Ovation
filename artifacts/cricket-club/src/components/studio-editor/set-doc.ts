@@ -221,6 +221,23 @@ export function addBlankPage(
   );
 }
 
+/**
+ * The name of a page added from another template ("Add a page → From another
+ * template"): the template's name, with the page's label when it has several
+ * pages. A name ending in "layout" reads as a slide's own layout
+ * (`strandedLayoutPageIds`), which opening, saving, Change look and migration
+ * 0079 let go of when no slide maps to it; so such a name always takes the
+ * page's label too ("Team layout · Team"), and the added page stays the
+ * admin's (retest 5, item 5). At most 60 characters, the label kept.
+ */
+export function templatePageName(templateName: string, pageLabel: string, multiPage: boolean) {
+  const name = templateName.trim();
+  const plain = name.slice(0, 60).trimEnd();
+  if (!multiPage && !/\slayout$/i.test(plain)) return plain;
+  const suffix = ` · ${pageLabel}`;
+  return `${name.slice(0, 60 - suffix.length).trimEnd()}${suffix}`;
+}
+
 /** A copy of a page after it; a copy of a slot page is a design page (C2). */
 export function duplicateSetPage(doc: EditorTemplateDoc, id: string) {
   const meta = doc.setDesign!.pages.find((p) => p.id === id)!;

@@ -7,7 +7,14 @@ import { describe, expect, it } from "vitest";
 import type { Fixture, SocialSettingsBundle } from "@workspace/api-client-react";
 import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
-import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+import {
+  BLANK_PACK_ID,
+  renderPackCard,
+  resolveCardTokens,
+  type CardAdjustments,
+} from "@/lib/pack-render";
 import { sourcesFor } from "@/test/carousel-sources";
 import {
   buildWeekendSlides,
@@ -52,6 +59,8 @@ function md(fixtures: Fixture[]): Record<string, Record<string, unknown>> {
     }),
   );
 }
+
+const BUNDLES = path.resolve(__dirname, "../../../../../lib/template-bundles");
 
 const bundle = {
   settings: { sponsorsEnabled: false, clubHashtag: "#OURCLUB" },
@@ -198,6 +207,71 @@ describe("Match Day: junior same-day slides", () => {
       on(),
     );
     expect(off.find((s) => s.id === "day-2026-10-10-2")).toMatchObject({ sponsorsOn: false });
+  });
+
+  // Retest 5 (H): a junior grade with a grade sponsor, as the admin picks it from
+  // the fixtures' grades (TeamSponsorPicker), in a look's own day page.
+  it("a junior grade's sponsor reads 'Supported by' on its day slide in every look that draws one (retest 5)", () => {
+    const juniors = [
+      fixture(41, "U13 Blue", SAT),
+      fixture(42, "U15 Gold", SAT),
+      fixture(43, "A Grade", SAT),
+    ];
+    const sponsored = {
+      ...bundle,
+      settings: { ...bundle.settings, sponsorsEnabled: true },
+      activeSponsors: [
+        // Stored as picked, matched whatever the case or spacing.
+        { name: "Blue Bakery", logoUrl: "/blue.png", grades: ["u13 blue"], cardKinds: [] },
+        { name: "Seniors Co", logoUrl: "/a-grade.png", grades: ["A Grade"], cardKinds: [] },
+      ],
+    } as unknown as SocialSettingsBundle;
+    const slides = buildWeekendSlides(
+      createTeamSlides(juniors, [], md(juniors)),
+      [],
+      sponsored,
+      "This weekend",
+      "2026-10-09",
+      "2026-10-11",
+      "Australia/Perth",
+      undefined,
+      undefined,
+      null,
+      on(),
+    );
+    const day = slides.find((s) => s.junior && s.content?.kind === "matchDay")!;
+    expect(day).toMatchObject({ junior: true, sponsorsOn: true, fixtureIds: [41, 42] });
+    expect(day.data.sponsors).toEqual([{ name: "Blue Bakery", logoUrl: "/blue.png" }]);
+    expect(day.data.presentingSponsorName).toBe("Blue Bakery");
+
+    const looks = readdirSync(BUNDLES).filter((d) =>
+      existsSync(path.join(BUNDLES, d, "matchDay.json")),
+    );
+    const drawn: string[] = [];
+    for (const look of looks) {
+      const doc = JSON.parse(readFileSync(path.join(BUNDLES, look, "matchDay.json"), "utf8"))
+        .document as { pages?: Record<string, unknown> };
+      // A look whose day page has no sponsor strip draws none (see the report).
+      if (!doc.pages?.day || !JSON.stringify(doc.pages.day).includes("{{sponsor1}}")) continue;
+      drawn.push(look);
+      for (const size of ["square", "portrait", "story"] as const) {
+        const html = renderPackCard(
+          day.input,
+          size,
+          day.sponsorsOn,
+          resolveCardTokens({ junior: true, data: day.data, packId: BLANK_PACK_ID }),
+          true,
+          day.data,
+          BLANK_PACK_ID,
+          doc as unknown as CardAdjustments,
+          { page: "day" },
+        );
+        expect(html, `${look} ${size}`).toContain("/blue.png");
+        expect(html, `${look} ${size}`).not.toContain("/a-grade.png");
+        expect(html.toUpperCase(), `${look} ${size}`).toMatch(/SUPPORTED BY/);
+      }
+    }
+    expect(drawn.length).toBeGreaterThan(5);
   });
 
   it("splits a day at the layout's capacity", () => {
