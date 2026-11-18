@@ -423,8 +423,8 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
     slug: "duotone",
     look: look6,
     templates: [
-      { kind: "matchDay", hash: "140d7931503736ea9b773424408e565288d59726ff94bbbe9377e2e08772665b", file: look6_0 },
-      { kind: "matchSummary", hash: "d56f465f89599f2adbbb2a6732306062f08d186a0ffb60fdaa45da427fa40ae8", file: look6_1 },
+      { kind: "matchDay", hash: "bd8331a55d184892f3ab3a5a4ca726e0da2693cb5a94c5af0c66035699b2b430", file: look6_0 },
+      { kind: "matchSummary", hash: "0da86667117baf49d909f73ee375e29cab3ffaf37dd9e82397cd7f60a6ca64a7", file: look6_1 },
       { kind: "teamList", hash: "43d1b533b5f652977a32df3a2f2e3259980f304c6d34cb6d6fd474848b8f0cd3", file: look6_2 },
     ],
   },

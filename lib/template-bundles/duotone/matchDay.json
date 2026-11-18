@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchDay",
-  "version": 10,
+  "version": 11,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -4188,7 +4188,52 @@
               }
             },
             "sig": "shape:0opoupm06a0pzr",
-            "link": "day-l9"
+            "link": "day-l9",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF",
+              "radius": 59.4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.2,
+                  "blur": 4,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "day-l9-sponsored",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 27.83,
+                "w": 92,
+                "h": 68.18
+              },
+              "portrait": {
+                "x": 4,
+                "y": 31.79,
+                "w": 92,
+                "h": 65.01
+              },
+              "story": {
+                "x": 4,
+                "y": 28.06,
+                "w": 92,
+                "h": 58.94
+              }
+            },
+            "sig": "shape:0opoupm06a0pzr",
+            "link": "day-l9",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "shape",
@@ -4247,7 +4292,45 @@
                 "h": 7.8
               }
             },
-            "sig": "image:194ijcq0drv4o1"
+            "sig": "image:194ijcq0drv4o1",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "day-l11-sponsored",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 31.43,
+                "w": 6,
+                "h": 6
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 34.85,
+                "w": 6.36,
+                "h": 5.09
+              },
+              "story": {
+                "x": 8.79,
+                "y": 30.37,
+                "w": 6.84,
+                "h": 3.85
+              },
+              "landscape": {
+                "x": 41.5,
+                "y": 9.68,
+                "w": 4.09,
+                "h": 7.8
+              }
+            },
+            "sig": "image:194ijcq0drv4o1",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "text",
@@ -4276,7 +4359,42 @@
               }
             },
             "sig": "text:0jmtuij0becg54",
-            "link": "day-l12"
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--dt-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l12-sponsored",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 16,
+                "y": 31.96,
+                "w": 39.97,
+                "h": 2.31
+              }
+            },
+            "sig": "text:0jmtuij0becg54",
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "text",
@@ -4305,7 +4423,42 @@
               }
             },
             "sig": "text:18ezihr14evgsi",
-            "link": "day-l12"
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--dt-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.97,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l13-sponsored",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.72,
+                "y": 35.3,
+                "w": 42.39,
+                "h": 1.93
+              }
+            },
+            "sig": "text:18ezihr14evgsi",
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "text",
@@ -4387,7 +4540,37 @@
               }
             },
             "sig": "text:00sino21chb713",
-            "link": "day-l16"
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Junior match day",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l16-sponsored",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 16,
+                "y": 34.48,
+                "w": 41.17,
+                "h": 2.22
+              }
+            },
+            "sig": "text:00sino21chb713",
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "text",
@@ -4411,7 +4594,37 @@
               }
             },
             "sig": "text:00dsmp10fqy1a2",
-            "link": "day-l16"
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Junior match day",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.12,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l17-sponsored",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.72,
+                "y": 37.43,
+                "w": 43.66,
+                "h": 1.85
+              }
+            },
+            "sig": "text:00dsmp10fqy1a2",
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "text",
@@ -4555,7 +4768,109 @@
               }
             },
             "sig": "rows:0ituovl03gi0oi",
-            "link": "day-l20"
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 9.15,
+              "cells": [
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.01,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 17.74,
+                  "y": 35.2,
+                  "h": 30.6,
+                  "style": {
+                    "fontSize": 2.8,
+                    "color": "var(--dt-p-on-light)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 17.74,
+                  "w": 75.56,
+                  "y": 13.04,
+                  "h": 26.99,
+                  "style": {
+                    "fontSize": 1.9,
+                    "color": "var(--dt-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 17.74,
+                  "w": 75.56,
+                  "y": 40.02,
+                  "h": 20.98,
+                  "style": {
+                    "fontSize": 3,
+                    "color": "var(--dt-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 17.74,
+                  "w": 75.56,
+                  "y": 60.99,
+                  "h": 26.99,
+                  "style": {
+                    "fontSize": 1.9,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 93.3,
+                  "w": 6.7,
+                  "y": 19.9,
+                  "h": 61.22,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l20-sponsored",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 39.02,
+                "w": 83.6,
+                "h": 46.38
+              }
+            },
+            "sig": "rows:0ituovl03gi0oi",
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "rows",
@@ -4652,7 +4967,110 @@
               }
             },
             "sig": "rows:1up52110nc1bli",
-            "link": "day-l20"
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 9.6,
+              "gap": 0,
+              "cells": [
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.96,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 18.94,
+                  "y": 35.01,
+                  "h": 30.94,
+                  "style": {
+                    "fontSize": 2.97,
+                    "color": "var(--dt-p-on-light)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 18.94,
+                  "w": 73.91,
+                  "y": 13.15,
+                  "h": 27.2,
+                  "style": {
+                    "fontSize": 2.01,
+                    "color": "var(--dt-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 18.94,
+                  "w": 73.91,
+                  "y": 40.35,
+                  "h": 20.28,
+                  "style": {
+                    "fontSize": 3.18,
+                    "color": "var(--dt-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 18.94,
+                  "w": 73.91,
+                  "y": 60.63,
+                  "h": 27.2,
+                  "style": {
+                    "fontSize": 2.01,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.85,
+                  "w": 7.15,
+                  "y": 19.55,
+                  "h": 61.87,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l21-sponsored",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 41.3,
+                "w": 83.1,
+                "h": 46.45
+              }
+            },
+            "sig": "rows:1up52110nc1bli",
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "rows",
@@ -4845,6 +5263,210 @@
             },
             "sig": "rows:1qpx0tb1vu6cui",
             "link": "day-l20"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 88.47,
+                "w": 13.13,
+                "h": 2.22
+              }
+            },
+            "sig": "text:17hcfax1jhznsc",
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.12,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label-portrait",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 90.39,
+                "w": 13.86,
+                "h": 1.85
+              }
+            },
+            "sig": "text:0uxbdcw0qlk3j3",
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.28,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label-story",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 81.94,
+                "w": 14.83,
+                "h": 1.41
+              }
+            },
+            "sig": "text:1lqyo4t0xszh9i",
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.37,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label-landscape",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 41.5,
+                "y": 85.21,
+                "w": 9.27,
+                "h": 2.7
+              }
+            },
+            "sig": "text:1a9116u0xh2qo9",
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "id": "day-strip-sponsor1",
+            "geometry": {
+              "square": {
+                "x": 21.93,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 23,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 24.43,
+                "y": 80.9,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 50.88,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            },
+            "sig": "image:16m2gfo0dd71nj"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor2}}",
+            "id": "day-strip-sponsor2",
+            "geometry": {
+              "square": {
+                "x": 36.43,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 38.28,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 40.25,
+                "y": 80.9,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 60.75,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            },
+            "sig": "image:16m2gfo0dd71nj"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor3}}",
+            "id": "day-strip-sponsor3",
+            "geometry": {
+              "square": {
+                "x": 50.93,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 53.56,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 56.07,
+                "y": 80.9,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 70.62,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            },
+            "sig": "image:16m2gfo0dd71nj"
           }
         ]
       },

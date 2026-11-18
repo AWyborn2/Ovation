@@ -6,6 +6,12 @@
 import { describe, expect, it } from "vitest";
 import type { Fixture, SocialSettingsBundle } from "@workspace/api-client-react";
 import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
+import {
+  documentRowsCapacity,
+  normaliseDocument,
+  rowsCapacity,
+  type TemplateLayerV2,
+} from "@workspace/scorecard/kind-templates";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -324,46 +330,47 @@ describe("Match Day: junior same-day slides", () => {
   });
 });
 
-describe("Results and Match Summaries: junior same-day slides", () => {
-  const summary = (f: Fixture, junior: boolean, detail: boolean) => ({
-    kind: "matchSummary",
-    matchTitle: `${f.grade} • Round 4`,
-    roundLabel: "Round 4",
-    result: junior ? "Our Club won by 12 runs" : "Visitors won by 3 wickets",
-    resultWinner: junior ? "club" : "opposition",
-    club: { name: "Our Club", primaryColor: "", secondaryColor: "", textColor: "" },
-    opposition: {
-      name: f.opponentName,
-      primaryColor: "",
-      secondaryColor: "",
-      textColor: "",
-      logoUrl: null,
+/** A result's card input, as the server's result content builder reads it (ADR-010 P7). */
+const summary = (f: Fixture, junior: boolean, detail: boolean) => ({
+  kind: "matchSummary",
+  matchTitle: `${f.grade} • Round 4`,
+  roundLabel: "Round 4",
+  result: junior ? "Our Club won by 12 runs" : "Visitors won by 3 wickets",
+  resultWinner: junior ? "club" : "opposition",
+  club: { name: "Our Club", primaryColor: "", secondaryColor: "", textColor: "" },
+  opposition: {
+    name: f.opponentName,
+    primaryColor: "",
+    secondaryColor: "",
+    textColor: "",
+    logoUrl: null,
+  },
+  innings: [
+    {
+      teamKey: "club",
+      inningsNum: 1,
+      totalRuns: "101",
+      wickets: "6",
+      overs: "20",
+      topBatters: [{ name: "A. Batter", runs: 40 }],
+      topBowlers: [],
     },
-    innings: [
-      {
-        teamKey: "club",
-        inningsNum: 1,
-        totalRuns: "101",
-        wickets: "6",
-        overs: "20",
-        topBatters: [{ name: "A. Batter", runs: 40 }],
-        topBowlers: [],
-      },
-      {
-        teamKey: "opposition",
-        inningsNum: 1,
-        totalRuns: "89",
-        wickets: "10",
-        overs: "18.2",
-        topBatters: [],
-        topBowlers: [],
-      },
-    ],
-    grade: f.grade,
-    junior,
-    carouselDetail: detail,
-  });
+    {
+      teamKey: "opposition",
+      inningsNum: 1,
+      totalRuns: "89",
+      wickets: "10",
+      overs: "18.2",
+      topBatters: [],
+      topBowlers: [],
+    },
+  ],
+  grade: f.grade,
+  junior,
+  carouselDetail: detail,
+});
 
+describe("Results and Match Summaries: junior same-day slides", () => {
   it.each(["results", "matchSummary"] as const)(
     "%s: puts a day's junior results on one multi-result slide",
     (setType) => {
@@ -418,4 +425,153 @@ describe("Results and Match Summaries: junior same-day slides", () => {
     const slides = build(games, on("results"), content);
     expect(slides.map((s) => s.id)).toEqual(["title", "fixture--2", "fixture--3", "sponsors"]);
   });
+});
+
+// ── Duotone's day pages: a "Supported by" strip (retest 6) ──────────────────
+
+describe("Duotone day pages: a 'Supported by' strip with the day's grade sponsors (retest 6)", () => {
+  // Ash's decision: Duotone's junior and senior day slides show their teams'
+  // grade sponsors as its fixture and result pages do (and every other look's
+  // day page). With no sponsor the strip draws nothing and the list keeps its
+  // full game count.
+  const SIZES4 = ["square", "portrait", "story", "landscape"] as const;
+  type Size4 = (typeof SIZES4)[number];
+  type Kind = "matchDay" | "matchSummary";
+  const GRADES = ["U11", "U12", "U13", "U14", "U15", "U16", "U17"];
+  /** Games a day list holds at each size, with or without sponsors. */
+  const CAPACITY: Record<Kind, Record<Size4, number>> = {
+    matchDay: { square: 5, portrait: 6, story: 6, landscape: 4 },
+    matchSummary: { square: 4, portrait: 4, story: 6, landscape: 4 },
+  };
+
+  const duotone = (kind: Kind) =>
+    JSON.parse(readFileSync(path.join(BUNDLES, "duotone", `${kind}.json`), "utf8")).document as {
+      pages: { day: { layers: TemplateLayerV2[] } };
+    };
+
+  const sponsoredBundle = (enabled: boolean) =>
+    ({
+      ...bundle,
+      settings: { ...bundle.settings, sponsorsEnabled: enabled },
+      activeSponsors: [
+        { name: "Blue Bakery", logoUrl: "/u11.png", grades: ["U11"], cardKinds: [] },
+        { name: "Gold Gym", logoUrl: "/u12.png", grades: ["U12"], cardKinds: [] },
+        { name: "Seniors Co", logoUrl: "/a-grade.png", grades: ["A Grade"], cardKinds: [] },
+      ],
+    }) as unknown as SocialSettingsBundle;
+
+  /** The day slides of `count` junior games (U11 and U12 sponsored), split as the app splits. */
+  function daySlides(kind: Kind, size: Size4, count: number, sponsors: boolean) {
+    const doc = duotone(kind);
+    // The app's day capacity: the picked template's day list (template-choice.tsx).
+    const capacity = documentRowsCapacity(
+      normaliseDocument(doc, kind).pages.day!,
+      size,
+      "dayRows",
+    )!;
+    const games = GRADES.slice(0, count).map((g, i) => fixture(60 + i, g, SAT));
+    const content =
+      kind === "matchDay"
+        ? md(games)
+        : sourcesFor("results", games, (f) => summary(f as Fixture, true, false));
+    const slides = buildWeekendSlides(
+      createTeamSlides(games, [], content),
+      [],
+      sponsoredBundle(sponsors),
+      "This weekend",
+      "2026-10-09",
+      "2026-10-11",
+      "Australia/Perth",
+      undefined,
+      undefined,
+      null,
+      on(kind === "matchDay" ? "matchDay" : "results", capacity),
+    );
+    return { doc, capacity, days: slides.filter((s) => s.id.startsWith("day-")) };
+  }
+
+  /** The day slide drawn in Duotone's own day page, as a junior or a senior card. */
+  function draw(kind: Kind, slide: WeekendSlide, size: Size4, junior: boolean) {
+    return renderPackCard(
+      { ...slide.input, junior } as WeekendSlide["input"],
+      size,
+      slide.sponsorsOn,
+      resolveCardTokens({ junior, data: slide.data, packId: BLANK_PACK_ID }),
+      junior,
+      slide.data,
+      BLANK_PACK_ID,
+      duotone(kind) as unknown as CardAdjustments,
+      { page: "day" },
+    );
+  }
+
+  /** Each drawn layer's top and bottom (card percent). */
+  function drawnBoxes(html: string): Map<string, { top: number; bottom: number }> {
+    const out = new Map<string, { top: number; bottom: number }>();
+    const re =
+      /data-layer-id="([^"]+)"[^>]*?style="position:absolute;left:[^;]+;top:(-?[\d.]+)%;width:[^;]+;height:(-?[\d.]+)%/g;
+    for (const m of html.matchAll(re))
+      out.set(m[1]!, { top: Number(m[2]), bottom: Number(m[2]) + Number(m[3]) });
+    return out;
+  }
+  /** The drawn day list's layer (the one holding the rows). */
+  function listLayer(html: string, doc: ReturnType<typeof duotone>): TemplateLayerV2 {
+    const root = window.document.createElement("div");
+    root.innerHTML = html;
+    const id = root.querySelector("[data-row-index]")!.closest<HTMLElement>("[data-layer-id]")!
+      .dataset.layerId!;
+    return doc.pages.day.layers.find((l) => l.id === id)!;
+  }
+
+  for (const kind of ["matchDay", "matchSummary"] as const)
+    for (const size of SIZES4)
+      for (const junior of [true, false])
+        it(`${kind} ${size} ${junior ? "junior" : "senior"}: the strip prints the day's grade sponsors, never a senior grade's`, () => {
+          const { days } = daySlides(kind, size, 3, true);
+          expect(days).toHaveLength(1);
+          const day = days[0]!;
+          expect(day).toMatchObject({ junior: true, sponsorsOn: true });
+          const html = draw(kind, day, size, junior);
+          expect(html).toMatch(/>Supported by</);
+          expect(html).toContain("/u11.png");
+          // Match Day's strip has three logo slots; a result card carries one sponsor.
+          if (kind === "matchDay") expect(html).toContain("/u12.png");
+          expect(html).not.toContain("/a-grade.png");
+          expect(html).not.toContain("{{");
+        });
+
+  for (const kind of ["matchDay", "matchSummary"] as const)
+    for (const size of SIZES4)
+      it(`${kind} ${size}: sponsors off, no strip and the list holds its full ${CAPACITY[kind][size]} games`, () => {
+        const { doc, capacity, days } = daySlides(kind, size, CAPACITY[kind][size], false);
+        expect(capacity).toBe(CAPACITY[kind][size]);
+        expect(days).toHaveLength(1);
+        expect(days[0]).toMatchObject({ sponsorsOn: false });
+        for (const junior of [true, false]) {
+          const html = draw(kind, days[0]!, size, junior);
+          expect(html).not.toMatch(/Supported by/i);
+          expect(html).not.toContain('data-layer-id="day-strip');
+          expect(html.match(/data-row-index="/g)).toHaveLength(capacity);
+          expect(rowsCapacity(listLayer(html, doc), size)).toBe(capacity);
+        }
+      });
+
+  for (const kind of ["matchDay", "matchSummary"] as const)
+    for (const size of SIZES4)
+      it(`${kind} ${size}: with sponsors the list still holds ${CAPACITY[kind][size]} games, every one above the strip`, () => {
+        const { doc, capacity, days } = daySlides(kind, size, CAPACITY[kind][size], true);
+        expect(days).toHaveLength(1);
+        expect(days[0]).toMatchObject({ sponsorsOn: true });
+        for (const junior of [true, false]) {
+          const html = draw(kind, days[0]!, size, junior);
+          expect(html.match(/data-row-index="/g)).toHaveLength(capacity);
+          const list = listLayer(html, doc);
+          expect(rowsCapacity(list, size)).toBeGreaterThanOrEqual(capacity);
+          const boxes = drawnBoxes(html);
+          const strip = [...boxes].filter(([id]) => id.startsWith("day-strip"));
+          expect(strip.length).toBeGreaterThan(0);
+          const stripTop = Math.min(...strip.map(([, b]) => b.top));
+          expect(boxes.get(list.id)!.bottom).toBeLessThanOrEqual(stripTop);
+        }
+      });
 });

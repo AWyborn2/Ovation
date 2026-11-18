@@ -451,6 +451,20 @@ describe("An empty slot draws nothing", () => {
     expect(folded).toEqual([]);
   }, 600_000);
 
+  it("Duotone's day pages are swept with 0, 1 and 3 sponsors and draw no empty slot (retest 6)", () => {
+    // Retest 6: Duotone's Match Day and Match Summary day pages carry a
+    // "Supported by" strip, so the sweep draws them with no sponsor, one and three.
+    const day = all.filter(
+      (b) => b.look === "duotone" && ["matchDay", "matchSummary"].includes(b.kind),
+    );
+    expect(day).toHaveLength(2);
+    for (const b of day) {
+      const loads = new Set(variants(b.doc, b.kind, "day").map((v) => v.sponsors));
+      expect([...loads].sort(), b.kind).toEqual([0, 1, 3]);
+    }
+    expect(sweepEmptySlots(day).failures).toEqual([]);
+  });
+
   it("every look's Result names the opposition on every size, crest or not (set 980)", () => {
     // A crest stood in for the name: a junior opposition with no crest went
     // unnamed (Bold Type, then Gold Foil, Neon Night, Sunset, Broadcast Dark,

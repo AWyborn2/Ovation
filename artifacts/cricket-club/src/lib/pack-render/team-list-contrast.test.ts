@@ -104,6 +104,13 @@ const TEAM: Record<string, unknown> = {
 };
 
 /**
+ * Whether the sweep draws its cards with a sponsor (the default) or none
+ * (`lowContrast`'s `sponsors: false`): a layer shown only with or without
+ * sponsors (`showWhen.sponsors`) is measured in its own state.
+ */
+let sweepSponsors = true;
+
+/**
  * The card drawn with `brand`, with or without its photo, as a senior or a
  * junior card (a junior's photo is approved junior stock, cleared by the
  * server): a Team List's team page, or `page` of a sample card of `kind`.
@@ -120,7 +127,7 @@ function render(
   const data: PackCardData = {
     brand: { ...BRANDS[brand], logoUrl: "https://cdn.example.org/crest.png" },
     hashtag: "#HHCC",
-    sponsors: [{ name: "Sponsor", logoUrl: "https://cdn.example.org/s.png" }],
+    sponsors: sweepSponsors ? [{ name: "Sponsor", logoUrl: "https://cdn.example.org/s.png" }] : [],
     ...(photo ? { photoUrl: "https://cdn.example.org/photo.jpg" } : {}),
   } as PackCardData;
   const tokens = resolveCardTokens({ theme: null, junior, data, packId: BLANK_PACK_ID });
@@ -129,7 +136,7 @@ function render(
   return renderPackCard(
     input as unknown as ShareCardInput,
     size,
-    true,
+    sweepSponsors,
     tokens,
     junior,
     data,
@@ -291,7 +298,8 @@ function drawnBox(l: TemplateLayerV2, size: CardSize, photo: boolean, junior: bo
   if (l.hidden || (l.sizes && !l.sizes.includes(size))) return null;
   if (typeof l.showWhen?.photo === "boolean" && l.showWhen.photo !== photo) return null;
   if (typeof l.showWhen?.junior === "boolean" && l.showWhen.junior !== junior) return null;
-  if (l.showWhen?.sponsors === false) return null;
+  if (typeof l.showWhen?.sponsors === "boolean" && l.showWhen.sponsors !== sweepSponsors)
+    return null;
   if (!photo && l.kind === "photo") return null;
   return (l.geometry as Partial<Record<CardSize, Box>>)[size] ?? null;
 }
@@ -568,15 +576,29 @@ function samples(
   return out;
 }
 
+type SweepOptions = {
+  kind?: string;
+  every?: boolean;
+  pages?: readonly string[];
+  /** Draw the cards with a sponsor (default) or none. */
+  sponsors?: boolean;
+};
+
 /**
  * Every name or grade line below its floor, with its ratio; with `every`, every
  * line of text the card draws (a card of `kind`, each of its pages).
  */
-function lowContrast(
-  name: string,
-  doc: TemplateDocumentV2,
-  opts: { kind?: string; every?: boolean; pages?: readonly string[] } = {},
-): string[] {
+function lowContrast(name: string, doc: TemplateDocumentV2, opts: SweepOptions = {}): string[] {
+  const was = sweepSponsors;
+  sweepSponsors = opts.sponsors ?? true;
+  try {
+    return sweep(name, doc, opts);
+  } finally {
+    sweepSponsors = was;
+  }
+}
+
+function sweep(name: string, doc: TemplateDocumentV2, opts: SweepOptions): string[] {
   const out: string[] = [];
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
     if (opts.pages && !opts.pages.includes(page)) continue;
@@ -683,6 +705,48 @@ describe("Duotone text contrast on every kind", () => {
     it(`${name}: every line of text clears WCAG AA on every page and size, for any club colours`, () => {
       expect(lowContrast(name, doc, { kind, every: true })).toEqual([]);
     });
+
+  // Retest 6 (Ash's decision): the junior and senior day slides carry a
+  // "Supported by" strip with the day's grade sponsors, on the white sheet.
+  for (const kind of ["matchDay", "matchSummary"])
+    it(`duotone/${kind} day page: its "Supported by" strip is measured at every size and clears WCAG AA, sponsors on or off`, () => {
+      const { doc } = bundles.find((b) => b.kind === kind)!;
+      const layers = flattenLayers(doc.pages.day!.layers);
+      for (const size of SIZE_KEYS)
+        for (const junior of [false, true]) {
+          const strip = everyText(layers, size, false, junior).filter((s) =>
+            s.label.includes('"Supported by"'),
+          );
+          expect(strip, `${size} ${junior ? "junior" : "senior"}`).toHaveLength(1);
+        }
+      expect(lowContrast(`duotone/${kind}`, doc, { kind, every: true, pages: ["day"] })).toEqual(
+        [],
+      );
+      expect(
+        lowContrast(`duotone/${kind}`, doc, {
+          kind,
+          every: true,
+          pages: ["day"],
+          sponsors: false,
+        }),
+      ).toEqual([]);
+    });
+
+  it("would catch a day page strip drawn off its white sheet (grey on the ink ground)", () => {
+    const md = bundles.find((b) => b.kind === "matchDay")!;
+    const was = structuredClone(md.doc);
+    const label = flattenLayers(was.pages.day!.layers).find(
+      (l) => l.kind === "text" && l.content === "Supported by" && l.geometry.story,
+    );
+    expect(label).toBeDefined();
+    label!.geometry.story!.y = 92; // below the sheet
+    const found = lowContrast("duotone/matchDay", was, {
+      kind: "matchDay",
+      every: true,
+      pages: ["day"],
+    });
+    expect(found.some((f) => /story .*"Supported by" \(default brand/.test(f))).toBe(true);
+  });
 
   it("would catch Match Day's fixture as it was (stage-coloured type on an accent-ink panel)", () => {
     const md = bundles.find((b) => b.kind === "matchDay")!;
