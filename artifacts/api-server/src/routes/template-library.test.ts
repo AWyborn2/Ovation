@@ -17,7 +17,7 @@ import {
   templateLooksTable,
   tenantsTable,
 } from "@workspace/db";
-import { placeholderDocument } from "@workspace/scorecard/kind-templates";
+import { KIND_KEY_IN_NAME, placeholderDocument } from "@workspace/scorecard/kind-templates";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { ensureKindTemplate } from "../lib/kind-templates";
 import { syncBundles } from "../lib/template-library/bundles";
@@ -573,5 +573,97 @@ describe("template names made from the kind key (retest 4)", () => {
       .map((r) => r.name)
       .sort();
     expect(names).toEqual(["Names Look Weekend Wrap", "Our own ladder"]);
+  });
+});
+
+describe("no template title shows a kind key (retest 5, I)", () => {
+  /** Every `name` anywhere in a response body. */
+  const namesIn = (body: unknown): string[] => {
+    if (Array.isArray(body)) return body.flatMap(namesIn);
+    if (body && typeof body === "object") {
+      return Object.entries(body).flatMap(([k, v]) =>
+        k === "name" && typeof v === "string" ? [v] : namesIn(v),
+      );
+    }
+    return [];
+  };
+
+  it("reads stored legacy names, library and club, with the kind's label on every route", async () => {
+    // A library row synced before #668 kept the bundle file's raw name.
+    const [legacyLib] = await db
+      .insert(libraryTemplatesTable)
+      .values({
+        slug: `rt-${STAMP}-legacy/teamOfWeek`,
+        lookId,
+        kind: "teamOfWeek",
+        name: "Test Look teamOfWeek",
+        origin: "bundle",
+        currentVersion: 1,
+        listed: false,
+      })
+      .returning({ id: libraryTemplatesTable.id });
+    const copy = (name: string, kind: string, originTemplateId: number | null = null) => ({
+      tenantId,
+      source: "kind",
+      isKindDefault: false,
+      version: 1,
+      updatedAt: new Date(),
+      name,
+      baseKind: kind,
+      cardKinds: [kind],
+      adjustments: placeholderDocument(kind),
+      originTemplateId,
+      originVersion: originTemplateId ? 1 : null,
+    });
+    // Club copies taken before the library named templates readably.
+    const rows = await db
+      .insert(cardTemplatesTable)
+      .values([
+        copy("Bold Type teamList", "teamList"),
+        copy("Broadcast Dark matchSummary", "matchSummary"),
+        copy("Bold Type teamList (copy)", "teamList"),
+        copy("Test Look milestone", "milestone", libIds[`${LOOK}/milestone`]!),
+        copy("Test Look teamOfWeek", "teamOfWeek", legacyLib!.id),
+      ])
+      .returning({ id: cardTemplatesTable.id });
+    const ids = rows.map((r) => r.id);
+
+    const list = await me().get("/club-templates?includeSets=true");
+    expect(list.status).toBe(200);
+    const byId = new Map(
+      (list.body.templates as { id: number; name: string }[]).map((t) => [t.id, t.name]),
+    );
+    expect(ids.map((id) => byId.get(id))).toEqual([
+      "Bold Type Team List",
+      "Broadcast Dark Match Summary",
+      "Bold Type Team List (copy)",
+      "Test Look Milestone",
+      "Test Look Team of the Week",
+    ]);
+
+    const one = await me().get(`/club-templates/${ids[4]}`);
+    expect(one.body.name).toBe("Test Look Team of the Week");
+    expect(one.body.basedOn?.name).toBe("Test Look Team of the Week");
+
+    // A duplicate stores the readable name, not the legacy one.
+    const dup = await me().post(`/club-templates/${ids[0]}/duplicate`);
+    expect(dup.status).toBe(201);
+    expect(dup.body.name).toBe("Bold Type Team List (copy)");
+    const [stored] = await db
+      .select({ name: cardTemplatesTable.name })
+      .from(cardTemplatesTable)
+      .where(eq(cardTemplatesTable.id, dup.body.id as number));
+    expect(stored?.name).toBe("Bold Type Team List (copy)");
+
+    const bodies = await Promise.all([
+      me().get("/club-templates?includeSets=true"),
+      me().get("/template-library"),
+      me().get("/template-library/looks"),
+      me().get(`/template-library/${libIds[`${LOOK}/milestone`]}`),
+      ...ids.map((id) => me().get(`/club-templates/${id}`)),
+    ]);
+    const names = bodies.flatMap((r) => namesIn(r.body));
+    expect(names.length).toBeGreaterThan(ids.length);
+    expect(names.filter((n) => KIND_KEY_IN_NAME.test(n))).toEqual([]);
   });
 });
