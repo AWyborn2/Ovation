@@ -1,6 +1,6 @@
 {
   "name": "Bold Type matchDay",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -6345,6 +6345,82 @@
             "sig": "photo:02es65207u5aez"
           },
           {
+            "kind": "shape",
+            "id": "sponsors-l6-square-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 46,
+                "h": 46
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [20.35, 0],
+                  [113.04, 0],
+                  [113.04, 113.04],
+                  [0, 113.04]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "sponsors-l6-square-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 62.74,
+                "y": 62.74,
+                "w": 28.52,
+                "h": 28.52
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
             "kind": "photo",
             "style": {
               "filter": [
@@ -6376,6 +6452,82 @@
               }
             },
             "sig": "photo:1376k341crvmdh"
+          },
+          {
+            "kind": "shape",
+            "id": "sponsors-l6-portrait-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 46,
+                "h": 40
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [20.35, 0],
+                  [113.04, 0],
+                  [113.04, 112],
+                  [0, 112]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "sponsors-l6-portrait-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 62.74,
+                "y": 68.59,
+                "w": 28.52,
+                "h": 22.82
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "photo",
@@ -6411,6 +6563,82 @@
             "sig": "photo:0z6mxht031ms20"
           },
           {
+            "kind": "shape",
+            "id": "sponsors-l6-landscape-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 48.85,
+                "h": 46
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [19.16, 0],
+                  [106.45, 0],
+                  [106.45, 113.04],
+                  [0, 113.04]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "sponsors-l6-landscape-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 67.55,
+                "y": 62.74,
+                "w": 16.04,
+                "h": 28.52
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
             "kind": "photo",
             "style": {
               "filter": [
@@ -6442,6 +6670,82 @@
               }
             },
             "sig": "photo:19lxj2r0hrvlii"
+          },
+          {
+            "kind": "shape",
+            "id": "sponsors-l7-story-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 37.28,
+                "y": 45,
+                "w": 62.72,
+                "h": 55
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [19.72, 0],
+                  [109.57, 0],
+                  [109.57, 106.13],
+                  [0, 106.13]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "sponsors-l7-story-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 49.2,
+                "y": 61.56,
+                "w": 38.89,
+                "h": 21.87
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "image",

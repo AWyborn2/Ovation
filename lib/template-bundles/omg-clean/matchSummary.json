@@ -1,6 +1,6 @@
 {
   "name": "Clean Match Summary",
-  "version": 1,
+  "version": 2,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -86,6 +86,98 @@
                 "w": 100,
                 "h": 100
               }
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "result-l3-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "result-l3-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
+              },
+              "portrait": {
+                "x": 41.1,
+                "y": -28.88,
+                "w": 95,
+                "h": 76
+              },
+              "landscape": {
+                "x": 66.87,
+                "y": -36.1,
+                "w": 53.44,
+                "h": 95
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.05
+            },
+            "showWhen": {
+              "photo": false
             }
           },
           {

@@ -1,6 +1,6 @@
 {
   "name": "Sunset teamList",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -108,6 +108,108 @@
           },
           {
             "kind": "shape",
+            "id": "team-l3-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "team-l3-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
+              },
+              "portrait": {
+                "x": 41.1,
+                "y": -28.88,
+                "w": 95,
+                "h": 76
+              },
+              "story": {
+                "x": 41.1,
+                "y": -20.31,
+                "w": 95,
+                "h": 53.44
+              },
+              "landscape": {
+                "x": 66.87,
+                "y": -36.1,
+                "w": 53.44,
+                "h": 95
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.05
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
             "style": {
               "fill": {
                 "type": "linear",
@@ -182,25 +284,25 @@
             "geometry": {
               "square": {
                 "x": 66,
-                "y": -12,
+                "y": -22.12,
                 "w": 46,
                 "h": 46
               },
               "portrait": {
                 "x": 66,
-                "y": -9.6,
+                "y": -17.7,
                 "w": 46,
                 "h": 36.8
               },
               "story": {
                 "x": 66,
-                "y": -6.75,
+                "y": -12.44,
                 "w": 46,
                 "h": 25.87
               },
               "landscape": {
                 "x": 82.15,
-                "y": -12,
+                "y": -22.12,
                 "w": 24.15,
                 "h": 46
               }
@@ -561,7 +663,7 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.4,
               "fontWeight": 500,
@@ -612,7 +714,7 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.74,
               "fontWeight": 500,
@@ -1524,19 +1626,19 @@
               "square": {
                 "x": 21.44,
                 "y": 87.84,
-                "w": 18.0,
+                "w": 18,
                 "h": 7.92
               },
               "portrait": {
                 "x": 21.44,
                 "y": 90.27,
-                "w": 18.0,
+                "w": 18,
                 "h": 6.34
               },
               "story": {
                 "x": 21.44,
                 "y": 92.34,
-                "w": 18.0,
+                "w": 18,
                 "h": 4.46
               }
             },
@@ -1578,19 +1680,19 @@
               "square": {
                 "x": 21.44,
                 "y": 87.84,
-                "w": 18.0,
+                "w": 18,
                 "h": 7.92
               },
               "portrait": {
                 "x": 21.44,
                 "y": 90.27,
-                "w": 18.0,
+                "w": 18,
                 "h": 6.34
               },
               "story": {
                 "x": 21.44,
                 "y": 92.34,
-                "w": 18.0,
+                "w": 18,
                 "h": 4.46
               }
             },

@@ -7,9 +7,13 @@
  *   × photo present and absent, where a layer is photo-conditioned or photo-bound
  *   × sponsors none and the kind's maximum, where a layer uses sponsors
  *
- * Plus, for the pages a junior card can draw (a junior fixture, result or
- * team list), one junior pass per size at the Full preset with no photo:
- * junior names, "Private Player" rows. A junior day slide is junior in every
+ * Plus, for every page a junior card or set can draw (a junior fixture,
+ * result or team list, a junior set's cover and sponsors pages, a junior
+ * milestone, century, five-for or Big Moment), junior passes per size at the
+ * Full preset: junior names, "Private Player" rows, with no photo, and, where
+ * the page uses a photo, with the club's approved junior stock photo. A
+ * junior card draws the same layout as its senior counterpart (Ash, retest
+ * 3), so it is held to the same checks. A junior day slide is junior in every
  * variant. A Match Summary template is checked as the Results set too (its
  * projection drops the top performers), at its own presets.
  *
@@ -58,11 +62,18 @@ const SPONSOR_TOKENS = new Set([
   "sponsors",
 ]);
 
-/** Pages a junior card can draw, so they get a junior pass. Day pages are always junior. */
-const JUNIOR_PAGES: Partial<Record<string, readonly PageKey[]>> = {
-  matchDay: ["fixture"],
+/**
+ * Pages a junior card or set can draw, so they get junior passes. Day pages
+ * are always junior. A junior set's cover and sponsors pages are Match Day's.
+ */
+export const JUNIOR_PAGES: Partial<Record<string, readonly PageKey[]>> = {
+  matchDay: ["fixture", "title", "sponsors"],
   matchSummary: ["result"],
   teamList: ["team"],
+  milestone: ["card"],
+  century: ["card"],
+  fiveFor: ["card"],
+  bigMoment: ["card"],
 };
 
 const drawn = (layers: readonly TemplateLayerV2[]) =>
@@ -137,15 +148,17 @@ export function fitMatrix(doc: TemplateDocumentV2, kind: string): FitVariant[] {
                 junior: dayPage,
               });
         if (!dayPage && JUNIOR_PAGES[templateKind]?.includes(page))
-          out.push({
-            page,
-            size,
-            contentKind,
-            ...(isContentKind(contentKind) ? { preset: "full" as const } : {}),
-            ...(photos[0] === undefined ? {} : { photo: false }),
-            ...(sponsors[0] ? { sponsors: "max" as const } : {}),
-            junior: true,
-          });
+          // No photo, then approved junior stock where the page uses a photo.
+          for (const photo of photos[0] === undefined ? [undefined] : [false, true])
+            out.push({
+              page,
+              size,
+              contentKind,
+              ...(isContentKind(contentKind) ? { preset: "full" as const } : {}),
+              ...(photo === undefined ? {} : { photo }),
+              ...(sponsors[0] ? { sponsors: "max" as const } : {}),
+              junior: true,
+            });
       }
     }
   }

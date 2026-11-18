@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match summary",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -261,6 +261,108 @@
               }
             },
             "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "kind": "shape",
+            "id": "photo-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "photo-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 54.64,
+                "y": 40.64,
+                "w": 34.72,
+                "h": 34.72
+              },
+              "portrait": {
+                "x": 49.78,
+                "y": 41.42,
+                "w": 38.44,
+                "h": 30.75
+              },
+              "story": {
+                "x": 49.78,
+                "y": 43.97,
+                "w": 38.44,
+                "h": 21.62
+              },
+              "landscape": {
+                "x": 59.5,
+                "y": 22.44,
+                "w": 31,
+                "h": 55.11
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "id": "photo-fade",
