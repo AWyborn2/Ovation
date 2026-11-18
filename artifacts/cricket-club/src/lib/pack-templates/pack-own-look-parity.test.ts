@@ -31,12 +31,15 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * Broadcast Dark regenerated for the content contract (ADR-010 P2): its Match Day
  * card shows the grade (a core field it had no box for), and the template's
  * sample note no longer prints on a real card.
+ * Broadcast Dark regenerated (retest 5) when the sample Team List players took
+ * initials ("J. BURRAGE", as real lists print): its lineup prints the initial;
+ * the other packs print surnames only, so their digests are unchanged.
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "eaca6db80cdbfcdc881a120e1bc14c7b61311b7781d10217b29cefa766091267",
-  "broadcast-dark-v1/junior": "a981d451b31ed1a813990e3bc51445643161a3e434dd0c30412090acbf900cad",
-  "broadcast-dark-v1/brandOnly": "a981d451b31ed1a813990e3bc51445643161a3e434dd0c30412090acbf900cad",
-  "broadcast-dark-v1/brandless": "9c5a659886837baa1f3176c9922b2d4f783839b74351fe3b8050ae42cae7212c",
+  "broadcast-dark-v1/themed": "2461a261e4f3975a60d7da3bb9d396db3e216f93c4726eea9e280783648b9fd9",
+  "broadcast-dark-v1/junior": "c8a8b937b8d8ffa98684bf952b074f0934e20fe007beeb4505a7a23240bea3cf",
+  "broadcast-dark-v1/brandOnly": "c8a8b937b8d8ffa98684bf952b074f0934e20fe007beeb4505a7a23240bea3cf",
+  "broadcast-dark-v1/brandless": "80f23fdf8cc7dfddf58ff1ede2472b53e165ab3fcb242da55d8044cdb31c9559",
   "gold-foil-v1/themed": "d729567915e69ca6933db969df51a400cbfef325d84aa1a94e6fbf31de8e7500",
   "gold-foil-v1/junior": "eeb1df8684ec71aaa7d27c69bf09904c98c30c04cb08d1ce5a6d5167a35a59ac",
   "gold-foil-v1/brandOnly": "eeb1df8684ec71aaa7d27c69bf09904c98c30c04cb08d1ce5a6d5167a35a59ac",
