@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark matchDay",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -185,6 +185,108 @@
               }
             },
             "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "kind": "shape",
+            "id": "fixture-l6-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "fixture-l6-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
+              },
+              "portrait": {
+                "x": 41.1,
+                "y": -28.88,
+                "w": 95,
+                "h": 76
+              },
+              "story": {
+                "x": 41.1,
+                "y": -20.31,
+                "w": 95,
+                "h": 53.44
+              },
+              "landscape": {
+                "x": 66.87,
+                "y": -36.1,
+                "w": 53.44,
+                "h": 95
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.05
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",
@@ -2584,7 +2686,10 @@
               }
             },
             "sig": "text:083pzam1prkaib",
-            "link": "fixture-l84"
+            "link": "fixture-l84",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -2615,7 +2720,10 @@
               }
             },
             "sig": "text:1bl7yop1e56cyw",
-            "link": "fixture-l84"
+            "link": "fixture-l84",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -2640,7 +2748,10 @@
               }
             },
             "sig": "text:19i9sul0wb9iwg",
-            "link": "fixture-l84"
+            "link": "fixture-l84",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -2767,7 +2878,10 @@
                 "h": 0.92
               }
             },
-            "sig": "shape:09ysusg0sm0keb"
+            "sig": "shape:09ysusg0sm0keb",
+            "showWhen": {
+              "field": "milestoneWatch"
+            }
           },
           {
             "kind": "text",
@@ -3411,6 +3525,108 @@
               }
             },
             "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "kind": "shape",
+            "id": "title-l2-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "portrait": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "story": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "landscape": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "title-l2-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 49.78,
+                "y": 30.78,
+                "w": 38.44,
+                "h": 38.44
+              },
+              "portrait": {
+                "x": 49.78,
+                "y": 34.62,
+                "w": 38.44,
+                "h": 30.75
+              },
+              "story": {
+                "x": 49.78,
+                "y": 39.19,
+                "w": 38.44,
+                "h": 21.62
+              },
+              "landscape": {
+                "x": 51.56,
+                "y": 19,
+                "w": 34.88,
+                "h": 62
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",
@@ -6894,6 +7110,108 @@
               }
             },
             "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "kind": "shape",
+            "id": "sponsors-l2-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "portrait": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "story": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "landscape": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "sponsors-l2-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 49.78,
+                "y": 30.78,
+                "w": 38.44,
+                "h": 38.44
+              },
+              "portrait": {
+                "x": 49.78,
+                "y": 34.62,
+                "w": 38.44,
+                "h": 30.75
+              },
+              "story": {
+                "x": 49.78,
+                "y": 39.19,
+                "w": 38.44,
+                "h": 21.62
+              },
+              "landscape": {
+                "x": 51.56,
+                "y": 19,
+                "w": 34.88,
+                "h": 62
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",

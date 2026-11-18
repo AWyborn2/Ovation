@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchDay",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1875,7 +1875,10 @@
               }
             },
             "sig": "text:1ly0fz21hq7ty5",
-            "link": "fixture-l62"
+            "link": "fixture-l62",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -1899,7 +1902,10 @@
               }
             },
             "sig": "text:07rygq30uk0sdu",
-            "link": "fixture-l62"
+            "link": "fixture-l62",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -1923,7 +1929,10 @@
               }
             },
             "sig": "text:03fqq3506cgn90",
-            "link": "fixture-l62"
+            "link": "fixture-l62",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -1947,7 +1956,10 @@
               }
             },
             "sig": "text:1q67r1b0tgvl6m",
-            "link": "fixture-l62"
+            "link": "fixture-l62",
+            "showWhen": {
+              "field": "lastMeeting"
+            }
           },
           {
             "kind": "text",
@@ -2097,7 +2109,10 @@
                 "h": 1.69
               }
             },
-            "sig": "shape:09ysusg0sm0keb"
+            "sig": "shape:09ysusg0sm0keb",
+            "showWhen": {
+              "field": "milestoneWatch"
+            }
           },
           {
             "kind": "text",
@@ -5012,6 +5027,108 @@
               }
             },
             "sig": "photo:1mc7jmb0h7xx80"
+          },
+          {
+            "kind": "shape",
+            "id": "sponsors-l3-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 60,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "sponsors-l3-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
+              },
+              "portrait": {
+                "x": 41.1,
+                "y": -28.88,
+                "w": 95,
+                "h": 76
+              },
+              "story": {
+                "x": 41.1,
+                "y": -20.31,
+                "w": 95,
+                "h": 53.44
+              },
+              "landscape": {
+                "x": 12.56,
+                "y": 19,
+                "w": 34.88,
+                "h": 62
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.05
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",

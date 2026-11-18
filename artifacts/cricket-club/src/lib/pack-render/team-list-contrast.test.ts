@@ -1,9 +1,10 @@
 /**
  * Team List names and the grade line readable on what's behind them (Ash's
  * round 3 retest, Nov 2026: Duotone printed its names and "A GRADE — ROUND 6"
- * dark grey on a dark panel). For every committed Team List bundle, size and
- * photo state, with the default club brand, a light club colour and a dark
- * one: the text colour the card resolves (its tokens and palettes, as
+ * dark grey on a dark panel). For every committed Team List bundle, size,
+ * photo state and senior or junior card (a junior draws the senior layout,
+ * its photo approved junior stock or none), with the default club brand, a
+ * light club colour and a dark one: the text colour the card resolves (its tokens and palettes, as
  * rendered) against the colour behind the glyphs (the card's ground and every
  * panel, scrim or chip drawn under them, gradients included).
  *
@@ -82,21 +83,31 @@ const TEAM: Record<string, unknown> = {
   })),
 };
 
-/** The card drawn with `brand`, with or without its photo. */
-function render(doc: TemplateDocumentV2, size: CardSize, brand: string, photo: boolean): string {
+/**
+ * The card drawn with `brand`, with or without its photo, as a senior or a
+ * junior card (a junior's photo is approved junior stock, cleared by the server).
+ */
+function render(
+  doc: TemplateDocumentV2,
+  size: CardSize,
+  brand: string,
+  photo: boolean,
+  junior = false,
+): string {
   const data: PackCardData = {
     brand: { ...BRANDS[brand], logoUrl: "https://cdn.example.org/crest.png" },
     hashtag: "#HHCC",
     sponsors: [{ name: "Sponsor", logoUrl: "https://cdn.example.org/s.png" }],
     ...(photo ? { photoUrl: "https://cdn.example.org/photo.jpg" } : {}),
   } as PackCardData;
-  const tokens = resolveCardTokens({ theme: null, junior: false, data, packId: BLANK_PACK_ID });
+  const tokens = resolveCardTokens({ theme: null, junior, data, packId: BLANK_PACK_ID });
+  const input = junior ? { ...TEAM, junior: true, juniorPhotoAllowed: photo } : TEAM;
   return renderPackCard(
-    TEAM as unknown as ShareCardInput,
+    input as unknown as ShareCardInput,
     size,
     true,
     tokens,
-    false,
+    junior,
     data,
     BLANK_PACK_ID,
     doc as unknown as CardAdjustments,
@@ -247,11 +258,17 @@ function gradientAt(
   return [0, 1, 2, 3].map((i) => a.colour![i]! + (b.colour![i]! - a.colour![i]!) * k) as Rgba;
 }
 
-/** A layer drawn on `size` in this photo state (sponsors on, a senior card). */
-function drawnBox(l: TemplateLayerV2, size: CardSize, photo: boolean): Box | null {
+/**
+ * A layer drawn on `size` in this photo state, sponsors on, on a senior or a
+ * junior card. Without a photo the photo slot draws nothing: what's behind
+ * the text there is the card's own ground and panels.
+ */
+function drawnBox(l: TemplateLayerV2, size: CardSize, photo: boolean, junior: boolean): Box | null {
   if (l.hidden || (l.sizes && !l.sizes.includes(size))) return null;
   if (typeof l.showWhen?.photo === "boolean" && l.showWhen.photo !== photo) return null;
-  if (l.showWhen?.sponsors === false || l.showWhen?.junior === true) return null;
+  if (typeof l.showWhen?.junior === "boolean" && l.showWhen.junior !== junior) return null;
+  if (l.showWhen?.sponsors === false) return null;
+  if (!photo && l.kind === "photo") return null;
   return (l.geometry as Partial<Record<CardSize, Box>>)[size] ?? null;
 }
 
@@ -280,13 +297,14 @@ function backgroundAt(
   upTo: number,
   size: CardSize,
   photo: boolean,
+  junior: boolean,
   [x, y]: Pt,
   vars: Map<string, string>,
 ): Rgba | null {
   const { w: W, h: H } = SIZES[size];
   let bg: Rgba | null = parseColour(resolveVars("var(--ink)", vars));
   for (const l of layers.slice(0, upTo)) {
-    const b = drawnBox(l, size, photo);
+    const b = drawnBox(l, size, photo, junior);
     if (!b || !coversPoint(l, b, x, y)) continue;
     const style = (l.style ?? {}) as { fill?: unknown; background?: unknown; opacity?: unknown };
     const opacity = typeof style.opacity === "number" ? style.opacity : 1;
@@ -331,11 +349,16 @@ type Sample = {
 };
 
 /** The grade line and every name column's first and last name, on `size`. */
-function samples(layers: TemplateLayerV2[], size: CardSize, photo: boolean): Sample[] {
+function samples(
+  layers: TemplateLayerV2[],
+  size: CardSize,
+  photo: boolean,
+  junior: boolean,
+): Sample[] {
   const { w: W, h: H } = SIZES[size];
   const out: Sample[] = [];
   for (const [index, l] of layers.entries()) {
-    const b = drawnBox(l, size, photo);
+    const b = drawnBox(l, size, photo, junior);
     if (!b) continue;
     const opacity = Number((l.style as { opacity?: unknown } | undefined)?.opacity ?? 1);
     if (l.kind === "text" && String(l.content ?? "").includes("{{gradeRound}}")) {
@@ -395,32 +418,34 @@ function lowContrast(name: string, doc: TemplateDocumentV2): string[] {
     const layers = flattenLayers(p?.layers ?? []);
     for (const size of SIZE_KEYS)
       for (const photo of [true, false])
-        for (const brand of Object.keys(BRANDS)) {
-          const found = samples(layers, size, photo);
-          if (found.length === 0) continue;
-          const vars = cardVars(render(doc, size, brand, photo));
-          for (const s of found) {
-            const fg = parseColour(resolveVars(s.style.color ?? "#000000", vars));
-            if (!fg) {
-              out.push(`${name} ${page} ${s.label}: unreadable colour ${s.style.color}`);
-              continue;
-            }
-            const large = s.px >= 24 || (s.px >= 18.66 && (s.style.fontWeight ?? 400) >= 700);
-            const floor = large ? AA_LARGE : AA;
-            for (const pt of s.points) {
-              const bg = backgroundAt(layers, s.index, size, photo, pt, vars);
-              if (!bg) continue; // on the photo or a logo
-              const ratio = contrast(over(fg, bg, s.opacity), bg);
-              if (ratio < floor) {
-                out.push(
-                  `${name} ${page} ${s.label} (${brand} brand, ${photo ? "photo" : "no photo"}): ` +
-                    `${ratio.toFixed(2)}:1, needs ${floor}:1`,
-                );
-                break;
+        for (const junior of [false, true])
+          for (const brand of Object.keys(BRANDS)) {
+            const found = samples(layers, size, photo, junior);
+            if (found.length === 0) continue;
+            const vars = cardVars(render(doc, size, brand, photo, junior));
+            for (const s of found) {
+              const fg = parseColour(resolveVars(s.style.color ?? "#000000", vars));
+              if (!fg) {
+                out.push(`${name} ${page} ${s.label}: unreadable colour ${s.style.color}`);
+                continue;
+              }
+              const large = s.px >= 24 || (s.px >= 18.66 && (s.style.fontWeight ?? 400) >= 700);
+              const floor = large ? AA_LARGE : AA;
+              for (const pt of s.points) {
+                const bg = backgroundAt(layers, s.index, size, photo, junior, pt, vars);
+                if (!bg) continue; // on the photo or a logo
+                const ratio = contrast(over(fg, bg, s.opacity), bg);
+                if (ratio < floor) {
+                  out.push(
+                    `${name} ${page} ${s.label} (${brand} brand, ${junior ? "junior, " : ""}` +
+                      `${photo ? "photo" : "no photo"}): ` +
+                      `${ratio.toFixed(2)}:1, needs ${floor}:1`,
+                  );
+                  break;
+                }
               }
             }
           }
-        }
   }
   return out;
 }

@@ -47,11 +47,26 @@ function teamListBundles(): Array<{ name: string; doc: TemplateDocumentV2 }> {
   return out;
 }
 
-/** A layer drawn on `size` with the photo and sponsors on. */
-function drawn(l: TemplateLayerV2, size: CardSize): Box | null {
+/**
+ * A layer drawn on `size` with the sponsors on, on a senior or a junior card,
+ * with the photo (a junior's is approved junior stock) or without it.
+ */
+type Card = { junior: boolean; photo: boolean };
+const SENIOR: Card = { junior: false, photo: true };
+/** The cards a list is drawn on: senior and junior, with and without the photo. */
+const CARDS: Card[] = [
+  SENIOR,
+  { junior: false, photo: false },
+  { junior: true, photo: true },
+  { junior: true, photo: false },
+];
+
+function drawn(l: TemplateLayerV2, size: CardSize, card: Card = SENIOR): Box | null {
   if (l.hidden || (l.sizes && !l.sizes.includes(size))) return null;
-  if (l.showWhen?.photo === false || l.showWhen?.sponsors === false) return null;
-  if (l.showWhen?.junior === true) return null;
+  if (l.showWhen?.sponsors === false) return null;
+  if (typeof l.showWhen?.photo === "boolean" && l.showWhen.photo !== card.photo) return null;
+  if (typeof l.showWhen?.junior === "boolean" && l.showWhen.junior !== card.junior) return null;
+  if (!card.photo && l.kind === "photo") return null;
   return (l.geometry as Partial<Record<CardSize, Box>>)[size] ?? null;
 }
 
@@ -98,19 +113,23 @@ const holds = (outer: Rect, inner: Rect) =>
   outer.bottom >= inner.bottom - 1;
 
 /** What a side of 14 runs into on a bundle's pages, as readable lines. */
-function overlaps(name: string, doc: TemplateDocumentV2): string[] {
+function overlaps(name: string, doc: TemplateDocumentV2, card: Card = SENIOR): string[] {
   const out: string[] = [];
+  const at =
+    card === SENIOR
+      ? ""
+      : ` (${card.junior ? "junior" : "senior"}, ${card.photo ? "photo" : "no photo"})`;
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
     const layers = flattenLayers(p?.layers ?? []);
     for (const [li, list] of layers.entries()) {
       if (list.kind !== "rows" || list.rows?.repeat !== "players") continue;
       for (const size of SIZE_KEYS) {
-        const box = drawn(list, size);
+        const box = drawn(list, size, card);
         if (!box) continue;
         const rows = rowsExtent(list, box, size);
         const short = Math.min(SIZES[size].w, SIZES[size].h);
         for (const [oi, other] of layers.entries()) {
-          const ob = oi === li ? null : drawn(other, size);
+          const ob = oi === li ? null : drawn(other, size, card);
           if (!ob || (ob.w >= 90 && ob.h >= 90)) continue;
           const opacity = (other.style as { opacity?: unknown } | undefined)?.opacity;
           if (typeof opacity === "number" && opacity <= 0.3) continue;
@@ -124,7 +143,10 @@ function overlaps(name: string, doc: TemplateDocumentV2): string[] {
             layers
               .slice(oi + 1, li)
               .some(
-                (s) => paintsOver(s) && drawn(s, size) && holds(px(drawn(s, size)!, size), rows),
+                (s) =>
+                  paintsOver(s) &&
+                  drawn(s, size, card) &&
+                  holds(px(drawn(s, size, card)!, size), rows),
               )
           )
             continue;
@@ -136,7 +158,7 @@ function overlaps(name: string, doc: TemplateDocumentV2): string[] {
             bottom: rows.bottom + pad,
           };
           if (rectMeetsPolygon(grown, area(other, px(ob, size))))
-            out.push(`${name} ${page} ${size}: ${list.id} into ${other.id}`);
+            out.push(`${name} ${page} ${size}${at}: ${list.id} into ${other.id}`);
         }
       }
     }
@@ -163,6 +185,22 @@ describe("Team List rows clear of the photo", () => {
         ).listed !== false,
     );
     expect(listed.flatMap((b) => overlaps(b.name, b.doc))).toEqual([]);
+  });
+
+  it("holds a junior side to the same rule, with approved stock and with no photo", () => {
+    // A junior Team List draws the senior layout (Ash, retest 3): the same
+    // list, clear of the same photo slot, logos and data text.
+    const listed = bundles.filter(
+      (b) =>
+        (
+          JSON.parse(readFileSync(path.join(BUNDLES, `${b.name}.json`), "utf8")) as {
+            listed?: boolean;
+          }
+        ).listed !== false,
+    );
+    expect(
+      CARDS.slice(1).flatMap((card) => listed.flatMap((b) => overlaps(b.name, b.doc, card))),
+    ).toEqual([]);
   });
 
   it("would catch Bold Type's story list as it was (26 px above the photo)", () => {
