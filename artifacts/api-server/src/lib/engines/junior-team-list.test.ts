@@ -103,6 +103,25 @@ describe("juniorTeamListToCardInput", () => {
     expect(JSON.stringify(input)).not.toContain(PRIV);
   });
 
+  it("withholds a name that is already PlayHQ's 'Private Player' whole, in capitals, bare", () => {
+    const placeholder = "aaaaaaaa-0000-4000-8000-000000000007";
+    const withPlaceholder = new Map(facts).set(placeholder, {
+      displayName: "Private Player",
+      isPrivate: false,
+      privacyOverride: false,
+    });
+    for (const style of ["full", "first_initial", "first"] as const) {
+      const rows = rowsOf(
+        juniorTeamListToCardInput(
+          fixture,
+          [{ order: 1, participantId: placeholder, role: "C", overseas: true }],
+          juniorCardNamer(makeJuniorNaming(style, withPlaceholder)),
+        ),
+      );
+      expect(rows[0]).toEqual({ order: 1, surname: "PRIVATE PLAYER" });
+    }
+  });
+
   it("numbers players by shirt from the junior register, by participant", () => {
     const numbers = buildJuniorTeamListShirtNumbers(
       [

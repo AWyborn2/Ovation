@@ -80,15 +80,27 @@ function rowWithheld(row: Record<string, unknown>, w: WithheldNames): boolean {
   return w.words.has(surname) || w.phrases.includes(surname);
 }
 
+/**
+ * "Private Player" in the case of the text it goes into: capitals in a field
+ * printed in capitals ("C. BULLER (C)", a team list row's name line), as every
+ * team list row is; as written ("Private Player") in mixed-case text.
+ */
+function withheldFor(field: string): string {
+  return /\p{Lu}/u.test(field) && field === field.toUpperCase()
+    ? JUNIOR_WITHHELD_NAME.toUpperCase()
+    : JUNIOR_WITHHELD_NAME;
+}
+
 function redactText(value: string, w: WithheldNames): string {
-  if (w.words.has(norm(value))) return JUNIOR_WITHHELD_NAME;
+  const withheld = withheldFor(value);
+  if (w.words.has(norm(value))) return withheld;
   let out = value;
   for (const phrase of w.phrases) {
     const re = new RegExp(
       `(^|[^\\p{L}])${escape(phrase).replace(/ /g, "\\s+")}(?=$|[^\\p{L}])`,
       "giu",
     );
-    out = out.replace(re, (_m, lead: string) => `${lead}${JUNIOR_WITHHELD_NAME}`);
+    out = out.replace(re, (_m, lead: string) => `${lead}${withheld}`);
   }
   return out;
 }

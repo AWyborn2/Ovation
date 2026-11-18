@@ -5,6 +5,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithHistory } from "@/test/render";
+import { teamListName } from "@/lib/pack-render/bind";
+import type { TeamListPlayer } from "@/lib/share-card";
 import { CreateWizard } from "./create-wizard";
 
 afterEach(() => {
@@ -47,6 +49,15 @@ const LATER = {
   startAt: "2027-01-09T02:00:00Z",
   isHome: true,
   roundLabel: "Round 9",
+};
+// A fixture with no saved list: "Fill in by hand".
+const UNLISTED = {
+  id: 15,
+  grade: "C Grade",
+  opponentName: "Baldivis",
+  startAt: "2026-10-31T04:30:00Z",
+  isHome: true,
+  roundLabel: "Round 5",
 };
 const source = (fixtureId: number, src: string, isPublished: boolean, playerCount = 11) => ({
   fixtureId,
@@ -99,13 +110,25 @@ function stubApi() {
       [source(11, "selection", true), source(12, "playhq", true), source(14, "admin", false, 4)],
     ],
     [
-      "/social-prefill/team-list/11",
+      "/social-prefill/team-list/15",
       {
-        input: { kind: "teamList", grade: "A Grade", opponent: "Mandurah", players: [] },
+        input: { kind: "teamList", grade: "C Grade", opponent: "Baldivis", players: [] },
         warnings: [],
       },
     ],
-    ["/fixtures", [...FIXTURES, LATER]],
+    [
+      "/social-prefill/team-list/11",
+      {
+        input: {
+          kind: "teamList",
+          grade: "A Grade",
+          opponent: "Mandurah",
+          players: [{ order: 1, firstInitial: "J", surname: "YOUNG", role: "C" }],
+        },
+        warnings: [],
+      },
+    ],
+    ["/fixtures", [...FIXTURES, LATER, UNLISTED]],
     ["/club-templates", { templates: [] }],
     ["/template-library/preview-input", { input: { kind: "teamList" } }],
     [
@@ -177,6 +200,89 @@ describe("Create wizard", () => {
       cardInput: { kind: "teamList", grade: "A Grade", opponent: "Mandurah" },
       templateRef: { libraryTemplateId: 7, version: 3 },
     });
+  });
+
+  it("fills a team with no list by hand, initials and all, before the look (round 4 retest, B)", async () => {
+    const calls = stubApi();
+    const { url } = renderWithHistory(
+      <CreateWizard />,
+      "/admin/social/create?kind=teamList&step=3",
+    );
+    const c = await screen.findByRole("button", { name: /C Grade v Baldivis/ });
+    await waitFor(() => expect(c).toHaveTextContent("Fill in by hand"));
+    fireEvent.click(c);
+
+    // The players form, every descriptor column shown, before the Look step.
+    await screen.findByRole("heading", { name: "Fill in the team" });
+    expect(url()).toBe("/admin/social/create?kind=teamList&step=3");
+    expect(screen.getByRole("textbox", { name: "Initial, row 1" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Surname, row 1" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Role, row 1" })).toBeInTheDocument();
+    const next = screen.getByRole("button", { name: "Next: pick a look" });
+    expect(next).toBeDisabled();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Initial, row 1" }), {
+      target: { value: "j" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Surname, row 1" }), {
+      target: { value: "Young" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "Role, row 1" }), {
+      target: { value: "C" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Initial, row 2" }), {
+      target: { value: "D" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Surname, row 2" }), {
+      target: { value: "FOX" },
+    });
+    fireEvent.click(next);
+
+    await waitFor(() => expect(url()).toBe("/admin/social/create?kind=teamList&step=4"));
+    fireEvent.click(await screen.findByRole("button", { name: "Use Club Kit Team List" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=square"));
+    const post = calls.find((c) => c.method === "POST" && c.url.includes("/social-drafts"))!;
+    const input = (post.body as { cardInput: { players: TeamListPlayer[] } }).cardInput;
+    // The empty rows are dropped; the names typed are the only ones.
+    expect(input).toMatchObject({ kind: "teamList", grade: "C Grade", opponent: "Baldivis" });
+    expect(input.players).toEqual([
+      { order: 1, firstInitial: "J", surname: "YOUNG", role: "C" },
+      { order: 2, firstInitial: "D", surname: "FOX" },
+    ]);
+    // The card prints the initial: "J. YOUNG", "D. FOX", never a bare "FOX".
+    expect(input.players.map((p) => teamListName(p.firstInitial, p.surname, null))).toEqual([
+      "J. YOUNG",
+      "D. FOX",
+    ]);
+  });
+
+  it("'Fill in by hand' opens the players form from empty rows, not the sample's bare surnames", async () => {
+    stubApi();
+    const { url } = renderWithHistory(
+      <CreateWizard />,
+      "/admin/social/create?kind=teamList&step=3",
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Fill in by hand" }));
+    await screen.findByRole("heading", { name: "Fill in the team" });
+    expect(url()).toBe("/admin/social/create?kind=teamList&step=3");
+    expect(screen.getByRole("textbox", { name: "Initial, row 1" })).toHaveValue("");
+    expect(screen.getByRole("textbox", { name: "Surname, row 1" })).toHaveValue("");
+    expect(screen.queryByDisplayValue("BURRAGE")).toBeNull();
+    expect(screen.getByRole("button", { name: "Next: pick a look" })).toBeDisabled();
+    // Back to the teams, and the Look step is never reached without the form.
+    fireEvent.click(screen.getByRole("button", { name: "Pick another team" }));
+    expect(await screen.findByRole("heading", { name: "Which team?" })).toBeInTheDocument();
+  });
+
+  it("'Fill in by hand' shows the rows form for the other kinds with rows too", async () => {
+    stubApi();
+    const { url } = renderWithHistory(<CreateWizard />, "/admin/social/create?kind=ladder&step=3");
+    fireEvent.click(await screen.findByRole("button", { name: "Fill in by hand" }));
+    await screen.findByRole("heading", { name: "Fill in by hand" });
+    expect(url()).toBe("/admin/social/create?kind=ladder&step=3");
+    expect(screen.getByRole("button", { name: /Add/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next: pick a look" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/create?kind=ladder&step=4"));
   });
 
   it("makes a blank design from just a size", async () => {

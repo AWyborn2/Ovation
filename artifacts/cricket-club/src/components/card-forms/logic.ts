@@ -102,3 +102,51 @@ export function buildCardInput(
   }
   return out as unknown as ShareCardInput;
 }
+
+const WITHHELD_ROW = /^private player$/i;
+
+/**
+ * A Team List's players as typed into the hand-fill form ("Fill in by hand"),
+ * tidied the way every built list prints: blank rows dropped, surnames in
+ * capitals, the initial one capital letter ("J. YOUNG"), rows numbered 1, 2, 3
+ * in the order typed. A withheld "Private Player" prints whole, with no initial
+ * or role mark. Other kinds' state passes through unchanged.
+ */
+export function tidyHandFilledState(kind: CardKind, state: CardFormState): CardFormState {
+  if (kind !== "teamList" || !Array.isArray(state.players)) return state;
+  const rows = (state.players as Record<string, unknown>[])
+    .map((p): Record<string, unknown> & { surname: string } => ({
+      ...p,
+      surname: String(p.surname ?? "").trim(),
+    }))
+    .filter((p) => p.surname !== "")
+    .map((p, i) => {
+      const { firstInitial: rawInitial, ...rest } = p;
+      if (WITHHELD_ROW.test(p.surname)) {
+        const { role: _role, ...withheld } = rest;
+        return { ...withheld, order: i + 1, surname: "PRIVATE PLAYER" };
+      }
+      const initial = String(rawInitial ?? "")
+        .match(/\p{L}/u)?.[0]
+        ?.toUpperCase();
+      return {
+        ...rest,
+        order: i + 1,
+        surname: p.surname.toUpperCase(),
+        ...(initial ? { firstInitial: initial } : {}),
+      };
+    });
+  return { ...state, players: rows };
+}
+
+/** Whether a hand-filled state has something to print (a Team List needs a name). */
+export function handFillReady(kind: CardKind, state: CardFormState): boolean {
+  if (kind !== "teamList") return true;
+  const rows = Array.isArray(state.players) ? (state.players as Record<string, unknown>[]) : [];
+  return rows.some((p) => String(p.surname ?? "").trim() !== "");
+}
+
+/** Empty Team List rows for a fixture with no saved list, numbered 1–11. */
+export function blankTeamListRows(count = 11): Record<string, unknown>[] {
+  return Array.from({ length: count }, (_, i) => ({ order: i + 1, firstInitial: "", surname: "" }));
+}

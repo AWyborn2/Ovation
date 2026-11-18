@@ -108,11 +108,15 @@ export function juniorTeamListToCardInput(
     players: [...players]
       .sort((a, b) => a.order - b.order)
       .map((p) => {
-        const named = nameOf(p.participantId);
+        // A name that is already the withheld placeholder (PlayHQ's own "Private
+        // Player") is withheld whole, in the row's capitals: never "P. PLAYER",
+        // and no role, number or overseas mark.
+        const found = nameOf(p.participantId);
+        const named = found && !/^private(\s+p(layer)?)?$/i.test(found.name.trim()) ? found : null;
         const row: CardRow = {
           order: p.order,
           ...cardName(named),
-          ...(p.role ? { role: p.role } : {}),
+          ...(named && p.role ? { role: p.role } : {}),
           // The overseas mark goes with the name: a withheld player has none.
           ...(named && p.overseas ? { overseas: true } : {}),
         };
