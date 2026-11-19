@@ -19,8 +19,10 @@ import {
   type ClubPhoto,
 } from "@workspace/api-client-react";
 import {
+  isJuniorPlayerPhotoUrl,
   juniorSafeDesignWith,
   photoKey,
+  withoutPhotos,
   type JuniorPhotoRule,
 } from "@workspace/scorecard/junior-design-photos";
 import { eligibleJuniorStockPhotos } from "@/components/weekend-carousel/model";
@@ -61,6 +63,43 @@ export const PHOTO_RULE_NOTE: Record<PhotoRule, string> = {
 /** The photos a junior page may be given: the club's approved junior stock. */
 export const juniorStockOnly = (photos: ClubPhoto[]): ClubPhoto[] =>
   eligibleJuniorStockPhotos(photos);
+
+/** A raster data URL, or a web address of a raster image. */
+const RASTER_IMAGE =
+  /^(data:image\/(?!svg\+xml)|https?:\/\/\S+\.(png|jpe?g|webp|gif|heic|heif|avif)([?#]|$))/i;
+
+/** An image layer's content it may keep on a junior page: a token or vector art. */
+const keepsImage = (content: unknown) =>
+  typeof content !== "string" ||
+  content.trim() === "" ||
+  /^\{\{[^}]+\}\}$/.test(content.trim()) ||
+  /^data:image\/svg\+xml/i.test(content.trim());
+
+/**
+ * A page copied into a junior set from another template ("Add a page → From
+ * another template", retest 6, item K), fail-closed (ADR-007): every stored
+ * or raster image the template held goes (a library photo, a club upload, a
+ * junior player's photo), and a photo layer loses its source (a team list
+ * player or a collection), so it shows only the set's own photo (approved
+ * junior stock) or none. Tokens (`{{clubLogo}}`, `{{sponsor1}}`) and vector
+ * art stay. The server applies its own rule again on save and on post.
+ */
+export function juniorSafeAddedLayers<L>(layers: L[]): L[] {
+  const isBad = (url: string) =>
+    url.includes("/objects/") || isJuniorPlayerPhotoUrl(url) || RASTER_IMAGE.test(url.trim());
+  const { value } = withoutPhotos(layers, isBad);
+  const strip = (list: unknown[]): unknown[] =>
+    list.flatMap((l) => {
+      if (!l || typeof l !== "object") return [l];
+      const layer = l as Record<string, unknown>;
+      // An image layer showing anything but a token or vector art goes whole.
+      if (layer.kind === "image" && !keepsImage(layer.content)) return [];
+      const { source: _source, ...rest } = layer;
+      const out = layer.kind === "photo" ? rest : layer;
+      return [Array.isArray(layer.children) ? { ...out, children: strip(layer.children) } : out];
+    });
+  return strip((value as unknown[] | null) ?? []) as L[];
+}
 
 /** A draft as the guard reads it. */
 type GuardDraft = {
