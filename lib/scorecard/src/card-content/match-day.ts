@@ -59,10 +59,14 @@ export function clubDay(d: Date, timeZone = CLUB_TIME_ZONE): string {
   return ["year", "month", "day"].map((k) => parts.find((p) => p.type === k)!.value).join("-");
 }
 
-/** "SAT 12 OCT – SUN 13 OCT" for a YYYY-MM-DD range. */
+/**
+ * "SAT 12 OCT – SUN 13 OCT" for a YYYY-MM-DD range; one day prints once
+ * ("SAT 10 NOV"), never as a range from a day to itself.
+ */
 export function dateRangeLabel(from: string, to: string, timeZone = CLUB_TIME_ZONE): string {
   const day = (s: string) => formatFixtureDate(new Date(`${s}T12:00:00Z`), timeZone);
-  return `${day(from)} – ${day(to)}`;
+  const [a, b] = [day(from), day(to || from)];
+  return a === b ? a : `${a} – ${b}`;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -140,14 +144,44 @@ export function normaliseRoundLabel(raw: string | null | undefined): string {
   return numeric ? `ROUND ${Number(numeric[1])}` : text.toUpperCase();
 }
 
+/** The longest "ROUNDS …" label a cover takes before it reads "MIXED ROUNDS". */
+const MAX_ROUNDS_LABEL = 22;
+
 /**
- * One label for a set of fixtures' rounds: the round they share, "MIXED
- * ROUNDS" when they differ, and "" when any is unknown (a known round for one
- * team does not establish the round of another).
+ * Numbered rounds as one label: "ROUNDS 4–5", "ROUNDS 4–6", "ROUNDS 4 & 6",
+ * "ROUNDS 1–3 & 5" (a number range takes an en dash, as card dates do); null
+ * when it would not fit a cover.
+ */
+function numberedRoundsLabel(numbers: readonly number[]): string | null {
+  const sorted = [...new Set(numbers)].sort((a, b) => a - b);
+  const runs: string[] = [];
+  for (let i = 0; i < sorted.length;) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j]! + 1) j++;
+    runs.push(j === i ? `${sorted[i]}` : `${sorted[i]}–${sorted[j]}`);
+    i = j + 1;
+  }
+  const list = runs.length > 1 ? `${runs.slice(0, -1).join(", ")} & ${runs.at(-1)}` : runs[0];
+  const label = `ROUNDS ${list}`;
+  return label.length <= MAX_ROUNDS_LABEL ? label : null;
+}
+
+/**
+ * One label for a set of fixtures' rounds: the round they share; numbered
+ * rounds as a run ("ROUNDS 4–5"); "MIXED ROUNDS" when they differ otherwise
+ * (a final with a numbered round, or too many to list); and "" when any is
+ * unknown (a known round for one team does not establish the round of another).
  */
 export function combinedRoundLabel(labels: ReadonlyArray<string | null | undefined>): string {
   const normalised = labels.map(normaliseRoundLabel);
-  if (new Set(normalised.filter(Boolean)).size > 1) return "MIXED ROUNDS";
+  const distinct = [...new Set(normalised.filter(Boolean))];
+  if (distinct.length > 1) {
+    const numbers = distinct.map((l) => /^ROUND (\d+)$/.exec(l)?.[1]);
+    // An unknown round could be any round, so only a fully known set is a run.
+    if (numbers.every((n) => n !== undefined) && normalised.every(Boolean))
+      return numberedRoundsLabel(numbers.map(Number)) ?? "MIXED ROUNDS";
+    return "MIXED ROUNDS";
+  }
   if (!normalised.length || normalised.some((l) => !l)) return "";
   return normalised[0]!;
 }

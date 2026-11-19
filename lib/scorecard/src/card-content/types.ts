@@ -26,7 +26,7 @@ export interface MatchDayTitleContent {
   heading: string;
   /** "SAT 12 OCT – SUN 13 OCT". */
   dateRange: string;
-  /** "ROUND 5", "MIXED ROUNDS", or "" when unknown. */
+  /** "ROUND 5", "ROUNDS 4–5", "MIXED ROUNDS", or "" when unknown. */
   roundLabel: string;
   fixtureCount: number;
   /** The club's livestream or scores link (P5); absent when the club has none. */

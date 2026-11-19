@@ -7,6 +7,7 @@ import sharp from "sharp";
 
 const LABELS = [
   "MIXED ROUNDS",
+  "ROUNDS 4–5",
   "GRAND FINAL",
   "ROUND 12",
   "PRELIMINARY FINAL — WESTERN DISTRICT CHAMPIONSHIP",
