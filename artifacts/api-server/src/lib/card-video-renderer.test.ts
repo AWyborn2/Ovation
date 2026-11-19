@@ -105,6 +105,34 @@ describe("POST /card-renders/still — entitlement gate (DB-backed, CI)", () => 
     expect(res.status).not.toBe(402);
     expect(res.status).toBe(400);
   });
+
+  it("refuses a size the design doesn't draw before the renderer runs (round 9 B13)", async () => {
+    delete process.env.BILLING_ENABLED;
+    const box = { x: 5, y: 5, w: 90, h: 20 };
+    // An OMG T20 Match Summary design: Square, Portrait and Landscape, no Story.
+    const adjustments = {
+      layers: [
+        {
+          id: "t20",
+          kind: "shape",
+          sizes: ["square", "portrait", "landscape"],
+          geometry: { square: box, portrait: box, landscape: box },
+        },
+      ],
+    };
+    const res = await request(app)
+      .post("/api/card-renders/still")
+      .set("Cookie", club.cookie)
+      .set("x-tenant-id", String(club.id))
+      .send({
+        input: { kind: "matchSummary" },
+        options: { size: "story", packId: "blank", adjustments },
+      });
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe(
+      "This design has no Story size, so there's nothing to download at Story. Pick a size it has in Format.",
+    );
+  });
 });
 
 // Real headless-Chromium render. Opt-in: needs Chromium AND the cricket-club

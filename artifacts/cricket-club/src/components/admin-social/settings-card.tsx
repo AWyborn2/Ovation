@@ -7,7 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { ENGINES, OLDER_SIZE_SETTING_NOTE, SIZE_KEYS, type SizeKey } from "./constants";
+import {
+  ENGINES,
+  OLDER_SIZE_SETTING_NOTE,
+  STORY_SETTING_NOTE,
+  SIZE_KEYS,
+  type SizeKey,
+} from "./constants";
 
 /**
  * Share buttons, season recap, output sizes, club URL / hashtag and the sponsor
@@ -125,6 +131,9 @@ export function SettingsCard({
                       <div className="text-xs text-muted-foreground">
                         Your feed size, so it stays on.
                       </div>
+                    )}
+                    {s.key === "sizeStory" && (
+                      <div className="text-xs text-muted-foreground">{STORY_SETTING_NOTE}</div>
                     )}
                   </div>
                   <Switch

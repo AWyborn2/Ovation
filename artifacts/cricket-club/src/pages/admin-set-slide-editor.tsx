@@ -247,6 +247,8 @@ function SlideEditor({
         data: slide.data,
         // The set draws the slide whole; so does its editor.
         wholeSlide: true,
+        // Older sizes only where the set was made in them (round 9 B8).
+        olderSizes: draft.olderSizes ?? [],
         actions: ({ document, size: shownSize, input, data }) => (
           <DownloadMenu
             card={{

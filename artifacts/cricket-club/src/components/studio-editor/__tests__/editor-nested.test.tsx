@@ -228,6 +228,10 @@ describe("several nested layers in the editor", () => {
 
   it("offers to delete a linked copy on every size", async () => {
     const requests = open();
+    // Club templates open at Portrait (round 9 B12); this one is edited at Square.
+    fireEvent.change(await screen.findByRole("combobox", { name: "Format" }), {
+      target: { value: "square" },
+    });
     await waitFor(() => expect(overlay("title-sq")).toBeTruthy());
     fireEvent.pointerDown(overlay("title-sq"));
     fireEvent.pointerUp(overlay("title-sq"));

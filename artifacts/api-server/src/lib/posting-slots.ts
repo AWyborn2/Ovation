@@ -7,8 +7,12 @@ import {
   tenantsTable,
   type SocialDraftRow,
 } from "@workspace/db";
-import { layoutBlocksAutomation } from "@workspace/scorecard/kind-templates";
-import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
+import {
+  layoutBlocks,
+  loadAutoPost,
+  loadSizeSwitches,
+  persistDueDrafts,
+} from "./effective-draft-state";
 import { notifyCardsNeedApproval, notifyPostsDue } from "./draft-notifications";
 import {
   OPEN_DRAFT_STATUSES,
@@ -134,11 +138,8 @@ async function dispatch(
       .limit(1);
     if (existing) return "existing";
     const handMadeUnpinned = d.engine === "adhoc" && d.plannedBy !== "admin";
-    const layoutBlocked = layoutBlocksAutomation({
-      templateVersion: d.templateVersion,
-      layoutCheckPending: d.layoutCheckPending,
-      layoutWarnings: d.layoutWarnings as Partial<Record<string, unknown[]>> | null,
-    });
+    // Only a warning on the feed size it would post at blocks (round 9 (b)).
+    const layoutBlocked = layoutBlocks(d, await loadSizeSwitches(d.tenantId));
     if (platforms && mayAutoPublish(d, publishing) && !handMadeUnpinned && !layoutBlocked) {
       const planned = d.plannedAt as Date;
       await schedulePublications(

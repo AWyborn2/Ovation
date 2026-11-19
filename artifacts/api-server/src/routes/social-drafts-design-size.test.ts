@@ -2,8 +2,10 @@
  * Portrait and Story sizes plan, Stage 2 ("Save the size", round 7): a draft
  * remembers the size it is designed at. Create saves `designSize`, PATCH saves
  * it at the top level (not inside the design), revisions record and restore
- * it, and an older size (Square, Landscape) is refused unless the draft's
- * design already has it. Real-DB integration test (needs DATABASE_URL).
+ * it. Round 9: no size the design doesn't draw is saved (B13), and an older
+ * size (Square, Landscape) only where the draft was made in it (B8): its saved
+ * size or a revision's, or an older draft from before sizes were saved. Every
+ * draft says which (`olderSizes`). Real-DB integration test (needs DATABASE_URL).
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
@@ -22,6 +24,7 @@ import { placeholderDocument } from "@workspace/scorecard/kind-templates";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { documentCoverage } from "../lib/template-library/coverage";
 import { listDraftRevisions } from "../lib/draft-revisions";
+import { SIZES_SAVED_FROM } from "../lib/draft-design-size";
 
 const STAMP = Date.now();
 const LOOK = `dsz-${STAMP}`;
@@ -37,6 +40,13 @@ const newShape = (id: string) => ({
   kind: "shape",
   sizes: ["portrait", "story"],
   geometry: { portrait: box, story: box },
+});
+/** A look pinned at Square, Portrait and Landscape: no Story. */
+const noStoryShape = (id: string) => ({
+  id,
+  kind: "shape",
+  sizes: ["square", "portrait", "landscape"],
+  geometry: { square: box, portrait: box, landscape: box },
 });
 /** An older design's layer: on every size. */
 const allShape = (id: string) => ({
@@ -94,6 +104,10 @@ beforeAll(async () => {
   lib.portraitStory = await libraryTemplate("portrait-story", "milestone", {
     layers: [newShape("ps-1")],
   });
+  // An OMG T20 Match Summary look: no Story layers (card 1022, round 9 B13).
+  lib.noStory = await libraryTemplate("no-story", "milestone", {
+    layers: [noStoryShape("ns-1")],
+  });
 });
 
 afterAll(async () => {
@@ -113,6 +127,24 @@ const send = (method: "post" | "patch" | "get", path: string, body?: object) => 
 };
 
 const milestone = { kind: "milestone", playerName: "Sam", value: 100 };
+
+/** Make a draft an older one: made before sizes were saved (no saved size). */
+async function makeOlder(id: number) {
+  await db
+    .update(socialDraftsTable)
+    .set({ createdAt: new Date(SIZES_SAVED_FROM.getTime() - 86_400_000), designSize: null })
+    .where(eq(socialDraftsTable.id, id));
+}
+
+/** A draft from the four-size library look, saved at no size. */
+async function fourSizeDraft(): Promise<number> {
+  const res = await send("post", "/social-drafts", {
+    cardInput: milestone,
+    templateRef: { libraryTemplateId: lib.fourSize, version: 1 },
+  });
+  expect(res.status).toBe(201);
+  return res.body.id as number;
+}
 
 /** A templated draft whose design has Portrait and Story layers only (a new design). */
 async function newDesignDraft(designSize: "portrait" | "story" = "story") {
@@ -143,42 +175,91 @@ describe("Create saves the size the design is started at", () => {
     expect(one.body.designSize).toBe("story");
   });
 
-  it("leaves it null when Create names no size (an older client), as drafts were before", async () => {
+  it("saves Portrait when Create names no size (an older client), never relying on the cutoff (round 9)", async () => {
     const res = await send("post", "/social-drafts", {
       cardInput: { kind: "announcement", title: "Hello" },
       packId: "blank",
     });
     expect(res.status).toBe(201);
-    expect(res.body.designSize).toBeNull();
+    expect(res.body.designSize).toBe("portrait");
   });
 
-  it("starts a blank design or a four-size template at an older size (its design has it)", async () => {
+  it("saves a size the design draws: Story for a Story-only design", async () => {
+    const storyOnly = await libraryTemplate("story-only", "milestone", {
+      layers: [{ id: "so-1", kind: "shape", sizes: ["story"], geometry: { story: box } }],
+    });
+    lib.storyOnly = storyOnly;
+    const res = await send("post", "/social-drafts", {
+      cardInput: milestone,
+      templateRef: { libraryTemplateId: storyOnly, version: 1 },
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.designSize).toBe("story");
+  });
+
+  it("never starts a new design at an older size, even from a four-size look (round 9 B8)", async () => {
     const blank = await send("post", "/social-drafts", {
       cardInput: { kind: "announcement", title: "Hello" },
       packId: "blank",
       designSize: "landscape",
     });
-    expect(blank.status).toBe(201);
-    expect(blank.body.designSize).toBe("landscape");
+    expect(blank.status).toBe(400);
+    expect(blank.body.error).toBe(
+      "Landscape is an older size this design wasn't made in. Design it at Portrait or Story.",
+    );
     const four = await send("post", "/social-drafts", {
       cardInput: milestone,
       templateRef: { libraryTemplateId: lib.fourSize, version: 1 },
       designSize: "square",
     });
-    expect(four.status).toBe(201);
-    expect(four.body.designSize).toBe("square");
+    expect(four.status).toBe(400);
+    expect(four.body.error).toMatch(/^Square is an older size/);
   });
 
-  it("refuses an older size for a design that has no layers on it", async () => {
-    for (const size of ["square", "landscape"]) {
+  it("refuses a size the design doesn't draw (round 9 B13)", async () => {
+    for (const [template, size, label] of [
+      [lib.portraitStory, "square", "Square"],
+      [lib.portraitStory, "landscape", "Landscape"],
+      [lib.noStory, "story", "Story"],
+    ] as const) {
       const res = await send("post", "/social-drafts", {
         cardInput: milestone,
-        templateRef: { libraryTemplateId: lib.portraitStory, version: 1 },
+        templateRef: { libraryTemplateId: template, version: 1 },
         designSize: size,
       });
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/older size/);
+      expect(res.body.error).toBe(`This design has no ${label} size. Design it at a size it has.`);
     }
+  });
+
+  it("a brand-new card from a four-size look is made in no older size (round 9 B8)", async () => {
+    const res = await send("post", "/social-drafts", {
+      cardInput: milestone,
+      templateRef: { libraryTemplateId: lib.fourSize, version: 1 },
+      designSize: "portrait",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.olderSizes).toEqual([]);
+    const one = await send("get", `/social-drafts/${res.body.id}`);
+    expect(one.body.olderSizes).toEqual([]);
+    // An edit puts it in the queue (an untouched editor card isn't listed).
+    expect((await send("patch", `/social-drafts/${res.body.id}`, { caption: "Hi" })).status).toBe(
+      200,
+    );
+    const list = await send("get", "/social-drafts");
+    const listed = (list.body as Array<{ id: number; olderSizes: string[] }>).find(
+      (d) => d.id === res.body.id,
+    );
+    expect(listed?.olderSizes).toEqual([]);
+    // An older draft in the same list keeps the older sizes it draws.
+    const older = await fourSizeDraft();
+    await makeOlder(older);
+    await send("patch", `/social-drafts/${older}`, { caption: "Old" });
+    const again = (await send("get", "/social-drafts")).body as Array<{
+      id: number;
+      olderSizes: string[];
+    }>;
+    expect(again.find((d) => d.id === older)?.olderSizes).toEqual(["square", "landscape"]);
   });
 
   it("refuses a size that isn't a card size", async () => {
@@ -240,7 +321,7 @@ describe("PATCH saves Format at the top level", () => {
       const res = await send("patch", `/social-drafts/${draft.id}`, { designSize: size });
       expect(res.status).toBe(400);
       expect(res.body.error).toBe(
-        `${size === "square" ? "Square" : "Landscape"} is an older size this design doesn't have. Design it at Portrait or Story.`,
+        `This design has no ${size === "square" ? "Square" : "Landscape"} size. Design it at a size it has.`,
       );
     }
     const [row] = await db
@@ -250,36 +331,94 @@ describe("PATCH saves Format at the top level", () => {
     expect(row!.designSize).toBe("story");
   });
 
-  it("a landscape draft (its design has landscape layers) can save Landscape and Square", async () => {
-    const res = await send("post", "/social-drafts", {
-      cardInput: milestone,
-      templateRef: { libraryTemplateId: lib.fourSize, version: 1 },
-    });
-    const id = res.body.id as number;
+  it("a new card from a four-size look can't save an older size it wasn't made in (round 9 B8)", async () => {
+    const id = await fourSizeDraft();
+    for (const size of ["square", "landscape"]) {
+      const res = await send("patch", `/social-drafts/${id}`, { designSize: size });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/is an older size this design wasn't made in/);
+    }
+    expect((await send("patch", `/social-drafts/${id}`, { designSize: "story" })).status).toBe(200);
+  });
+
+  it("an older draft (made before sizes were saved) keeps and can save Landscape and Square", async () => {
+    const id = await fourSizeDraft();
+    await makeOlder(id);
+    const one = await send("get", `/social-drafts/${id}`);
+    expect(one.body.olderSizes).toEqual(["square", "landscape"]);
     const landscape = await send("patch", `/social-drafts/${id}`, { designSize: "landscape" });
     expect(landscape.status).toBe(200);
     expect(landscape.body.designSize).toBe("landscape");
-    const square = await send("patch", `/social-drafts/${id}`, { designSize: "square" });
-    expect(square.status).toBe(200);
-    expect(square.body.designSize).toBe("square");
+    expect(landscape.body.olderSizes).toEqual(["landscape"]);
   });
 
-  it("a pack-based draft (before the template library) can save every size", async () => {
+  it("a revision at an older size keeps it (round 9 B8)", async () => {
+    const id = await fourSizeDraft();
+    await makeOlder(id);
+    await send("patch", `/social-drafts/${id}`, { designSize: "square" });
+    // An edit records a revision of the Square state, then moves it to Portrait.
+    const edited = await send("patch", `/social-drafts/${id}`, {
+      caption: "Moved",
+      designSize: "portrait",
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body.olderSizes).toEqual(["square"]);
+    expect((await send("patch", `/social-drafts/${id}`, { designSize: "square" })).status).toBe(
+      200,
+    );
+    expect((await send("patch", `/social-drafts/${id}`, { designSize: "landscape" })).status).toBe(
+      400,
+    );
+  });
+
+  it("a card with no Story layers can't save Story (round 9 B13)", async () => {
+    const res = await send("post", "/social-drafts", {
+      cardInput: milestone,
+      templateRef: { libraryTemplateId: lib.noStory, version: 1 },
+      designSize: "portrait",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.olderSizes).toEqual([]);
+    const story = await send("patch", `/social-drafts/${res.body.id}`, { designSize: "story" });
+    expect(story.status).toBe(400);
+    expect(story.body.error).toBe("This design has no Story size. Design it at a size it has.");
+  });
+
+  it("a pack-based draft (before the template library): new ones Portrait and Story, older ones every size", async () => {
     const res = await send("post", "/social-drafts", {
       cardInput: { kind: "announcement", title: "Old style" },
       packId: "club-kit-v1",
     });
     expect(res.status).toBe(201);
+    for (const size of ["portrait", "story"]) {
+      const saved = await send("patch", `/social-drafts/${res.body.id}`, { designSize: size });
+      expect(saved.status).toBe(200);
+    }
+    expect(
+      (await send("patch", `/social-drafts/${res.body.id}`, { designSize: "square" })).status,
+    ).toBe(400);
+    await makeOlder(res.body.id);
     for (const size of ["square", "landscape", "portrait", "story"]) {
+      await makeOlder(res.body.id);
       const saved = await send("patch", `/social-drafts/${res.body.id}`, { designSize: size });
       expect(saved.status).toBe(200);
       expect(saved.body.designSize).toBe(size);
     }
   });
 
-  it("judges an older size against the design as the same request leaves it", async () => {
-    const draft = await newDesignDraft("story");
-    const res = await send("patch", `/social-drafts/${draft.id}`, {
+  it("judges a size against the design as the same request leaves it", async () => {
+    const draft = await newDesignDraft("portrait");
+    // The edit takes Story off the design: Story can't be saved with it.
+    const off = await send("patch", `/social-drafts/${draft.id}`, {
+      adjustments: { layers: [noStoryShape("ns-2")] },
+      designSize: "story",
+    });
+    expect(off.status).toBe(400);
+    expect(off.body.error).toMatch(/no Story size/);
+    // An older draft whose edit puts Square back can save Square with it.
+    const older = await fourSizeDraft();
+    await makeOlder(older);
+    const res = await send("patch", `/social-drafts/${older}`, {
       adjustments: { layers: [allShape("all-1")] },
       designSize: "square",
     });
@@ -315,11 +454,8 @@ describe("Revisions record the size and restore it", () => {
   });
 
   it("an older revision with no size restores as null (the draft opens at Square, as then)", async () => {
-    const res = await send("post", "/social-drafts", {
-      cardInput: milestone,
-      templateRef: { libraryTemplateId: lib.fourSize, version: 1 },
-    });
-    const id = res.body.id as number;
+    const id = await fourSizeDraft();
+    await makeOlder(id);
     // A caption edit records a revision of the draft before any size was saved.
     await send("patch", `/social-drafts/${id}`, { caption: "First" });
     await send("patch", `/social-drafts/${id}`, { designSize: "story" });
@@ -328,5 +464,21 @@ describe("Revisions record the size and restore it", () => {
     expect(revs[0]!.designSize).toBeNull();
     const reverted = await send("post", `/social-drafts/${id}/revisions/${revs[0]!.id}/revert`);
     expect(reverted.body.designSize).toBeNull();
+  });
+
+  it("a newer draft restoring a revision with no size keeps a size its design draws (round 9)", async () => {
+    const id = await fourSizeDraft();
+    // A revision with no size (as one made between the cutoff and round 9 has).
+    await db
+      .update(socialDraftsTable)
+      .set({ designSize: null })
+      .where(eq(socialDraftsTable.id, id));
+    await send("patch", `/social-drafts/${id}`, { caption: "First" });
+    await send("patch", `/social-drafts/${id}`, { designSize: "story" });
+    const revs = await listDraftRevisions(tenantId, id);
+    expect(revs[0]!.designSize).toBeNull();
+    const reverted = await send("post", `/social-drafts/${id}/revisions/${revs[0]!.id}/revert`);
+    expect(reverted.status).toBe(200);
+    expect(reverted.body.designSize).toBe("portrait");
   });
 });

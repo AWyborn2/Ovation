@@ -33,6 +33,7 @@ import { kindLabel } from "@/lib/social-studio";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { juniorSampleCardInput } from "@/lib/sample-card-inputs";
+import { useClubCreateSizes } from "@/lib/offered-sizes";
 import {
   TemplateThumb,
   usePreviewInput,
@@ -42,7 +43,8 @@ import {
 /**
  * The sizes a new design is started at (portrait and story sizes plan, Stage
  * 3): Portrait for the feed, first as the default, and Story. Square and
- * Landscape are retired for new designs; older ones keep theirs.
+ * Landscape are retired for new designs; older ones keep theirs. Create
+ * offers those of them the club has on (round 9, D17).
  */
 export const CREATE_SIZES: { value: CardSize; label: string }[] = [
   { value: "portrait", label: "Portrait" },
@@ -279,6 +281,9 @@ export function CreatePicker({
   onClose: () => void;
 }) {
   const [size, setSize] = useState<CardSize | null>(null);
+  // Only the sizes the club has on (round 9, D17): Create and the club's
+  // settings never disagree.
+  const clubSizes = useClubCreateSizes();
   const design = useStartDesign();
   const blankInput = usePreviewInput(BLANK_DESIGN_KIND, preview.clubName);
   const blank = target !== null && "blank" in target;
@@ -317,7 +322,7 @@ export function CreatePicker({
           </DialogDescription>
         </DialogHeader>
         <div role="radiogroup" aria-label="Size" className="flex flex-wrap gap-2">
-          {CREATE_SIZES.map((s) => (
+          {CREATE_SIZES.filter((s) => clubSizes.includes(s.value)).map((s) => (
             <button
               key={s.value}
               type="button"

@@ -230,7 +230,9 @@ New designs come in two sizes (plan `docs/plans/2026-11-19-portrait-story-sizes-
 - **Feed posts** (Facebook and Instagram, auto-post included) go out at Portrait. Square is sent only for an older design with no portrait boxes, or at a club that still has Square on with Portrait off. Landscape is never posted.
 - **Stories** go out at Story, with no caption.
 - **Settings** (Social Studio settings → Looks, sizes and sound → Output sizes) show the Portrait and Story switches. Square and Landscape show only while a club has them on, labelled "Older size: kept for your existing cards". Once off they can't be switched back on, and the server refuses it too. A club always keeps a feed size: switching Square off with Portrait off switches Portrait on, and Portrait can't be switched off while Square is off.
-- **Older cards** keep their own sizes whatever the switches: a square or landscape draft still opens and downloads at its size in the editor (Format and Download), the queue's Share to socials and the Card Sets editor. The post pack zip gives the club's switched-on sizes the design draws, or the design's own size when it draws none of them (a queued carousel always gives its saved size).
+- **Older cards** keep their own sizes: a square or landscape draft still opens and downloads at its size in the editor (Format and Download), the queue's Share to socials and the Card Sets editor, when it was made in that size (its saved size or a revision's, a queued carousel's saved size, or a draft with no saved size made before sizes were saved, 19 Nov 2026). A new card from a library look that happens to have Square or Landscape layers doesn't offer them (round 9). The post pack zip gives the club's switched-on sizes the design draws, or the design's own size when it draws none of them (a queued carousel gives its saved size).
+- **Never an empty size** (round 9): Format, Share to socials and Download offer only the sizes a design draws. A size it doesn't draw is refused on download (editor, post pack) and on posting, with a message saying what to pick. A carousel look without the chosen size shows "No Story size" (or the size asked for) on Create and is refused by the server, never swapped for another look.
+- **Story on for every club** (migration 0084, round 9): Create offers only the sizes a club has on, so Story is switched on for every club. Story stays switchable. Auto-post stays feed only: turning Story on never posts Stories automatically.
 
 **Deploy order (once)**, statement by statement in the Production SQL runner:
 
@@ -238,6 +240,7 @@ New designs come in two sizes (plan `docs/plans/2026-11-19-portrait-story-sizes-
 2. Paste `lib/db/migrations/0082_new_clubs_portrait_feed.sql` (new clubs start with Square off).
 3. Paste the two statements of `lib/db/migrations/0083_square_off_all_clubs.sql` one at a time, in order: Portrait on first where a club is about to lose Square, then Square off. Both are guarded, so running them again changes nothing.
 4. Run the check again: expect `square_on = 0` and `no_feed_size = 0`. Then republish.
+5. Round 9: paste the two statements of `lib/db/migrations/0084_story_on_all_clubs.sql` one at a time, in order (Story on for every club, then its default for new clubs). Check after with `select count(*) filter (where not size_story) as story_off from social_settings;` (expect 0). Then republish.
 
 ## 4. Maintenance
 

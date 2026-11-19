@@ -59,6 +59,13 @@ export type Props = {
    * goes off (D3). A new card has none: Portrait and Story only (D7).
    */
   olderSizes?: readonly CardSize[];
+  /** A stored item's own saved size (a Story card's Story): always offered. */
+  designSize?: CardSize | null;
+  /**
+   * The sizes a stored item's design draws (round 9 B13): no other size is
+   * offered, so nothing downloads blank. A new card leaves it out.
+   */
+  drawnSizes?: readonly CardSize[];
   /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,

@@ -75,6 +75,8 @@ export function ShareCardModal({
   packId: packIdProp,
   templateDoc,
   olderSizes,
+  designSize,
+  drawnSizes,
   onApprove,
   approveLabel = "Approve & download",
 }: Props) {
@@ -126,6 +128,8 @@ export function ShareCardModal({
     open,
     settings: bundle?.settings,
     olderSizes,
+    designSize,
+    drawnSizes,
   });
 
   // A "pack" (standard / built-in) card is one with no BYO template selected

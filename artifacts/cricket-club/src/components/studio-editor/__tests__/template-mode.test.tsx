@@ -162,9 +162,19 @@ describe("template editor", () => {
     open();
     fireEvent.click(await screen.findByRole("button", { name: "Text" }));
     fireEvent.click(screen.getByRole("button", { name: "Add a heading" }));
-    fireEvent.click(screen.getByRole("button", { name: "Just square" }));
+    // It opened at Portrait (round 9 B12), so the heading went on Portrait.
+    fireEvent.click(screen.getByRole("button", { name: "Just portrait" }));
     format("story");
     expect(layerBoxes()).toHaveLength(1);
+  });
+
+  it("round 9 B12: a four-size club template opens at Portrait, never an older size by default", async () => {
+    open();
+    const menu = await screen.findByRole("combobox", { name: "Format" });
+    expect((menu as HTMLSelectElement).value).toBe("portrait");
+    // Its older sizes stay one click away, as "(older size)" (KTD15 keeps them).
+    const options = [...(menu as HTMLSelectElement).options].map((o) => o.textContent);
+    expect(options).toEqual(["Portrait", "Story", "Square (older size)", "Landscape (older size)"]);
   });
 
   it("saves text style, including letter spacing, and a field token", async () => {
@@ -250,6 +260,7 @@ describe("template editor", () => {
   it("won't let a four-size template lose Square by accident (sizes plan, Stage 4)", async () => {
     const requests = open();
     await screen.findByRole("combobox", { name: "Format" });
+    format("square");
     selectLayer("title");
     // Delete it from Square only; its copies on the other sizes stay.
     fireEvent.keyDown(window, { key: "Delete" });
@@ -405,6 +416,7 @@ describe("template editor: copy, multi-select and arrange", () => {
   it("ctrl-click selects two layers; Match size gives them the first one's size", async () => {
     const requests = open({ template: template({ document: TWO_DOC }) });
     await screen.findByRole("combobox", { name: "Format" });
+    format("square");
     click(layerEl("title"));
     click(layerEl("badge"), { ctrlKey: true });
     expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
@@ -445,6 +457,7 @@ describe("template editor: copy, multi-select and arrange", () => {
   it("resizes a selection together from a corner, scaling its text", async () => {
     const requests = open({ template: template({ document: TWO_DOC }) });
     await screen.findByRole("combobox", { name: "Format" });
+    format("square");
     click(layerEl("title"));
     click(layerEl("badge"), { shiftKey: true });
     sizedBoard();

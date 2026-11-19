@@ -125,7 +125,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { setType, pages, templateRef } = parsed.data;
+    const { setType, pages, templateRef, size } = parsed.data;
     const known = new Set<string>(PAGE_KEYS);
     const unknown = pages.find((p) => !known.has(p));
     if (unknown !== undefined) {
@@ -138,6 +138,7 @@ router.post(
         await assembleCarouselPages(tenantId, setType, pages as PageKey[], {
           templateRef: templateRef ?? null,
           packId: await resolveDraftPack(tenantId, setTemplateKind(setType)),
+          ...(size ? { size } : {}),
         }),
       );
     } catch (err) {

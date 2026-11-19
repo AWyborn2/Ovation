@@ -42,7 +42,25 @@ const matchDayDoc = {
   ),
 };
 
-async function libraryTemplate(kind: string, document: unknown): Promise<number> {
+/** A Match Day look with every page but no Story size (an OMG T20 look, round 9 B13). */
+const noStoryShape = (id: string) => ({
+  id,
+  kind: "shape",
+  sizes: ["square", "portrait", "landscape"],
+  geometry: { square: box, portrait: box, landscape: box },
+});
+const noStoryMatchDayDoc = {
+  formatVersion: 2,
+  pages: Object.fromEntries(
+    ["fixture", "title", "sponsors"].map((p) => [p, { layers: [noStoryShape(`t20-${p}`)] }]),
+  ),
+};
+
+async function libraryTemplate(
+  kind: string,
+  document: unknown,
+  slug = `${LOOK}/${kind}`,
+): Promise<number> {
   const [look] = await db
     .insert(templateLooksTable)
     .values({ slug: LOOK, name: LOOK, origin: "bundle" })
@@ -51,7 +69,7 @@ async function libraryTemplate(kind: string, document: unknown): Promise<number>
   const [t] = await db
     .insert(libraryTemplatesTable)
     .values({
-      slug: `${LOOK}/${kind}`,
+      slug,
       lookId: look!.id,
       kind,
       name: `${kind} (test)`,
@@ -89,6 +107,7 @@ beforeAll(async () => {
   cookie = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
   lib.milestone = await libraryTemplate("milestone", placeholderDocument("milestone"));
   lib.matchDay = await libraryTemplate("matchDay", matchDayDoc);
+  lib.noStory = await libraryTemplate("matchDay", noStoryMatchDayDoc, `${LOOK}/t20-matchDay`);
 });
 
 afterAll(async () => {
@@ -210,6 +229,64 @@ describe("a templated (version 3) Weekend Carousel", () => {
       },
     });
     expect(res.status).toBe(400);
+  });
+
+  it("refuses a Story set drawn with a look that has no Story size, never swapping the look (round 9 B13)", async () => {
+    const carousel = (size: string) => ({
+      caption: "This weekend",
+      cardInput: {
+        kind: "matchDay",
+        weekendCarousel: {
+          version: 3,
+          templateRef: { libraryTemplateId: lib.noStory, version: 1 },
+          setType: "matchDay",
+          submissionId: randomUUID(),
+          size,
+          slides,
+        },
+      },
+    });
+    const count = async () =>
+      (
+        await db
+          .select({ id: socialDraftsTable.id })
+          .from(socialDraftsTable)
+          .where(eq(socialDraftsTable.tenantId, tenantId))
+      ).length;
+    const before = await count();
+    const story = await post(carousel("story"));
+    expect(story.status).toBe(409);
+    expect(story.body.error).toBe(
+      "This look has no Story size, so it can't draw this carousel at Story. Pick a look that comes in Story, or another size.",
+    );
+    // Nothing was queued in another look's place.
+    expect(await count()).toBe(before);
+    // The same look at a size it has draws with that look, not another.
+    const portrait = await post(carousel("portrait"));
+    expect(portrait.status).toBe(201);
+    expect(portrait.body.templateRef).toEqual({ libraryTemplateId: lib.noStory, version: 1 });
+    expect(portrait.body.adjustments.pages.fixture.layers[0].id).toBe("t20-fixture");
+  });
+
+  it("the composer's assembly preview refuses it too, given the size", async () => {
+    const body = {
+      setType: "matchDay",
+      pages: ["fixture"],
+      templateRef: { libraryTemplateId: lib.noStory, version: 1 },
+    };
+    const send = (extra: object) =>
+      request(app)
+        .post("/api/template-library/carousel-assembly")
+        .set("Cookie", cookie)
+        .set("x-tenant-id", String(tenantId))
+        .send({ ...body, ...extra });
+    const story = await send({ size: "story" });
+    expect(story.status).toBe(409);
+    expect(story.body.error).toMatch(/^This look has no Story size/);
+    const portrait = await send({ size: "portrait" });
+    expect(portrait.status).toBe(200);
+    expect(portrait.body.templateRef).toEqual({ libraryTemplateId: lib.noStory, version: 1 });
+    expect((await send({ size: "banner" })).status).toBe(400);
   });
 
   it("a version 1 carousel still saves with its pack", async () => {

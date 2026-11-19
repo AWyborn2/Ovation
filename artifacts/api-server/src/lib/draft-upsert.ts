@@ -1,3 +1,4 @@
+import { initialDesignSize } from "./draft-design-size";
 import { and, desc, eq, like, ne, sql } from "drizzle-orm";
 import {
   db,
@@ -400,6 +401,13 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           layerPhotos,
           // Whose sponsors the card carries; looked up when it is drawn.
           subjectPlayerId: e.subjectPlayerId,
+          // The size it is made at (round 9): a carousel's own size, else
+          // Portrait, always one its design draws.
+          designSize: initialDesignSize({
+            cardInput: input.cardInput,
+            adjustments: templated?.adjustments ?? null,
+            templateVersion: templated?.templateVersion ?? null,
+          }),
           ...(templated ?? {}),
         })
         .returning();

@@ -55,6 +55,7 @@ import {
   type CarouselSize,
 } from "@workspace/scorecard/queued-carousel";
 import { recordDraftRevision } from "../draft-revisions";
+import { keptDesignSize } from "../draft-design-size";
 import { normalizeDraftStatus } from "../draft-status";
 import { BLANK_PACK_ID, KIND_SOURCE } from "../kind-templates";
 import { MAX_TEMPLATE_NAME } from "./copies";
@@ -363,6 +364,19 @@ export async function saveDraftSetDesign(
     // A layout page no slide maps to (saved before the 17 Nov 2026 fix) goes.
     patch.adjustments = withoutStrandedLayouts(doc);
   }
+  // A size the saved design draws (round 9): a carousel's own size, else the
+  // draft's, never one the design lacks.
+  const carouselSize =
+    kind.layout === "carousel" ? readQueuedCarousel(patch.cardInput)?.size : null;
+  patch.designSize = keptDesignSize(
+    draft,
+    {
+      cardInput: patch.cardInput ?? draft.cardInput,
+      adjustments: patch.adjustments,
+      templateVersion: patch.templateVersion ?? null,
+    },
+    carouselSize ?? draft.designSize,
+  );
   return db.transaction(async (tx) => {
     await recordDraftRevision(draft, "edit", tx);
     const [row] = await tx

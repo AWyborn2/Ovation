@@ -10271,6 +10271,19 @@ export const CarouselAssemblyRequestSetType = {
   matchSummary: 'matchSummary',
 } as const;
 
+/**
+ * The size the set is made at. Every page must draw it: a picked template that doesn't is refused (409), never swapped for another look.
+ */
+export type CarouselAssemblyRequestSize = typeof CarouselAssemblyRequestSize[keyof typeof CarouselAssemblyRequestSize];
+
+
+export const CarouselAssemblyRequestSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
 export interface CarouselAssemblyRequest {
   setType: CarouselAssemblyRequestSetType;
   /**
@@ -10280,6 +10293,8 @@ export interface CarouselAssemblyRequest {
   pages: string[];
   /** The picked template; absent for the club's default. */
   templateRef?: TemplateRef | null;
+  /** The size the set is made at. Every page must draw it: a picked template that doesn't is refused (409), never swapped for another look. */
+  size?: CarouselAssemblyRequestSize;
 }
 
 export interface CarouselAssembly {
@@ -10431,6 +10446,14 @@ export const SocialDraftDesignSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export type SocialDraftOlderSizesItem = typeof SocialDraftOlderSizesItem[keyof typeof SocialDraftOlderSizesItem];
+
+
+export const SocialDraftOlderSizesItem = {
+  square: 'square',
   landscape: 'landscape',
 } as const;
 
@@ -10594,6 +10617,8 @@ export interface SocialDraft {
      * @nullable
      */
   designSize?: SocialDraftDesignSize;
+  /** The older sizes (Square, Landscape) this draft was made in and its design still draws: its saved size or a revision's, a queued carousel's saved size, or every older size its design draws for an older draft (no saved size, made before sizes were saved). The only older sizes its editor, the queue and the share window offer. A template having layers on an older size is not enough. */
+  olderSizes?: SocialDraftOlderSizesItem[];
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable

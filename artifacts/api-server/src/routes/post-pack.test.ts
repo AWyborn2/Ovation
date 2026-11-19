@@ -430,6 +430,62 @@ describe("POST /social-drafts/:id/post-pack", () => {
     });
   });
 
+  it("round 9 B13: a Story carousel whose design has no Story layers is refused, not downloaded blank", async () => {
+    const box = { x: 10, y: 10, w: 80, h: 20 };
+    const ids = ["page-1", "page-2", "page-3"];
+    const d = await draft({
+      packId: "blank",
+      templateVersion: 1,
+      cardInput: {
+        kind: "matchDay",
+        weekendCarousel: {
+          version: 3,
+          templateRef: { copyId: 1, version: 1 },
+          setType: "matchDay",
+          submissionId: crypto.randomUUID(),
+          size: "story",
+          slides: ids.map((id) => ({
+            id,
+            label: id,
+            pageId: id,
+            input: { kind: "matchDay" },
+            data: {},
+            junior: false,
+            sponsorsOn: false,
+            warnings: [],
+          })),
+        },
+      },
+      adjustments: {
+        formatVersion: 2,
+        set: "free",
+        pages: ids.map((id) => ({
+          id,
+          role: "fixed",
+          slot: "page",
+          kind: "matchDay",
+          page: "fixture",
+          layers: [
+            {
+              id: `${id}-t`,
+              kind: "text",
+              text: "T20",
+              sizes: ["square", "portrait", "landscape"],
+              geometry: { square: box, portrait: box, landscape: box },
+            },
+          ],
+        })),
+      },
+    });
+    renders.length = 0;
+    const res = await post(d.id);
+    expect(res.status, JSON.stringify(res.body)).toBe(422);
+    expect(res.body.error).toBe(
+      "This design has no Story size, so it can't download at Story. Change its look or size in the editor.",
+    );
+    expect(renders).toHaveLength(0);
+  });
+
   it("another tenant's draft is 404", async () => {
     const foreign = await draft({}, otherTenantId);
     expect((await post(foreign.id)).status).toBe(404);

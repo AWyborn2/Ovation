@@ -10,8 +10,9 @@ import {
   getCardVideoJob,
   type CardTheme as ApiCardTheme,
 } from "@workspace/api-client-react";
+import { emptySizeRefusal } from "@workspace/scorecard/design-sizes";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
-import type { CardAdjustments, PackCardData } from "@/lib/pack-render";
+import { BLANK_PACK_ID, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 
 export type DownloadFormat = "png" | "jpg" | "pdf" | "mp4" | "gif";
 export const DOWNLOAD_FORMATS: { value: DownloadFormat; label: string; hint: string }[] = [
@@ -51,6 +52,22 @@ export type CardRender = {
   junior?: boolean;
 };
 
+/**
+ * Why the card can't be downloaded at its size (round 9 B13): a design on the
+ * blank base that draws other sizes but not this one would save a blank
+ * image. Null when it can (a pack card, or a design with no layers yet).
+ */
+export function downloadRefusal(
+  card: Pick<CardRender, "input" | "size" | "packId" | "adjustments">,
+) {
+  if (card.packId !== BLANK_PACK_ID || !card.adjustments) return null;
+  return emptySizeRefusal(
+    card.adjustments,
+    card.input as unknown as Record<string, unknown>,
+    card.size,
+  );
+}
+
 /** The harness options for the card (the same props the canvas renders with). */
 export function harnessOptions(card: CardRender) {
   return {
@@ -81,6 +98,9 @@ export async function renderDownload(
   onProgress: (p: number) => void = () => {},
   signal?: AbortSignal,
 ): Promise<Blob> {
+  // Never a blank file (round 9 B13): refused before anything renders.
+  const refused = downloadRefusal(card);
+  if (refused) throw new Error(refused);
   const input = card.input as unknown as Record<string, unknown>;
   const options = harnessOptions(card) as unknown as Record<string, unknown>;
   if (!isClip(format)) {

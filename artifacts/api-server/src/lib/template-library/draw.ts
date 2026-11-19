@@ -29,8 +29,11 @@ import {
   lookTemplateSlug,
   normaliseDocument,
   pageForInput,
+  sizesWithLayers,
   templateKindFor,
+  type LayerDocument,
   type PageKey,
+  type TemplateSize,
   type TemplateDocumentV2,
   type TemplatePage,
 } from "@workspace/scorecard/kind-templates";
@@ -39,6 +42,7 @@ import {
   type CarouselSetType,
   type QueuedCarousel,
 } from "@workspace/scorecard/queued-carousel";
+import { DESIGN_SIZE_LABEL } from "@workspace/scorecard/design-sizes";
 import { BLANK_PACK_ID, ensureKindTemplate, type TemplatedDesign } from "../kind-templates";
 import { loadCopy } from "./copies";
 import { TemplateLibraryError } from "./errors";
@@ -131,6 +135,32 @@ const pagesOf = (document: unknown, kind: string) => {
   return { doc, pages: new Set(documentPages(doc)) };
 };
 
+/**
+ * Whether every one of `pages` of `doc` draws `size` (any size when none is
+ * asked for). A page with no layers at all draws nothing at any size, so it
+ * isn't a size problem.
+ */
+function drawsSize(
+  doc: TemplateDocumentV2,
+  pages: readonly PageKey[],
+  size: TemplateSize | undefined,
+): boolean {
+  if (!size) return true;
+  return pages.every((page) => {
+    const p = doc.pages[page] as unknown as LayerDocument | undefined;
+    if (!p || !Array.isArray(p.layers) || p.layers.length === 0) return true;
+    return sizesWithLayers(p).includes(size);
+  });
+}
+
+/** A picked template that doesn't come in the set's size (round 9 B13): refused, never swapped. */
+const noSize = (size: TemplateSize) => {
+  const label = DESIGN_SIZE_LABEL[size];
+  return new TemplateLibraryError(409, {
+    error: `This look has no ${label} size, so it can't draw this carousel at ${label}. Pick a look that comes in ${label}, or another size.`,
+  });
+};
+
 /** A look's (or else a slug's) library template for a kind, at its current version. */
 async function libraryTemplateFor(where: { lookId: number } | { slug: string }, kind: string) {
   const [row] = await db
@@ -202,6 +232,11 @@ export type AssemblyOptions = {
   templateRef?: { copyId?: number; libraryTemplateId?: number; version: number } | null;
   /** The club's pack for the set's kind: picks the fallback look. */
   packId: string | null;
+  /**
+   * The size the set is made at (round 9 B13): every page must draw it. A
+   * picked template that doesn't is refused, not swapped for the pack look.
+   */
+  size?: TemplateSize;
 };
 
 /**
@@ -215,6 +250,7 @@ export async function assembleCarouselPages(
   opts: AssemblyOptions,
 ): Promise<AssembledCarousel> {
   const kind = setTemplateKind(setType);
+  const size = opts.size;
   const needed = [...new Set<PageKey>([...BOOKEND_PAGES, ...slidePages])];
   // A Match Day set draws its bookends from its own template.
   const required = kind === BOOKEND_KIND ? needed : needed.filter((p) => !isBookendPage(p));
@@ -260,7 +296,8 @@ export async function assembleCarouselPages(
       const c = await candidate();
       if (!c) continue;
       const p = pagesOf(c.document, BOOKEND_KIND);
-      if (BOOKEND_PAGES.every((page) => p.pages.has(page))) return p.doc;
+      if (BOOKEND_PAGES.every((page) => p.pages.has(page)) && drawsSize(p.doc, BOOKEND_PAGES, size))
+        return p.doc;
     }
     return null;
   };
@@ -268,9 +305,19 @@ export async function assembleCarouselPages(
   const tryDraw = async (t: DrawnTemplate, useClubDefault: boolean) => {
     const own = pagesOf(t.document, kind);
     if (!required.every((p) => own.pages.has(p))) return null;
+    if (!drawsSize(own.doc, required, size)) return null;
     const bookends = await bookendsFor(t, useClubDefault);
     return bookends ? { t, own, bookends } : null;
   };
+
+  // A template the admin picked that has the pages but not the size is
+  // refused (round 9 B13): drawing the set with another look instead would
+  // be a silent swap.
+  if (opts.templateRef && size) {
+    const own = pagesOf(picked.document, kind);
+    if (required.every((p) => own.pages.has(p)) && !drawsSize(own.doc, required, size))
+      throw noSize(size);
+  }
 
   let drawn = await tryDraw(picked, true);
   if (!drawn) {
@@ -282,7 +329,9 @@ export async function assembleCarouselPages(
     drawn = row ? await tryDraw(fromLibraryRow(row, kind), false) : null;
   }
   if (!drawn) {
-    throw cannotDraw(`every page this carousel needs (${needed.join(", ")})`);
+    throw cannotDraw(
+      `every page this carousel needs (${needed.join(", ")})${size ? ` at ${DESIGN_SIZE_LABEL[size]}` : ""}`,
+    );
   }
 
   const { t, own, bookends } = drawn;

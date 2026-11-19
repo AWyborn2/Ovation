@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { assembleCarouselTemplate } from "@workspace/api-client-react";
+import { assembleCarouselTemplate, type TemplateRef } from "@workspace/api-client-react";
 import {
   documentRowsCapacity,
   normaliseDocument,
@@ -9,7 +9,11 @@ import {
   type PageKey,
 } from "@workspace/scorecard/kind-templates";
 import { carouselTemplateKind, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
-import { TemplatePicker, type PickedTemplate } from "@/components/template-library/template-picker";
+import {
+  sameRef,
+  TemplatePicker,
+  type PickedTemplate,
+} from "@/components/template-library/template-picker";
 import { previewSample } from "@/lib/kind-templates/samples";
 import { juniorSampleCardInput } from "@/lib/sample-card-inputs";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
@@ -51,9 +55,17 @@ export function useCarouselAssembly(
   setType: CarouselSetType,
   slides: readonly WeekendSlide[],
   picked: PickedTemplate | null,
-): { document: unknown; loading: boolean; error: string | null } {
+  size?: CardSize,
+): {
+  document: unknown;
+  loading: boolean;
+  error: string | null;
+  /** The template that draws the set, when it isn't the one picked (the pack look stood in). */
+  drawnWith: TemplateRef | null;
+} {
   const pages = useMemo(() => slidePages(slides), [slides]);
-  const body = { setType, pages, templateRef: picked?.ref ?? null };
+  // The size goes too: a picked look without it is refused, not swapped (round 9 B13).
+  const body = { setType, pages, templateRef: picked?.ref ?? null, ...(size ? { size } : {}) };
   const q = useQuery({
     queryKey: ["carousel-assembly", body],
     queryFn: () => assembleCarouselTemplate(body),
@@ -65,7 +77,9 @@ export function useCarouselAssembly(
     ? ((q.error as { data?: { error?: string } } | null)?.data?.error ??
       "Couldn't put this design together for the set.")
     : null;
-  return { document: q.data?.document, loading: q.isFetching, error };
+  const drawn = q.data?.templateRef ?? null;
+  const drawnWith = picked && drawn && !sameRef(drawn, picked.ref) ? drawn : null;
+  return { document: q.data?.document, loading: q.isFetching, error, drawnWith };
 }
 
 /**
@@ -93,6 +107,8 @@ export function CarouselTemplatePicker({ s }: { s: WeekendCarouselState }) {
       input={input}
       data={data}
       junior={junior}
+      size={s.size}
+      onUnpick={() => s.setPicked(null)}
     />
   );
 }

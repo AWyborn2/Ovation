@@ -47,9 +47,21 @@ describe("editorOpeningSize", () => {
     expect(editorOpeningSize("", { ...c, designSize: "portrait" })).toBe("portrait");
   });
 
-  it("then square, for an older draft with nothing saved", () => {
-    expect(editorOpeningSize("", { ...card, designSize: null })).toBe("square");
-    expect(editorOpeningSize("", card)).toBe("square");
+  it("then square, for an older draft with nothing saved (made at Square)", () => {
+    expect(editorOpeningSize("", { ...card, designSize: null, olderSizes: ["square"] })).toBe(
+      "square",
+    );
+    expect(
+      editorOpeningSize("", { ...card, designSize: null, olderSizes: ["square", "landscape"] }),
+    ).toBe("square");
+  });
+
+  it("round 9 B8: else Portrait, for a new card with nothing saved (a sweep's)", () => {
+    expect(editorOpeningSize("", { ...card, designSize: null, olderSizes: [] })).toBe("portrait");
+    expect(editorOpeningSize("", { ...card, designSize: null, olderSizes: ["landscape"] })).toBe(
+      "portrait",
+    );
+    expect(editorOpeningSize("", card)).toBe("portrait");
   });
 });
 
