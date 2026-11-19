@@ -373,22 +373,27 @@ export async function renderCardStill(
   input: unknown,
   options: unknown,
   harnessOrigin?: string | null,
-  out: { format?: StillFormat; scale?: number } = {},
+  out: { format?: StillFormat; scale?: number } & StillLimits = {},
 ): Promise<StillRenderResult> {
   const format: StillFormat = out.format ?? "png";
   const url = harnessUrl(harnessOrigin);
+  const attempts = Math.max(1, out.attempts ?? STILL_ATTEMPTS);
+  const limits = {
+    attemptTimeoutMs: out.attemptTimeoutMs ?? STILL_ATTEMPT_TIMEOUT_MS,
+    bootTimeoutMs: out.bootTimeoutMs ?? HARNESS_BOOT_TIMEOUT_MS,
+  };
   const release = await stillSlots.acquire();
   try {
     let lastError: unknown = null;
-    for (let attempt = 1; attempt <= STILL_ATTEMPTS; attempt++) {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
         // A retry never reuses a warm page: its image cache may hold the cut-off copy.
-        return await stillAttempt(input, options, url, format, out.scale, attempt > 1);
+        return await stillAttempt(input, options, url, format, out.scale, attempt > 1, limits);
       } catch (err) {
         if (err instanceof HarnessContractError) throw err;
         lastError = err;
         logger.warn(
-          { err: harnessMessage(err), attempt, of: STILL_ATTEMPTS },
+          { err: harnessMessage(err), attempt, of: attempts },
           "card still attempt failed",
         );
       }
@@ -410,6 +415,29 @@ export function harnessMessage(err: unknown): string {
 export const STILL_ATTEMPTS = 3;
 /** The longest one attempt may take, waits for images included. */
 export const STILL_ATTEMPT_TIMEOUT_MS = 60_000;
+/**
+ * How long a fresh harness page may take to load the web app and install the
+ * harness (page.goto, then the harness's `ready`), for a render someone is
+ * waiting on. Puppeteer's own TimeoutError ("Waiting failed: 30000ms
+ * exceeded") is this wait running out, not the card drawing.
+ */
+export const HARNESS_BOOT_TIMEOUT_MS = 30_000;
+/**
+ * The same wait for background work nobody watches (layout checks, template
+ * fit checks): a cold page on a busy server can need longer, and a retry an
+ * hour later costs far more than waiting here.
+ */
+export const BACKGROUND_BOOT_TIMEOUT_MS = 90_000;
+
+/** Per-call limits for a still (layout checks pass their own, see draft-render.ts). */
+export type StillLimits = {
+  /** Tries before the still fails (default STILL_ATTEMPTS). */
+  attempts?: number;
+  /** The longest one try may take to draw (default STILL_ATTEMPT_TIMEOUT_MS). */
+  attemptTimeoutMs?: number;
+  /** The longest a fresh harness page may take to boot (default HARNESS_BOOT_TIMEOUT_MS). */
+  bootTimeoutMs?: number;
+};
 
 async function stillAttempt(
   input: unknown,
@@ -418,10 +446,11 @@ async function stillAttempt(
   format: StillFormat,
   scale: number | undefined,
   fresh: boolean,
+  limits: { attemptTimeoutMs: number; bootTimeoutMs: number },
 ): Promise<StillRenderResult> {
   // A warm harness page (round 3 retest, #9): loading the web app for every
   // still made each download slide take many seconds.
-  const lease = await acquireStillPage(url, fresh);
+  const lease = await acquireStillPage(url, fresh, limits.bootTimeoutMs);
   const page: Page = lease.page;
   let reusable = false;
   let timer: NodeJS.Timeout | null = null;
@@ -434,10 +463,10 @@ async function stillAttempt(
         () =>
           reject(
             new Error(
-              `The card took longer than ${STILL_ATTEMPT_TIMEOUT_MS / 1000} s to draw (an image may be very slow).`,
+              `The card took longer than ${limits.attemptTimeoutMs / 1000} s to draw (an image may be very slow).`,
             ),
           ),
-        STILL_ATTEMPT_TIMEOUT_MS,
+        limits.attemptTimeoutMs,
       );
     });
     const result = await Promise.race([work, timeout]);
@@ -553,7 +582,11 @@ function scheduleReap(): void {
   reapTimer.unref?.();
 }
 
-async function acquireStillPage(url: string, fresh = false): Promise<StillLease> {
+async function acquireStillPage(
+  url: string,
+  fresh = false,
+  bootTimeoutMs = HARNESS_BOOT_TIMEOUT_MS,
+): Promise<StillLease> {
   reapStalePages();
   if (!fresh) {
     for (let i = idleStillPages.length - 1; i >= 0; i--) {
@@ -567,17 +600,49 @@ async function acquireStillPage(url: string, fresh = false): Promise<StillLease>
     page.on("pageerror", (err) =>
       logger.warn({ err: String(err) }, "card-still harness page error"),
     );
-    await page.goto(url, { waitUntil: "load", timeout: 30_000 });
-    await page.waitForFunction(
-      () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
-      { timeout: 30_000 },
+    await bootHarness(page, url, bootTimeoutMs, () =>
+      Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
     );
-    await assertHarnessContract(page, url);
     return { page, context, url, createdAt: Date.now() };
   } catch (err) {
     await context.close().catch(() => {});
     throw err;
   }
+}
+
+/**
+ * Open the harness on a fresh page and wait until `installed` holds, within
+ * one shared time limit (`polling` as Puppeteer's waitForFunction takes it;
+ * its default polls on animation frames). A wait that runs out says which
+ * step was slow and for how long, instead of Puppeteer's bare TimeoutError.
+ */
+async function bootHarness(
+  page: Page,
+  url: string,
+  timeoutMs: number,
+  installed: () => boolean,
+  polling?: number,
+): Promise<void> {
+  const started = Date.now();
+  let step = "load the card renderer page";
+  try {
+    await page.goto(url, { waitUntil: "load", timeout: timeoutMs });
+    step = "start the card renderer";
+    const left = Math.max(1_000, timeoutMs - (Date.now() - started));
+    await page.waitForFunction(installed, {
+      timeout: left,
+      ...(polling !== undefined ? { polling } : {}),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      throw new Error(
+        `The card renderer page didn't ${step} within ${Math.round(timeoutMs / 1000)} s ` +
+          `(after ${Math.round((Date.now() - started) / 1000)} s).`,
+      );
+    }
+    throw err;
+  }
+  await assertHarnessContract(page, url);
 }
 
 async function releaseStillPage(lease: StillLease, reusable: boolean): Promise<void> {
@@ -619,12 +684,13 @@ export async function renderFitCheck(
       logger.warn({ err: String(err) }, "fit-check harness page error"),
     );
     const fitUrl = harnessUrl(harnessOrigin);
-    await page.goto(fitUrl, { waitUntil: "load", timeout: 30_000 });
-    await page.waitForFunction(
+    await bootHarness(
+      page,
+      fitUrl,
+      BACKGROUND_BOOT_TIMEOUT_MS,
       () => typeof (globalThis as HarnessGlobal).__cardRenderHarness?.fitCheck === "function",
-      { timeout: 30_000, polling: 200 },
+      200,
     );
-    await assertHarnessContract(page, fitUrl);
     // The check holds the shared render queue, so it may never hang it.
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(

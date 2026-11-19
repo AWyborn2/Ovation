@@ -62,6 +62,7 @@ import { initialFit, requestFit } from "./fit";
 import { libraryAssetPolicyErrors } from "./assets";
 import { resolveTemplateRef } from "./draw";
 import { TemplateLibraryError } from "./errors";
+import { layoutCheckOwed } from "../layout-check-state";
 
 /** The set type each queued carousel set type is drawn as. */
 const CAROUSEL_SET_TYPE: Record<CarouselSetType, DataSetType> = {
@@ -334,7 +335,7 @@ export async function saveDraftSetDesign(
     templateRef: ref,
     templateVersion: ref?.version ?? draft.templateVersion ?? 1,
     designEditedAt: new Date(),
-    layoutCheckPending: true,
+    ...layoutCheckOwed(),
     autoReadyAt: null,
   };
   if (kind.layout === "carousel") {

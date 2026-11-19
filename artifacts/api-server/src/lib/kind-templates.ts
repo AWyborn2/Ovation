@@ -43,6 +43,7 @@ import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { recordDraftRevision } from "./draft-revisions";
 import { isAutoPhoto } from "./draft-enrich";
 import { draftLayerPhotos } from "./layer-photos";
+import { layoutCheckOwed, type LayoutCheckOwed } from "./layout-check-state";
 
 export const KIND_SOURCE = "kind";
 
@@ -364,7 +365,7 @@ export async function applyTemplateToDrafts(
         templateRef: { copyId: template.id, version: template.version },
         designEditedAt: null,
         layoutWarnings: null,
-        layoutCheckPending: true,
+        ...layoutCheckOwed(),
       })
       .where(eq(socialDraftsTable.id, draft.id));
     changed += 1;
@@ -379,8 +380,7 @@ export type TemplatedDesign = {
   adjustments: unknown;
   templateVersion: number;
   templateRef: DraftTemplateRefColumn;
-  layoutCheckPending: true;
-};
+} & LayoutCheckOwed;
 
 /** A draft's design copied from one of the club's templates (ADR-002). */
 export function designFromCopy(template: CardTemplateRow): TemplatedDesign {
@@ -389,7 +389,7 @@ export function designFromCopy(template: CardTemplateRow): TemplatedDesign {
     adjustments: structuredClone(template.adjustments ?? { layers: [] }),
     templateVersion: template.version,
     templateRef: { copyId: template.id, version: template.version },
-    layoutCheckPending: true,
+    ...layoutCheckOwed(),
   };
 }
 

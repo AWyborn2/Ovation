@@ -21,6 +21,7 @@ import { templatedDesignFor } from "./kind-templates";
 import { resolveLayerPhotos } from "./layer-photos";
 import { placeDraft } from "./posting-writer";
 import { cancelDraftPublications } from "./publishing/publications";
+import { layoutCheckOwed } from "./layout-check-state";
 
 /**
  * One draft per event (Social Studio automation, KTD3).
@@ -468,7 +469,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
       : {}),
     // New data can change how a templated card lays out: it owes a fresh
     // layout check before automation can touch it again (KTD10).
-    ...(current.templateVersion !== null ? { layoutCheckPending: true } : {}),
+    ...(current.templateVersion !== null ? layoutCheckOwed() : {}),
     // A never-auto-ready draft still in review loses any deadline it had (KTD14). A
     // ready one is left to the sweep's re-timing, which tells auto-promotion apart
     // from an admin's approval.

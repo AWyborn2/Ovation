@@ -81,6 +81,20 @@ export interface SocialDraft {
   layoutWarnings?: SocialDraftLayoutWarnings;
   /** True while a templated draft owes a layout check; automation leaves it alone until then. */
   layoutCheckPending?: boolean;
+  /** How many times the sweep has tried this draft's layout check since its design or data last changed. */
+  layoutCheckAttempts?: number;
+  /**
+     * When the sweep last tried this draft's layout check; null until it has.
+     * @nullable
+     */
+  layoutCheckLastTriedAt?: Date | null;
+  /** True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it. */
+  layoutCheckFailed?: boolean;
+  /**
+     * Why the last layout check try failed; null when it hasn't failed.
+     * @nullable
+     */
+  layoutCheckError?: string | null;
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable

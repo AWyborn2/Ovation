@@ -266,17 +266,73 @@ export function clubTimeLabel(iso: string): string {
   }).format(new Date(iso));
 }
 
-/** A templated draft's layout state for the queue (card kind templates, KTD10). */
-export type LayoutState = "clear" | "checking" | "needs-look";
+/**
+ * A templated draft's layout state for the queue (card kind templates, KTD10).
+ * "check-failed": the layout check failed three times in a row and stopped
+ * trying (retest 7); like "needs-look" the card stays out of automation.
+ */
+export type LayoutState = "clear" | "checking" | "check-failed" | "needs-look";
 
-/** Whether a draft's layout is fine, still being checked, or needs a look. */
-export function layoutState(
-  d: Pick<SocialDraft, "templateVersion" | "layoutCheckPending" | "layoutWarnings">,
-): LayoutState {
+type LayoutFields = Pick<
+  SocialDraft,
+  | "templateVersion"
+  | "layoutCheckPending"
+  | "layoutWarnings"
+  | "layoutCheckFailed"
+  | "layoutCheckLastTriedAt"
+>;
+
+/** Whether a draft's layout is fine, still being checked, its check failed, or it needs a look. */
+export function layoutState(d: LayoutFields): LayoutState {
   if (d.templateVersion == null) return "clear";
   const warnings = Object.values(d.layoutWarnings ?? {});
   if (warnings.some((list) => (list?.length ?? 0) > 0)) return "needs-look";
-  return d.layoutCheckPending ? "checking" : "clear";
+  if (!d.layoutCheckPending) return "clear";
+  return d.layoutCheckFailed ? "check-failed" : "checking";
+}
+
+/** Whether the queue's "Needs a look" filter lists the draft: warnings, or a failed check. */
+export function layoutNeedsAttention(d: LayoutFields): boolean {
+  const state = layoutState(d);
+  return state === "needs-look" || state === "check-failed";
+}
+
+/** A time in club time, numeric: "19/11/2026, 2:05 pm". */
+export function clubDateTimeLabel(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Perth",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(new Date(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("day")}/${part("month")}/${part("year")}, ${part("hour")}:${part("minute")} ${part("dayPeriod").toLowerCase()}`;
+}
+
+/**
+ * The queue badge for a draft's layout check, or null when there's none to
+ * show: "Checking layout", with when it was last tried once the sweep has
+ * tried, and "Layout check failed" once it gave up.
+ */
+export function layoutCheckBadge(
+  d: LayoutFields,
+): { label: string; tone: StatusTone; lastTried: string | null; text: string } | null {
+  const state = layoutState(d);
+  if (state !== "checking" && state !== "check-failed") return null;
+  const lastTried = d.layoutCheckLastTriedAt
+    ? `last tried ${clubDateTimeLabel(d.layoutCheckLastTriedAt)}`
+    : null;
+  const label = state === "check-failed" ? "Layout check failed" : "Checking layout";
+  return {
+    label,
+    tone: state === "check-failed" ? "danger" : "neutral",
+    lastTried,
+    text: lastTried ? `${label} · ${lastTried}` : label,
+  };
 }
 
 const SIZE_NAME: Record<string, string> = {

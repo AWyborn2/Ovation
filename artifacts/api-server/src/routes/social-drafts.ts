@@ -89,6 +89,7 @@ import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { notePhotoUsage } from "../lib/card-content/photos";
+import { layoutCheckOwed } from "../lib/layout-check-state";
 
 const router: IRouter = Router();
 
@@ -661,7 +662,7 @@ router.post(
           adjustments: assembled.document,
           templateVersion: assembled.templateRef.version,
           templateRef: assembled.templateRef,
-          layoutCheckPending: true,
+          ...layoutCheckOwed(),
         };
       } else if (
         !carousel &&
@@ -951,7 +952,7 @@ router.patch(
         // A templated draft's design edit: `editedAt` stays the caption
         // marker, and the new layout owes a check (KTD10).
         patch.designEditedAt = new Date();
-        patch.layoutCheckPending = true;
+        Object.assign(patch, layoutCheckOwed());
       } else {
         patch.editedAt = patch.editedAt ?? new Date();
       }

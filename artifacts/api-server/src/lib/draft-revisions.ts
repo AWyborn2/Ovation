@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { draftPhotoFocus } from "./photo-focus-snapshot";
 import { draftLayerPhotos } from "./layer-photos";
+import { layoutCheckNotOwed, layoutCheckOwed } from "./layout-check-state";
 
 /** Revisions kept per draft; the oldest are dropped beyond this (KTD2). */
 export const MAX_DRAFT_REVISIONS = 20;
@@ -117,7 +118,7 @@ export async function revertDraftToRevision(
           packId: rev.packId,
           templateVersion: rev.templateVersion,
           layoutWarnings: null,
-          layoutCheckPending: rev.templateVersion !== null,
+          ...(rev.templateVersion !== null ? layoutCheckOwed() : layoutCheckNotOwed()),
         }
       : {};
     const [updated] = await tx

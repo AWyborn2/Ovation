@@ -839,6 +839,16 @@ export const socialDraftsTable = pgTable(
     templateVersion: integer("template_version"),
     layoutWarnings: jsonb("layout_warnings").$type<DraftLayoutWarningsColumn>(),
     layoutCheckPending: boolean("layout_check_pending").notNull().default(false),
+    // The layout check's tries since the design last changed (retest 7, migration
+    // 0080): how many sweeps tried to render it, when the last one did, and,
+    // after LAYOUT_CHECK_MAX_ATTEMPTS failed tries, that it gave up ("check
+    // failed, needs a look") and why. A failed check stays pending, so
+    // automation still leaves the draft alone; an edit, apply or data refresh
+    // clears all four and the sweep tries again.
+    layoutCheckAttempts: integer("layout_check_attempts").notNull().default(0),
+    layoutCheckLastTriedAt: timestamp("layout_check_last_tried_at", { withTimezone: true }),
+    layoutCheckFailed: boolean("layout_check_failed").notNull().default(false),
+    layoutCheckError: text("layout_check_error"),
     designEditedAt: timestamp("design_edited_at", { withTimezone: true }),
     // Template library (ADR-011): which template this draft's design was copied
     // from — a club copy or a library version. Null for pack drafts and for

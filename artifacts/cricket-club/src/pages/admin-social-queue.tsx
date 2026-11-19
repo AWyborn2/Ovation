@@ -54,6 +54,8 @@ import {
   publicationLabel,
   draftInput,
   draftSource,
+  layoutCheckBadge,
+  layoutNeedsAttention,
   layoutState,
   draftStatus,
   draftSubline,
@@ -90,6 +92,18 @@ function slideCount(d: SocialDraft): number {
   if (!input) return 1;
   const opts = (d.adjustments as { set?: CardSetOptions } | null | undefined)?.set ?? {};
   return planCardSet(input, opts).length;
+}
+
+/** The layout check's pill: "Checking layout · last tried …" or "Layout check failed · …". */
+function LayoutCheckPill({ draft }: { draft: SocialDraft }) {
+  const badge = layoutCheckBadge(draft);
+  if (!badge) return null;
+  return (
+    <StatusPill tone={badge.tone}>
+      {badge.label}
+      {badge.lastTried && <span className="font-normal">{` · ${badge.lastTried}`}</span>}
+    </StatusPill>
+  );
 }
 
 /** "3 captions refreshed · 2 edited kept" */
@@ -221,7 +235,7 @@ export default function AdminSocialQueue() {
     return c;
   }, [drafts]);
   const lookCount = useMemo(
-    () => drafts.filter((d) => draftStatus(d) === status && layoutState(d) === "needs-look").length,
+    () => drafts.filter((d) => draftStatus(d) === status && layoutNeedsAttention(d)).length,
     [drafts, status],
   );
   const grades = useMemo(
@@ -237,7 +251,7 @@ export default function AdminSocialQueue() {
           (family === "all" || d.family === family) &&
           (grade === "all" || draftGrade(d) === grade) &&
           (team === "all" || isJuniorDraft(d) === (team === "junior")) &&
-          (!needsLook || layoutState(d) === "needs-look"),
+          (!needsLook || layoutNeedsAttention(d)),
       ),
     [drafts, status, family, grade, team, batchIds, needsLook],
   );
@@ -304,7 +318,7 @@ export default function AdminSocialQueue() {
           <span className="text-muted-foreground">{draftSource(d)}</span>
           {d.staleSince && <StatusPill tone="danger">Data changed</StatusPill>}
           {layoutState(d) === "needs-look" && <StatusPill tone="danger">Needs a look</StatusPill>}
-          {layoutState(d) === "checking" && <StatusPill tone="neutral">Checking layout</StatusPill>}
+          <LayoutCheckPill draft={d} />
           {(d.publications ?? [])
             .filter((p) => p.status !== "cancelled")
             .map((p) => (
