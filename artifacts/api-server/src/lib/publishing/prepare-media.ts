@@ -9,11 +9,16 @@ import { env } from "../../config";
 import { objectUrl, photoStore } from "../photo-store";
 import { renderDraftCaption } from "../draft-enrich";
 import {
-  enabledSizes,
+  designSizes,
+  feedSize,
   layoutWarningsFrom,
   renderDraftSlides,
   stillRendererOverridden,
+  type CardSize,
+  type DraftDesign,
+  type SizeSwitches,
 } from "../draft-render";
+import { ensureSettings } from "../social-cards-helpers";
 import {
   isJuniorDraftRow,
   loadWithheldJuniorNames,
@@ -26,8 +31,9 @@ import { DestinationError, type Platform, type PostType, type PreparedPost } fro
  * 2026-10-06-001 U4, KTD7–KTD9). Rendered at publish time, so a correction
  * that lands after scheduling still goes out corrected (R9, AE6):
  *
- *  - feed posts use the club's portrait size when it is on, else square;
- *    Stories use the story size; landscape is never published;
+ *  - feed posts use the club's portrait size when it is on, else square,
+ *    within the sizes the design covers (`postSize`); Stories use the story
+ *    size; landscape is never published;
  *  - every image is an sRGB JPEG under 8 MB (Instagram takes JPEG only) at an
  *    unguessable object path, served from the public origin Meta can reach;
  *  - a list card that splits into a set publishes as one carousel/album or a
@@ -106,6 +112,30 @@ async function draftCaption(
   );
 }
 
+/**
+ * The size one publication renders at (portrait and story sizes plan,
+ * Stage 1): a Story at the story size, a feed post at the design's feed size
+ * (`feedSize`: portrait when the design covers it and the club has portrait
+ * on or the design has no square; otherwise square). A design without the
+ * size is refused rather than posted blank.
+ */
+export function postSize(draft: DraftDesign, postType: PostType, settings: SizeSwitches): CardSize {
+  const design = designSizes(draft);
+  if (postType === "story") {
+    if (design.includes("story")) return "story";
+    throw new DestinationError(
+      "permanent",
+      "This design has no Story size, so it can't post as a Story. Add a Story size in the editor, or post it to the feed.",
+    );
+  }
+  const feed = feedSize(design, settings);
+  if (feed) return feed;
+  throw new DestinationError(
+    "permanent",
+    "This design has no Portrait size, so it can't post to the feed. Add a Portrait size in the editor, or post it as a Story.",
+  );
+}
+
 export async function prepareMedia(
   draft: SocialDraftRow,
   platform: Platform,
@@ -115,8 +145,7 @@ export async function prepareMedia(
 ): Promise<PreparedMedia> {
   const origin = publicOrigin();
   const harness = harnessOrigin();
-  const sizes = await enabledSizes(draft.tenantId);
-  const size = postType === "story" ? "story" : sizes.includes("portrait") ? "portrait" : "square";
+  const size = postSize(draft, postType, await ensureSettings(draft.tenantId));
 
   const slides = await renderDraftSlides(draft, [size], harness, log);
   if (slides.length === 0) throw new DestinationError("permanent", "The card rendered nothing.");

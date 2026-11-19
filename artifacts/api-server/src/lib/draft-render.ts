@@ -10,13 +10,19 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
 import {
   expandSetSlides,
+  isDocumentV2,
   isSetDocument,
   mapCarouselSlides,
+  normaliseDocument,
+  pageForInput,
   planTemplateSlides,
   setPageRenderDocument,
+  sizesWithLayers,
+  TEMPLATE_SIZE_ORDER,
   type DraftLayoutWarnings,
   type LayerDocument,
   type LayoutWarning,
+  type PageKey,
 } from "@workspace/scorecard/kind-templates";
 import { env } from "../config";
 import { ensureSettings } from "./social-cards-helpers";
@@ -37,6 +43,7 @@ import {
   queuedSlideAdjustments,
   carouselPackId,
   carouselSlideData,
+  carouselTemplateKind,
 } from "@workspace/scorecard/queued-carousel";
 
 /**
@@ -122,9 +129,16 @@ export type RenderedSlide = {
 
 type Logger = Parameters<typeof loadActiveSponsors>[1];
 
-/** The sizes the club has switched on, in a fixed order (square if none). */
-export async function enabledSizes(tenantId: number): Promise<CardSize[]> {
-  const settings = await ensureSettings(tenantId);
+/** A club's size switches (its social settings row, or the part of it sizes need). */
+export type SizeSwitches = {
+  sizeSquare: boolean;
+  sizePortrait: boolean;
+  sizeStory: boolean;
+  sizeLandscape: boolean;
+};
+
+/** The sizes a club's switches turn on, in a fixed order (square if none). */
+export function clubSizes(settings: SizeSwitches): CardSize[] {
   const sizes: CardSize[] = [
     ...(settings.sizeSquare ? (["square"] as const) : []),
     ...(settings.sizePortrait ? (["portrait"] as const) : []),
@@ -132,6 +146,123 @@ export async function enabledSizes(tenantId: number): Promise<CardSize[]> {
     ...(settings.sizeLandscape ? (["landscape"] as const) : []),
   ];
   return sizes.length ? sizes : ["square"];
+}
+
+/** The sizes the club has switched on, in a fixed order (square if none). */
+export async function enabledSizes(tenantId: number): Promise<CardSize[]> {
+  return clubSizes(await ensureSettings(tenantId));
+}
+
+/** What `draftSizes` reads from a draft. */
+export type DraftDesign = Pick<SocialDraftRow, "cardInput" | "adjustments" | "templateVersion">;
+
+/** The sizes every one of `pages` that has layers puts a layer on (none when no page has any). */
+function pagesCoverage(pages: readonly LayerDocument[]): CardSize[] {
+  const drawn = pages.filter((p) => Array.isArray(p.layers) && p.layers.length > 0);
+  if (drawn.length === 0) return [];
+  return TEMPLATE_SIZE_ORDER.filter((size) =>
+    drawn.every((p) => sizesWithLayers(p).includes(size)),
+  );
+}
+
+/**
+ * The sizes a layer document covers: a flat (v1) document is one page; a
+ * page-based (v2) one is read for the pages `inputs` draw, chosen as the
+ * renderer chooses them.
+ */
+function layerDocumentCoverage(
+  doc: unknown,
+  kind: string,
+  inputs: readonly Record<string, unknown>[],
+): CardSize[] {
+  const normalised = normaliseDocument(doc, kind);
+  if (!isDocumentV2(doc)) return pagesCoverage(Object.values(normalised.pages).filter((p) => !!p));
+  const pages = new Set<PageKey>(
+    inputs.map((input) =>
+      pageForInput({ ...input, kind: typeof input.kind === "string" ? input.kind : kind }),
+    ),
+  );
+  return pagesCoverage([...pages].map((page) => normalised.pages[page] ?? { layers: [] }));
+}
+
+/**
+ * The sizes a draft's design draws (portrait and story sizes plan, Stage 1),
+ * read from its document, never guessed: a templated card's layer document
+ * (for the page it draws), a set design's pages (every page with layers, as
+ * the library's coverage reads them), a templated carousel's pages for its
+ * slides. A pack-based draft or carousel (before the template library)
+ * covers all four, and so does a document no size can be read from: it
+ * renders as it does today.
+ */
+export function designSizes(draft: DraftDesign): CardSize[] {
+  const input = (draft.cardInput ?? {}) as Record<string, unknown>;
+  const kind = typeof input.kind === "string" ? input.kind : "card";
+  const carousel = readQueuedCarousel(input);
+  let covered: CardSize[];
+  if (carousel) {
+    if (carousel.version !== 3) return [...TEMPLATE_SIZE_ORDER];
+    covered = isSetDocument(draft.adjustments)
+      ? pagesCoverage(draft.adjustments.pages)
+      : layerDocumentCoverage(
+          draft.adjustments,
+          carouselTemplateKind(carousel.setType),
+          carousel.slides.map((s) => s.input as unknown as Record<string, unknown>),
+        );
+  } else {
+    if (draft.templateVersion === null) return [...TEMPLATE_SIZE_ORDER];
+    covered = isSetDocument(draft.adjustments)
+      ? pagesCoverage(draft.adjustments.pages)
+      : layerDocumentCoverage(draft.adjustments, kind, [input]);
+  }
+  return covered.length ? covered : [...TEMPLATE_SIZE_ORDER];
+}
+
+/**
+ * The size a design posts to the feed at: portrait when it covers portrait
+ * and either the club has portrait on or the design has no square; otherwise
+ * square. That is today's rule for every four-size design. Null when the
+ * design has neither, so it has no feed size.
+ */
+export function feedSize(design: readonly CardSize[], settings: SizeSwitches): CardSize | null {
+  if (design.includes("portrait") && (settings.sizePortrait || !design.includes("square")))
+    return "portrait";
+  return design.includes("square") ? "square" : null;
+}
+
+/**
+ * What the sizes are for. Posting, layout checks and emails (`post`) follow
+ * the club's switches; a download (`download`: the post pack) keeps a
+ * design's own older size even when the club has switched it off (D3).
+ */
+export type SizeUse = "post" | "download";
+
+/**
+ * The sizes to render a draft at (portrait and story sizes plan, Stage 1):
+ * the club's enabled sizes narrowed to the sizes the draft's design covers,
+ * never empty, so no design renders a size it has no boxes on.
+ *
+ *  - `post`: the narrowed sizes; when the design covers none of the club's
+ *    sizes, its feed size, else its own sizes.
+ *  - `download`: a queued carousel's own saved size whatever the switches
+ *    (as today); otherwise the narrowed sizes, else the design's own sizes.
+ *
+ * A four-size design (every stored design, pack-based or templated) gets
+ * exactly the club's enabled sizes, as before.
+ */
+export function draftSizes(
+  draft: DraftDesign,
+  settings: SizeSwitches,
+  use: SizeUse = "post",
+): CardSize[] {
+  if (use === "download") {
+    const carousel = readQueuedCarousel(draft.cardInput ?? {});
+    if (carousel) return [carousel.size];
+  }
+  const design = designSizes(draft);
+  const narrowed = clubSizes(settings).filter((size) => design.includes(size));
+  if (narrowed.length) return narrowed;
+  const feed = use === "post" ? feedSize(design, settings) : null;
+  return feed ? [feed] : design;
 }
 
 /**
@@ -465,7 +596,8 @@ function unchangedSince(draft: SocialDraftRow) {
 }
 
 /**
- * Render a templated draft at every enabled size and store its layout
+ * Render a templated draft at every enabled size its design covers
+ * (`draftSizes`) and store its layout
  * warnings (KTD10). A full check replaces the stored warnings, so a size the
  * club has since turned off can't keep the draft blocked. The result is only
  * stored if the draft is unchanged since it was read — an apply, edit or data
@@ -474,7 +606,9 @@ function unchangedSince(draft: SocialDraftRow) {
  * whatever images load (see RenderPurpose).
  */
 export async function checkDraftLayout(draft: SocialDraftRow, log: Logger): Promise<LayoutCheck> {
-  const sizes = await enabledSizes(draft.tenantId);
+  // Only the enabled sizes the design draws: a size it lacks gets no entry,
+  // so a blank size can't hold the draft out of automation (Stage 1).
+  const sizes = draftSizes(draft, await ensureSettings(draft.tenantId));
   const slides = await renderDraftSlides(draft, sizes, null, log, "layoutCheck");
   const warnings = layoutWarningsFrom(slides, sizes);
   const updated = await db

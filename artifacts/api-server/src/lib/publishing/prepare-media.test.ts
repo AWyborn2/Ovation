@@ -15,6 +15,7 @@ import {
   captionTemplatesTable,
   type SocialDraftRow,
 } from "@workspace/db";
+import { TEMPLATE_SIZES } from "@workspace/scorecard/kind-templates";
 import { setStillRenderer } from "../draft-render";
 import { logger } from "../logger";
 import { setPhotoStore, type PhotoStore } from "../photo-store";
@@ -180,6 +181,94 @@ describe("prepareMedia", () => {
     );
     const edited = await draft({ editedAt: new Date(), caption: "My own words" });
     expect((await prepareMedia(edited, "facebook", "feed", log)).post.caption).toBe("My own words");
+  });
+
+  describe("a portrait-and-story design (portrait and story sizes plan, Stage 1)", () => {
+    const box = { x: 10, y: 10, w: 80, h: 20 };
+    const layer = (sizes: string[]) => ({
+      id: "title",
+      kind: "text",
+      text: "Sam Smith",
+      sizes,
+      geometry: Object.fromEntries(sizes.map((s) => [s, box])),
+    });
+    const designed = (sizes: string[]) =>
+      draft({ packId: "blank", templateVersion: 1, adjustments: { layers: [layer(sizes)] } });
+
+    /** Renders at the size's real pixels, so the posted JPEG's size can be read. */
+    async function sizedRender(_input: unknown, options: unknown) {
+      const size = (options as { size: keyof typeof TEMPLATE_SIZES }).size;
+      renders.push({ size });
+      const { w, h } = TEMPLATE_SIZES[size];
+      const buffer = await sharp({
+        create: { width: w, height: h, channels: 4, background: "#123456" },
+      })
+        .png()
+        .toBuffer();
+      return { buffer, contentType: "image/png", warnings: [] };
+    }
+
+    const jpegSize = async (path: string) => {
+      const meta = await sharp(objects.get(path)!.data).metadata();
+      return [meta.format, meta.width, meta.height];
+    };
+
+    it("posts to the feed at 1080 × 1350 at a club with portrait off", async () => {
+      setStillRenderer(sizedRender);
+      await db
+        .update(socialSettingsTable)
+        .set({ sizePortrait: false })
+        .where(eq(socialSettingsTable.tenantId, tenantId));
+      try {
+        const d = await designed(["portrait", "story"]);
+        const { imagePaths } = await prepareMedia(d, "instagram", "feed", log);
+        expect(renders).toEqual([{ size: "portrait" }]);
+        expect(await jpegSize(imagePaths[0])).toEqual(["jpeg", 1080, 1350]);
+        // A four-size design at the same club still posts square, as today.
+        renders.length = 0;
+        await prepareMedia(
+          await designed(["square", "portrait", "story", "landscape"]),
+          "facebook",
+          "feed",
+          log,
+        );
+        expect(renders).toEqual([{ size: "square" }]);
+      } finally {
+        await db
+          .update(socialSettingsTable)
+          .set({ sizePortrait: true })
+          .where(eq(socialSettingsTable.tenantId, tenantId));
+      }
+    });
+
+    it("posts a Story at 1080 × 1920", async () => {
+      setStillRenderer(sizedRender);
+      const { post, imagePaths } = await prepareMedia(
+        await designed(["portrait", "story"]),
+        "instagram",
+        "story",
+        log,
+      );
+      expect(renders).toEqual([{ size: "story" }]);
+      expect(await jpegSize(imagePaths[0])).toEqual(["jpeg", 1080, 1920]);
+      expect(post.caption).toBeNull();
+    });
+
+    it("refuses a Story for a design without story boxes, rendering nothing", async () => {
+      const d = await designed(["square", "portrait"]);
+      await expect(prepareMedia(d, "instagram", "story", log)).rejects.toThrow(
+        /no Story size, so it can't post as a Story/,
+      );
+      expect(renders).toEqual([]);
+      expect(objects.size).toBe(0);
+    });
+
+    it("refuses a feed post for a design with neither portrait nor square", async () => {
+      await expect(
+        prepareMedia(await designed(["story"]), "facebook", "feed", log),
+      ).rejects.toThrow(/no Portrait size, so it can't post to the feed/);
+      expect(renders).toEqual([]);
+    });
   });
 
   it("fails clearly without a public origin, and cleanup removes the images", async () => {

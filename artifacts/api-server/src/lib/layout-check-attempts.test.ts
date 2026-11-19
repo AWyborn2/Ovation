@@ -344,6 +344,52 @@ describe("what a layout check draws", () => {
     expect(calls[0]!.options.strictImages).toBe(true);
     expect(calls[0]!.limits).toBeUndefined();
   });
+
+  it("checks only the enabled sizes the design draws, so a size it lacks can't block it (Stage 1)", async () => {
+    await db
+      .update(socialSettingsTable)
+      .set({ sizeStory: true, sizeLandscape: true })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    try {
+      const box = { x: 0, y: 0, w: 100, h: 20 };
+      const newDesign = await draft({
+        adjustments: {
+          layers: [
+            {
+              id: "title",
+              kind: "text",
+              text: "Round 7",
+              sizes: ["portrait", "story"],
+              geometry: { portrait: box, story: box },
+            },
+          ],
+        },
+      });
+      const result = await checkDraftLayout(newDesign, logger);
+      expect(calls.map((c) => c.options.size)).toEqual(["story"]);
+      expect(calls.every((c) => c.options.strictImages === false)).toBe(true);
+      expect(result.warnings).toEqual({ story: [] });
+      const stored = await reload(newDesign.id);
+      expect(stored.layoutWarnings).toEqual({ story: [] });
+      expect(stored.layoutCheckPending).toBe(false);
+      expect(layoutBlocksAutomation(stored)).toBe(false);
+
+      // A four-size design is checked at every enabled size, as before.
+      calls.length = 0;
+      const fourSize = await draft();
+      expect((await checkDraftLayout(fourSize, logger)).warnings).toEqual({
+        square: [],
+        story: [],
+        landscape: [],
+      });
+      expect(calls.map((c) => c.options.size)).toEqual(["square", "story", "landscape"]);
+    } finally {
+      await db
+        .update(socialSettingsTable)
+        .set({ sizeStory: false, sizeLandscape: false })
+        .where(eq(socialSettingsTable.tenantId, tenantId));
+    }
+  });
 });
 
 describe("the queue API", () => {

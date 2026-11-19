@@ -7,14 +7,15 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { objectUrl, photoStore } from "../lib/photo-store";
-import { enabledSizes, renderDraftSlides } from "../lib/draft-render";
-import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
+import { draftSizes, renderDraftSlides } from "../lib/draft-render";
+import { ensureSettings } from "../lib/social-cards-helpers";
 
 export { setStillRenderer, type CardSize } from "../lib/draft-render";
 
 /**
  * `POST /social-drafts/:id/post-pack` — everything needed to share one card
- * (Social Studio R7, KTD9): a PNG per enabled format rendered through the
+ * (Social Studio R7, KTD9): a PNG per enabled format the design covers
+ * (`draftSizes`, download), rendered through the
  * still harness with the club's branding, the draft's caption, and a zip of
  * both for desktop download.
  */
@@ -44,11 +45,12 @@ router.post(
     const kind = typeof input.kind === "string" ? input.kind : "card";
     const store = photoStore();
     try {
+      // A download: a queued carousel at its own saved size, else the club's
+      // sizes the design draws, keeping the design's own older size when the
+      // club has switched it off (portrait and story sizes plan, D3).
       const slides = await renderDraftSlides(
         draft,
-        readQueuedCarousel(input)
-          ? [readQueuedCarousel(input)!.size]
-          : await enabledSizes(tenantId),
+        draftSizes(draft, await ensureSettings(tenantId), "download"),
         harnessOriginFromHeaders(req.headers),
         req.log,
       );
