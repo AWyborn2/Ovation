@@ -32,6 +32,27 @@ const toContent = (c: object) => c as unknown as Record<string, unknown>;
 /** A source's club-time day (timestamps cross midnight in club time, not UTC/browser time). */
 export const carouselMatchDay = (value: string | null): string | null => resultDay(value);
 
+/**
+ * A carousel game id for a scorecard (results and match summary sets). A source
+ * namespace avoids fixture/import/junior ID collisions; the rounds picker
+ * (carousel-rounds.ts) ids the same games the same way.
+ */
+export const scorecardCarouselId = (matchId: number, junior: boolean): number =>
+  -(matchId + (junior ? 1_000_000_000 : 0));
+
+/**
+ * Whether a scorecard has a final result a results card can show. An abandoned
+ * (washed-out) match is a final result: it gets a "no result" card even though no
+ * winner or result line was recorded.
+ */
+export function hasFinalResult(match: { result?: string | null; abandoned?: unknown }): boolean {
+  if (match.abandoned === true) return true;
+  const result = match.result?.trim();
+  return (
+    !!result && !/\b(pending|scheduled|in progress|unknown|upcoming|not started)\b/i.test(result)
+  );
+}
+
 /** Grade labels as the same team: "A Grade" / "a-grade" / "A GRADE". */
 function sameGrade(a: string, b: string): boolean {
   const key = (g: string) => g.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -52,6 +73,8 @@ export async function carouselContent(
   from: string,
   to: string,
   audience: "all" | "senior" | "junior" = "all",
+  /** Only these carousel game ids (a rounds pick); absent, every game in the range. */
+  only?: ReadonlySet<number>,
 ): Promise<{
   fixtures: FixtureRow[];
   content: Content;
@@ -63,7 +86,7 @@ export async function carouselContent(
   const warnings: string[] = [];
   const juniorSources =
     (type === "matchDay" || type === "teamList") && audience !== "senior"
-      ? await juniorCarouselContent(tenantId, type, from, to)
+      ? await juniorCarouselContent(tenantId, type, from, to, only)
       : { fixtures: [], content: {}, warnings: [], junior: new Map<number, JuniorFixtureMeta>() };
   if (audience === "junior" && (type === "matchDay" || type === "teamList")) return juniorSources;
   if (type === "matchDay")
@@ -148,21 +171,15 @@ export async function carouselContent(
   for (const match of candidates) {
     const day = carouselMatchDay(match.matchDate);
     if (!day) {
-      undated++;
+      if (!only) undated++;
       continue;
     }
     if (day < from || day > to) continue;
+    const id = scorecardCarouselId(match.id, match.junior);
+    if (only && !only.has(id)) continue;
     const label = `${match.grade} v ${match.opponent || "opponent unknown"}`;
-    // An abandoned (washed-out) match is a final result: it gets a "no result"
-    // card even though no winner or result line was recorded.
     const abandoned = "abandoned" in match && match.abandoned === true;
-    if (
-      !abandoned &&
-      (!match.result?.trim() ||
-        /\b(pending|scheduled|in progress|unknown|upcoming|not started)\b/i.test(
-          match.result.trim(),
-        ))
-    ) {
+    if (!hasFinalResult({ result: match.result, abandoned })) {
       warnings.push(`${label}: result is not available yet.`);
       continue;
     }
@@ -194,9 +211,7 @@ export async function carouselContent(
       );
       continue;
     }
-    // A source namespace avoids fixture/import/junior ID collisions. We offer
-    // only the canonical scorecard, not additional copies from linked fixtures.
-    const id = -(match.id + (match.junior ? 1_000_000_000 : 0));
+    // We offer only the canonical scorecard, not additional copies from linked fixtures.
     const fixture = {
       id,
       tenantId,

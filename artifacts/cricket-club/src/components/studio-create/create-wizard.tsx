@@ -12,7 +12,7 @@ import {
   type CreateSocialDraftRequest,
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
-import { Check, Plus } from "lucide-react";
+import { Check, Layers, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   CardFormRouter,
@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import {
   CAROUSEL_SET_OF,
   SENIOR_KINDS,
+  carouselChoices,
   STEP_LABELS,
   carouselOnly,
   kindsFor,
@@ -56,7 +57,7 @@ import {
   type CreateState,
   type CreateTeam,
 } from "./model";
-import { CarouselFlow } from "./carousel-flow";
+import { BlankCarouselButton, CarouselFlow } from "./carousel-flow";
 import { JuniorTeamPicker } from "./junior-team-picker";
 import { TeamPicker } from "./team-picker";
 
@@ -106,7 +107,7 @@ export function CreateWizard() {
   const [size, setSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
   const design = useStartDesign();
 
-  const kind = s.kind && s.kind !== "blank" ? s.kind : null;
+  const kind = s.kind && s.kind !== "blank" && s.kind !== "carousel" ? s.kind : null;
   // Kinds with rows (players, matches, ladder rows …) are filled by hand in their
   // form, every column shown. A junior card only ever takes a junior builder's
   // names (juniors fail closed), so it has no hand form here.
@@ -172,7 +173,8 @@ export function CreateWizard() {
       <ol aria-label="Steps" className="flex flex-wrap gap-2">
         {STEP_LABELS.map((label, i) => {
           const n = (i + 1) as CreateState["step"];
-          const skipped = s.kind !== null && !steps.includes(n);
+          // Carousel set's chooser hands over to the set's own steps 3 and 4.
+          const skipped = s.kind !== null && s.kind !== "carousel" && !steps.includes(n);
           const on = s.step === n;
           const done = !skipped && n < s.step;
           return (
@@ -213,6 +215,16 @@ export function CreateWizard() {
             setFilled(null);
             const mode = carouselOnly(s.team, k) ? ("many" as const) : ("one" as const);
             go({ kind: k, mode, step: nextStep({ ...s, kind: k, mode }) });
+          }}
+        />
+      )}
+
+      {s.step === 2 && s.kind === "carousel" && (
+        <CarouselTypeStep
+          team={s.team}
+          onPick={(k) => {
+            setFilled(null);
+            go({ kind: k, mode: "many", step: 3 });
           }}
         />
       )}
@@ -454,6 +466,47 @@ function ModeStep({
   );
 }
 
+/**
+ * Carousel set, step 2: which set to make. Each opens its own kind's Fill from as a
+ * carousel; "Pick by hand" starts a blank carousel. Juniors get their own list.
+ */
+function CarouselTypeStep({
+  team,
+  onPick,
+}: {
+  team: CreateTeam;
+  onPick: (kind: CardKind) => void;
+}) {
+  return (
+    <section aria-labelledby="carousel-heading" className="space-y-4">
+      <h3 id="carousel-heading" className="text-lg font-semibold">
+        What sort of carousel?
+      </h3>
+      <ul aria-label="Carousel sets" className="grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+        {carouselChoices(team).map((o) => (
+          <li key={o.kind}>
+            <button
+              type="button"
+              onClick={() => onPick(o.kind)}
+              className="flex h-full w-full flex-col items-start gap-1 rounded-xl border border-border bg-card p-5 text-left hover:border-primary"
+            >
+              <span className="text-base font-semibold">{o.label}</span>
+              <span className="text-sm text-muted-foreground">{o.hint}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap items-center gap-3">
+        <BlankCarouselButton junior={team === "junior"} />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Every set has a cover, a slide for each team or game, then your sponsors.
+        {team === "junior" && " Junior sets use junior data only."}
+      </p>
+    </section>
+  );
+}
+
 const JUNIOR_LABELS: Partial<Record<CardKind, string>> = {
   matchDay: "Junior Match Day",
   teamList: "Junior Team List",
@@ -476,7 +529,7 @@ function KindStep({
   juniorsOn: boolean;
   onTeam: (team: CreateTeam) => void;
   picked: CreateState["kind"];
-  onPick: (kind: CardKind | "blank") => void;
+  onPick: (kind: CardKind | "blank" | "carousel") => void;
 }) {
   const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
@@ -489,7 +542,7 @@ function KindStep({
   const rest = junior ? [] : SENIOR_KINDS.filter((k) => !first.includes(k));
   const [more, setMore] = useState(rest.includes(picked as CardKind));
 
-  const tile = (k: CardKind | "blank") => (
+  const tile = (k: CardKind | "blank" | "carousel") => (
     <li key={k}>
       <button
         type="button"
@@ -501,11 +554,14 @@ function KindStep({
         )}
       >
         {k === "blank" && <Plus className="h-4 w-4 text-primary-text" aria-hidden />}
+        {k === "carousel" && <Layers className="h-4 w-4 text-primary-text" aria-hidden />}
         {k === "blank"
           ? "Blank design"
-          : junior
-            ? (JUNIOR_LABELS[k] ?? kindLabel(k))
-            : kindLabel(k)}
+          : k === "carousel"
+            ? "Carousel set"
+            : junior
+              ? (JUNIOR_LABELS[k] ?? kindLabel(k))
+              : kindLabel(k)}
       </button>
     </li>
   );
@@ -541,6 +597,7 @@ function KindStep({
       </div>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {first.map(tile)}
+        {tile("carousel")}
         {!junior && tile("blank")}
       </ul>
       <p className="text-sm text-muted-foreground">

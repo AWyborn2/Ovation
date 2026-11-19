@@ -10867,6 +10867,40 @@ export interface TrackedLink {
   createdAt: string;
 }
 
+export interface CarouselRound {
+  /** Unique within its season ("other" for Other games) */
+  key: string;
+  /** The round as the club names it ("Round 5", "Semi Final", "Other games") */
+  label: string;
+  /** The round's first game day, YYYY-MM-DD, club time */
+  from: string;
+  /** The round's last game day, YYYY-MM-DD, club time */
+  to: string;
+  /** Games with no round label */
+  other: boolean;
+  /** The round's games, as getWeekendCarouselSources ids them */
+  gameIds: number[];
+}
+
+export interface CarouselRoundSeason {
+  /** Season start year (2025 = 2025/26) */
+  season: number;
+  /** The season's name, "2025/26" */
+  label: string;
+  rounds: CarouselRound[];
+}
+
+export interface CarouselRounds {
+  seasons: CarouselRoundSeason[];
+  /**
+     * The season the picker opens on; null when no game has a round label
+     * @nullable
+     */
+  defaultSeason: number | null;
+  /** Round keys the picker opens on: the next round (Team List, Match Day) or the most recent completed round (Results, Match Summary). */
+  defaultRounds: string[];
+}
+
 /**
  * Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
  */
@@ -13339,6 +13373,11 @@ to: string;
  * Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.
  */
 fields?: string;
+/**
+ * Only these games, comma-separated carousel game ids (the `gameIds` of the rounds picked from getCarouselRounds or getJuniorCarouselRounds). Games outside the date range are still left out. Absent: every game in the range.
+ * @pattern ^-?\d+(,-?\d+)*$
+ */
+ids?: string;
 };
 
 export type GetWeekendCarouselSourcesSetType = typeof GetWeekendCarouselSourcesSetType[keyof typeof GetWeekendCarouselSourcesSetType];
@@ -13358,6 +13397,34 @@ export const GetWeekendCarouselSourcesAudience = {
   all: 'all',
   senior: 'senior',
   junior: 'junior',
+} as const;
+
+export type GetCarouselRoundsParams = {
+setType?: GetCarouselRoundsSetType;
+};
+
+export type GetCarouselRoundsSetType = typeof GetCarouselRoundsSetType[keyof typeof GetCarouselRoundsSetType];
+
+
+export const GetCarouselRoundsSetType = {
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  results: 'results',
+  matchSummary: 'matchSummary',
+} as const;
+
+export type GetJuniorCarouselRoundsParams = {
+setType?: GetJuniorCarouselRoundsSetType;
+};
+
+export type GetJuniorCarouselRoundsSetType = typeof GetJuniorCarouselRoundsSetType[keyof typeof GetJuniorCarouselRoundsSetType];
+
+
+export const GetJuniorCarouselRoundsSetType = {
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  results: 'results',
+  matchSummary: 'matchSummary',
 } as const;
 
 export type ListFixturesParams = {
