@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchSummary",
-  "version": 10,
+  "version": 11,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -2963,7 +2963,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 8.17,
+                  "w": 12.06,
                   "y": 12.26,
                   "h": 31.27,
                   "show": "backdrop",
@@ -2973,53 +2973,9 @@
                   }
                 },
                 {
-                  "field": "grade",
-                  "x": 0,
-                  "w": 0.22,
-                  "y": 12.26,
-                  "h": 31.27,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "opposition",
-                  "x": 7.95,
-                  "w": 0.22,
-                  "y": 12.26,
-                  "h": 31.27,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "result",
-                  "x": 0,
-                  "w": 8.17,
-                  "y": 12.26,
-                  "h": 1.91,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "clubScore",
-                  "x": 0,
-                  "w": 8.17,
-                  "y": 41.62,
-                  "h": 1.91,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
                   "field": "word",
-                  "x": 0,
-                  "w": 8.17,
+                  "x": 1.61,
+                  "w": 8.83,
                   "y": 12.26,
                   "h": 31.27,
                   "style": {
@@ -3032,8 +2988,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 9.5,
-                  "w": 46.59,
+                  "x": 13.39,
+                  "w": 42.7,
                   "y": 15.2,
                   "h": 25.4,
                   "style": {
@@ -3146,7 +3102,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 8.17,
+                  "w": 12.06,
                   "y": 12.26,
                   "h": 31.27,
                   "show": "backdrop",
@@ -3156,53 +3112,9 @@
                   }
                 },
                 {
-                  "field": "grade",
-                  "x": 0,
-                  "w": 0.22,
-                  "y": 12.26,
-                  "h": 31.27,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "opposition",
-                  "x": 7.95,
-                  "w": 0.22,
-                  "y": 12.26,
-                  "h": 31.27,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "result",
-                  "x": 0,
-                  "w": 8.17,
-                  "y": 12.26,
-                  "h": 1.91,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "clubScore",
-                  "x": 0,
-                  "w": 8.17,
-                  "y": 41.62,
-                  "h": 1.91,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
                   "field": "word",
-                  "x": 0,
-                  "w": 8.17,
+                  "x": 1.61,
+                  "w": 8.83,
                   "y": 12.26,
                   "h": 31.27,
                   "style": {
@@ -3215,8 +3127,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 9.5,
-                  "w": 46.59,
+                  "x": 13.39,
+                  "w": 42.7,
                   "y": 15.2,
                   "h": 25.4,
                   "style": {
@@ -3329,7 +3241,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 8.68,
+                  "w": 12.87,
                   "y": 10.4,
                   "h": 26.41,
                   "show": "backdrop",
@@ -3339,53 +3251,9 @@
                   }
                 },
                 {
-                  "field": "grade",
-                  "x": 0,
-                  "w": 0.22,
-                  "y": 10.4,
-                  "h": 26.41,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "opposition",
-                  "x": 8.46,
-                  "w": 0.22,
-                  "y": 10.4,
-                  "h": 26.41,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "result",
-                  "x": 0,
-                  "w": 8.68,
-                  "y": 10.4,
-                  "h": 1.53,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "clubScore",
-                  "x": 0,
-                  "w": 8.68,
-                  "y": 35.28,
-                  "h": 1.53,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
                   "field": "word",
-                  "x": 0,
-                  "w": 8.68,
+                  "x": 1.72,
+                  "w": 9.42,
                   "y": 10.4,
                   "h": 26.41,
                   "style": {
@@ -3398,8 +3266,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 10.02,
-                  "w": 43.16,
+                  "x": 14.21,
+                  "w": 38.97,
                   "y": 12.84,
                   "h": 21.51,
                   "style": {
@@ -3512,7 +3380,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 8.68,
+                  "w": 12.87,
                   "y": 10.4,
                   "h": 26.41,
                   "show": "backdrop",
@@ -3522,53 +3390,9 @@
                   }
                 },
                 {
-                  "field": "grade",
-                  "x": 0,
-                  "w": 0.22,
-                  "y": 10.4,
-                  "h": 26.41,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "opposition",
-                  "x": 8.46,
-                  "w": 0.22,
-                  "y": 10.4,
-                  "h": 26.41,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "result",
-                  "x": 0,
-                  "w": 8.68,
-                  "y": 10.4,
-                  "h": 1.53,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "clubScore",
-                  "x": 0,
-                  "w": 8.68,
-                  "y": 35.28,
-                  "h": 1.53,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
                   "field": "word",
-                  "x": 0,
-                  "w": 8.68,
+                  "x": 1.72,
+                  "w": 9.42,
                   "y": 10.4,
                   "h": 26.41,
                   "style": {
@@ -3581,8 +3405,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 10.02,
-                  "w": 43.16,
+                  "x": 14.21,
+                  "w": 38.97,
                   "y": 12.84,
                   "h": 21.51,
                   "style": {
@@ -3696,7 +3520,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 9.34,
+                  "w": 13.93,
                   "y": 10.18,
                   "h": 27.24,
                   "show": "backdrop",
@@ -3706,53 +3530,9 @@
                   }
                 },
                 {
-                  "field": "grade",
-                  "x": 0,
-                  "w": 0.34,
-                  "y": 10.18,
-                  "h": 27.24,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "opposition",
-                  "x": 9.0,
-                  "w": 0.34,
-                  "y": 10.18,
-                  "h": 27.24,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "result",
-                  "x": 0,
-                  "w": 9.34,
-                  "y": 10.18,
-                  "h": 2.11,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "clubScore",
-                  "x": 0,
-                  "w": 9.34,
-                  "y": 35.31,
-                  "h": 2.11,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
                   "field": "word",
-                  "x": 0,
-                  "w": 9.34,
+                  "x": 1.87,
+                  "w": 10.2,
                   "y": 10.18,
                   "h": 27.24,
                   "style": {
@@ -3765,8 +3545,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 10.87,
-                  "w": 38.35,
+                  "x": 15.46,
+                  "w": 33.76,
                   "y": 13.1,
                   "h": 21.39,
                   "style": {
@@ -3876,7 +3656,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 9.03,
+                  "w": 12.99,
                   "y": 10.52,
                   "h": 27.17,
                   "show": "backdrop",
@@ -3886,53 +3666,9 @@
                   }
                 },
                 {
-                  "field": "grade",
-                  "x": 0,
-                  "w": 0.31,
-                  "y": 10.52,
-                  "h": 27.17,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "opposition",
-                  "x": 8.72,
-                  "w": 0.31,
-                  "y": 10.52,
-                  "h": 27.17,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "result",
-                  "x": 0,
-                  "w": 9.03,
-                  "y": 10.52,
-                  "h": 2.1,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
-                  "field": "clubScore",
-                  "x": 0,
-                  "w": 9.03,
-                  "y": 35.59,
-                  "h": 2.1,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--gold)"
-                  }
-                },
-                {
                   "field": "word",
-                  "x": 0,
-                  "w": 9.03,
+                  "x": 1.74,
+                  "w": 9.51,
                   "y": 10.52,
                   "h": 27.17,
                   "style": {
@@ -3945,8 +3681,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 10.92,
-                  "w": 41.82,
+                  "x": 14.88,
+                  "w": 37.86,
                   "y": 13.47,
                   "h": 21.26,
                   "style": {

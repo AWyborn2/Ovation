@@ -1,6 +1,6 @@
 {
   "name": "Club Kit matchDay",
-  "version": 10,
+  "version": 11,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -2808,9 +2808,9 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 90.1,
+                "x": 76.9,
                 "y": 86.4,
-                "w": 3.3,
+                "w": 16.75,
                 "h": 3.43
               },
               "portrait": {
@@ -2987,7 +2987,7 @@
               "square": {
                 "x": 18,
                 "y": 12.54,
-                "w": 24.51,
+                "w": 40,
                 "h": 1.94
               },
               "portrait": {
@@ -3030,7 +3030,7 @@
               "landscape": {
                 "x": 9.45,
                 "y": 12.47,
-                "w": 12.87,
+                "w": 34.87,
                 "h": 2.06
               }
             },
