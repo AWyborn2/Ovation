@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark matchSummary",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3088,7 +3088,7 @@
                 {
                   "field": "word",
                   "x": 1.73,
-                  "w": 4.92,
+                  "w": 6.06,
                   "y": 11.54,
                   "h": 27,
                   "show": "backdrop",
@@ -3100,7 +3100,7 @@
                 {
                   "field": "word",
                   "x": 1.73,
-                  "w": 6.04,
+                  "w": 6.06,
                   "y": 11.54,
                   "h": 27,
                   "style": {
@@ -3108,13 +3108,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 7.77,
-                  "w": 57.68,
+                  "x": 9.15,
+                  "w": 56.3,
                   "y": 17.7,
                   "h": 19.5,
                   "style": {
@@ -3286,7 +3286,7 @@
                 {
                   "field": "word",
                   "x": 1.9,
-                  "w": 5.49,
+                  "w": 7.28,
                   "y": 11.4,
                   "h": 27.08,
                   "show": "backdrop",
@@ -3298,7 +3298,7 @@
                 {
                   "field": "word",
                   "x": 1.9,
-                  "w": 6.75,
+                  "w": 7.28,
                   "y": 11.4,
                   "h": 27.08,
                   "style": {
@@ -3306,13 +3306,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 8.65,
-                  "w": 55.03,
+                  "x": 10.44,
+                  "w": 53.24,
                   "y": 17.93,
                   "h": 19.56,
                   "style": {
@@ -3484,7 +3484,7 @@
                 {
                   "field": "word",
                   "x": 1.5,
-                  "w": 4.27,
+                  "w": 7.28,
                   "y": 11.62,
                   "h": 26.95,
                   "show": "backdrop",
@@ -3496,7 +3496,7 @@
                 {
                   "field": "word",
                   "x": 1.5,
-                  "w": 5.25,
+                  "w": 7.28,
                   "y": 11.62,
                   "h": 26.95,
                   "style": {
@@ -3504,13 +3504,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 6.75,
-                  "w": 56.66,
+                  "x": 10.04,
+                  "w": 53.37,
                   "y": 17.98,
                   "h": 19.47,
                   "style": {
@@ -3682,7 +3682,7 @@
                 {
                   "field": "word",
                   "x": 1.96,
-                  "w": 5.44,
+                  "w": 7.0,
                   "y": 11.88,
                   "h": 26.72,
                   "show": "backdrop",
@@ -3694,7 +3694,7 @@
                 {
                   "field": "word",
                   "x": 1.96,
-                  "w": 6.69,
+                  "w": 7.0,
                   "y": 11.88,
                   "h": 26.72,
                   "style": {
@@ -3702,13 +3702,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 8.65,
-                  "w": 55.27,
+                  "x": 11.11,
+                  "w": 52.81,
                   "y": 19.31,
                   "h": 19.31,
                   "style": {

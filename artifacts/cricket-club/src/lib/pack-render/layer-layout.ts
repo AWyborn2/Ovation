@@ -126,6 +126,64 @@ const FAINT = 0.15;
 /** Layers that put something in a box: type, an image, a photo, a list, a group. */
 const CONTENT_KINDS = new Set(["text", "image", "photo", "rows", "group"]);
 
+/**
+ * Whether a frame's box holds a slot's: round it (no more than four times its
+ * area) or under it (most of the frame on it, the slot no more than four times
+ * the frame's area: a tile on a full-card photo isn't that photo's frame).
+ */
+function holds(box: LayerBox, slot: LayerBox): boolean {
+  const area = areaOf(box);
+  return (
+    (encloses(box, slot) && area <= 4 * areaOf(slot)) ||
+    (overlapArea(box, slot) >= 0.6 * area && areaOf(slot) <= 4 * area)
+  );
+}
+
+/** A sponsor logo token: a strip's, the weekend's or a player sponsor's. */
+const SPONSOR_LOGO_TOKEN = /^(?:(?:weekend)?[Ss]ponsor\d+|playerSponsor\d*Logo)$/;
+
+/** A fill on the look's ink-on-accent token, near-black for a light club colour. */
+const ACCENT_INK_FILL = /^\s*var\(\s*--accent-ink\b/;
+
+/**
+ * The plates of drawn sponsor logos that are drawn light (dev retest 6, card
+ * 978): a token-free shape filled with `--accent-ink` under or round exactly
+ * one sponsor logo that is drawn. A logo is fitted (contained) in its box and
+ * keeps its shape, so a dark plate as wide as that box showed a dark bar on
+ * each side of a squarish logo (and a dark logo all but vanished on it).
+ * Logos are made for a light ground: the plate is drawn light, so the space
+ * beside the fitted logo reads as the logo's own ground, as a sponsor tile in
+ * a list already does (`SPONSOR_LOGO_PLATE`). A colour a design picked itself
+ * (white, a club colour) is kept.
+ */
+export function sponsorLogoPlates(
+  siblings: readonly TemplateLayerV2[],
+  boxOf: (layer: TemplateLayerV2) => LayerBox | null,
+  filled: (token: string, slot: TemplateLayerV2) => boolean,
+  tokensOf: (layer: TemplateLayerV2) => readonly string[],
+): Set<TemplateLayerV2> {
+  const plates = new Set<TemplateLayerV2>();
+  const slots = siblings
+    .map((layer) => ({ layer, token: imageSlotToken(layer), box: boxOf(layer) }))
+    .filter(
+      (s): s is { layer: TemplateLayerV2; token: string; box: LayerBox } =>
+        !!s.token && !!s.box && areaOf(s.box) > 0,
+    );
+  if (!slots.some((s) => SPONSOR_LOGO_TOKEN.test(s.token))) return plates;
+  for (const layer of siblings) {
+    if (layer.kind !== "shape" || tokensOf(layer).length > 0) continue;
+    const fill = (layer.style as { fill?: unknown } | undefined)?.fill;
+    if (typeof fill !== "string" || !ACCENT_INK_FILL.test(fill)) continue;
+    const box = boxOf(layer);
+    if (!box || areaOf(box) <= 0) continue;
+    const held = slots.filter((s) => holds(box, s.box));
+    if (held.length !== 1) continue;
+    const slot = held[0]!;
+    if (SPONSOR_LOGO_TOKEN.test(slot.token) && filled(slot.token, slot.layer)) plates.add(layer);
+  }
+  return plates;
+}
+
 export interface EmptySlotOptions {
   /** Which layers are slots, and for what: every image slot by default (`imageSlotToken`). */
   slotToken?: (layer: TemplateLayerV2) => string | null;
@@ -189,11 +247,7 @@ export function emptySlotFrames(
     // Round the slot (no more than four times its area) or under it (most of
     // the frame on it, the slot no more than four times the frame's area: a
     // tile on a full-card photo isn't that photo's frame).
-    const held = slots.filter(
-      (s) =>
-        (encloses(box, s.box) && area <= 4 * areaOf(s.box)) ||
-        (overlapArea(box, s.box) >= 0.6 * area && areaOf(s.box) <= 4 * area),
-    );
+    const held = slots.filter((s) => holds(box, s.box));
     if (held.length !== 1) continue;
     const slot = held[0]!;
     if (has(slot.token, slot.layer)) continue;

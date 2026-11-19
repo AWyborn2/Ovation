@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match day",
-  "version": 13,
+  "version": 14,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -594,7 +594,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:19l9gim0482zmt"
           },
@@ -623,7 +623,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:0tw195u1n28x3v"
           },
@@ -652,7 +652,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:0h67wb31k6o4ty"
           },

@@ -22,6 +22,7 @@ import {
   fitVariantLabel,
   flattenLayers,
   isSetDocument,
+  isTitleLayer,
   layerTokens,
   missingCoreFields,
   normaliseDocument,
@@ -90,6 +91,8 @@ export type FitMount = (
 const ALLOWED_IMAGE = /^(?:https:\/\/|data:image\/|\/(?!\/))/;
 /** An image this faint is a watermark, which may bleed off the card. */
 const WATERMARK_OPACITY = 0.3;
+/** Set by the fit step on text it ended in "…" (`layer-fit.ts`). */
+const ELLIPSIS_USED = "data-fit-ellipsis-used";
 /** Markup a sanitised vector never holds. */
 const UNSAFE_VECTOR = "script, foreignObject, [href], [xlink\\:href]";
 
@@ -128,6 +131,13 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
       )
     )
       issues.push({ ...at, reason: "hidden-shown", layerId });
+    // A title fits by shrinking (and wrapping, where its box allows): it is
+    // never cut short with "…" (dev retest 6: Club Kit's junior Match Day).
+    if (
+      isTitleLayer(layer, ctx.kind, ctx.page) &&
+      (el.hasAttribute(ELLIPSIS_USED) || el.querySelector(`[${ELLIPSIS_USED}]`))
+    )
+      issues.push({ ...at, reason: "title-ellipsis", layerId });
     const box = el.getBoundingClientRect();
     // A faint image (a watermark crest at a few percent) may bleed off the card by
     // design; data you read may not.
@@ -183,6 +193,9 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
   // Every list's text stays inside its cell and its row (Ash's round 5 retest:
   // Club Kit's Team of the Week stat values ran out of their tiles).
   issues.push(...rowTextOutsideIssues(root, layers, at));
+  // A results day row's label ("WON", "RESULT") keeps clear of the grade and
+  // team beside it (dev retest 6, set 992: Duotone's "RESULT" into "Year 8").
+  if (ctx.page === "day") issues.push(...resultLabelIssues(root, layers, at));
 
   for (const img of Array.from(root.querySelectorAll("img"))) {
     const src = img.getAttribute("src") ?? "";
@@ -433,6 +446,53 @@ function rowTextOutsideIssues(
           row: Number(row.getAttribute("data-row-index")),
           field: cell.getAttribute("data-row-cell") ?? undefined,
           detail: `"${(cell.textContent ?? "").slice(0, 40)}" drawn ${Math.round(text.width)} px wide in a ${Math.round(own.width)} px cell${out ? ", outside its row" : ""}`,
+        });
+        continue lists;
+      }
+    }
+  }
+  return issues;
+}
+
+/** The space a results row's label keeps from the text beside it, as drawn, in px. */
+export const RESULT_LABEL_CLEARANCE = 6;
+
+/**
+ * Results day rows whose result label (the `word` cell) is drawn into, or
+ * within {@link RESULT_LABEL_CLEARANCE} of, another cell's text on its line:
+ * measured on the letters as drawn (`drawnTextRect`), one issue per list.
+ */
+function resultLabelIssues(
+  root: HTMLElement,
+  layers: Map<string, TemplateLayerV2>,
+  at: { variant: string; page: PageKey; size: TemplateSize },
+): FitIssue[] {
+  const issues: FitIssue[] = [];
+  lists: for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-layer-id]"))) {
+    const layerId = el.getAttribute("data-layer-id") ?? "";
+    if (layers.get(layerId)?.kind !== "rows") continue;
+    for (const row of Array.from(el.querySelectorAll<HTMLElement>("[data-row-index]"))) {
+      const word = row.querySelector<HTMLElement>(`:scope > [data-row-cell="word"][${FIT_ATTR}]`);
+      const label = word ? drawnTextRect(word) : null;
+      if (!word || !label) continue;
+      for (const cell of Array.from(
+        row.querySelectorAll<HTMLElement>(`:scope > [data-row-cell][${FIT_ATTR}]`),
+      )) {
+        if (cell === word) continue;
+        const text = drawnTextRect(cell);
+        if (!text) continue;
+        const line = Math.min(label.bottom, text.bottom) - Math.max(label.top, text.top);
+        if (line < 0.5 * Math.min(label.height, text.height)) continue;
+        // The nearer edges: text beside the label on either side.
+        const gap = text.left >= label.left ? text.left - label.right : label.left - text.right;
+        if (gap >= RESULT_LABEL_CLEARANCE) continue;
+        issues.push({
+          ...at,
+          reason: "rows-overlap",
+          layerId,
+          row: Number(row.getAttribute("data-row-index")),
+          field: cell.getAttribute("data-row-cell") ?? undefined,
+          detail: `result label "${(word.textContent ?? "").slice(0, 20)}" ${gap < 0 ? "runs into" : `${Math.round(gap)} px from`} "${(cell.textContent ?? "").slice(0, 30)}"`,
         });
         continue lists;
       }

@@ -594,6 +594,15 @@ export function bindInput(
     case "teamOfWeek": {
       set(values, "title", input.title);
       set(values, "dateLabel", input.dateLabel);
+      // The card's photo (a look's hero frame) is the top player's: the input
+      // carries no photo of its own, so the frame was always empty (dev
+      // retest 6). The first listed player with a photo; a photo picked for
+      // the card (`data.photoUrl`) still wins.
+      const hero = (input.players ?? [])
+        .slice(0, 12)
+        .map((p) => (p.photoUrl ?? "").trim())
+        .find(Boolean);
+      if (hero) images["photo"] = hero;
       rows["players"] = (input.players ?? []).slice(0, 12).map((p) => ({
         values: {
           name: p.name ?? "",

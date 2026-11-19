@@ -23,7 +23,7 @@ import {
 } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { previewSample, stressSample } from "@/lib/kind-templates/samples";
-import { isEmptyAdjustments, renderFreeLayers } from "./adjustments";
+import { NO_PHOTO_ATTR, isEmptyAdjustments, renderFreeLayers } from "./adjustments";
 import { FIT_WORDS_ATTR } from "./layer-fit";
 
 const DATA: PackCardData = {
@@ -167,7 +167,12 @@ describe("a starter as an explicit v2 document", () => {
   // nothing v1's empty-box rule doesn't, and the two read the same on sample,
   // stress (long names, empty optional lines) and junior data. L4-B's starter
   // bundles (T4.11) rely on this. The one difference is by design: a v2
-  // list-row cell is marked to end in "…" after a whole word past the fit floor.
+  // list-row cell is marked to end in "…" after a whole word past the fit floor,
+  // and a v2 list's photo cell with no photo draws the club's crest (retest 6).
+  const NO_PHOTO_CELL = new RegExp(
+    `<div data-row-cell="[^"]*" ${NO_PHOTO_ATTR}="1"[^>]*><img [^>]*/></div>`,
+    "g",
+  );
   it.each(STARTER_IDS)("%s renders as it does in v1, every kind, size and variant", (starter) => {
     for (const kind of TEMPLATE_CARD_KINDS) {
       const stored = starterDocument(starter, kind as TemplateCardKind);
@@ -184,7 +189,9 @@ describe("a starter as an explicit v2 document", () => {
           const v2 = render(input, asV2(stored as { layers: unknown[] }, kind), {
             size,
             junior,
-          }).replaceAll(` ${FIT_WORDS_ATTR}="1"`, "");
+          })
+            .replaceAll(` ${FIT_WORDS_ATTR}="1"`, "")
+            .replace(NO_PHOTO_CELL, "");
           expect(
             v2,
             `${starter}/${kind}/${size}/${junior ? "junior" : input === stress ? "stress" : "sample"}`,

@@ -1,6 +1,6 @@
 {
   "name": "Club Kit matchDay",
-  "version": 9,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1282,14 +1282,14 @@
               "square": {
                 "x": 6,
                 "y": 20.51,
-                "w": 45.85,
+                "w": 52,
                 "h": 30.06
               }
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 0.3,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:0ojdjul1w56o8a",
             "link": "fixture-l32"
@@ -1357,9 +1357,9 @@
               "lineHeight": 0.95
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.3,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l34",
             "sizes": ["landscape"],
@@ -1723,9 +1723,9 @@
                       "lineHeight": 1.05
                     },
                     "fit": {
-                      "minScale": 1,
-                      "maxLines": 1,
-                      "ellipsis": true
+                      "minScale": 0.5,
+                      "maxLines": 2,
+                      "ellipsis": false
                     },
                     "id": "fixture-l43",
                     "sizes": ["square"],
@@ -1753,9 +1753,9 @@
                       "lineHeight": 1.05
                     },
                     "fit": {
-                      "minScale": 0.6,
+                      "minScale": 0.5,
                       "maxLines": 1,
-                      "ellipsis": true
+                      "ellipsis": false
                     },
                     "id": "fixture-l44",
                     "sizes": ["portrait", "story"],
@@ -1789,9 +1789,9 @@
                       "lineHeight": 1.05
                     },
                     "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
+                      "minScale": 0.5,
+                      "maxLines": 2,
+                      "ellipsis": false
                     },
                     "id": "fixture-l45",
                     "sizes": ["landscape"],
@@ -2904,9 +2904,9 @@
               "lineHeight": 0.95
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l74",
             "sizes": ["square", "portrait", "story"],
@@ -2946,9 +2946,9 @@
               "lineHeight": 0.95
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l75",
             "sizes": ["landscape"],

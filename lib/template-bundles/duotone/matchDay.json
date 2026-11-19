@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchDay",
-  "version": 11,
+  "version": 12,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -627,9 +627,9 @@
               "lineHeight": 1.15
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 0.5,
               "maxLines": 1,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l16",
             "sizes": ["square"],
@@ -951,9 +951,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 0.5,
               "maxLines": 1,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l30",
             "sizes": ["square"],
@@ -980,9 +980,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l31",
             "sizes": ["portrait"],
@@ -1009,9 +1009,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l32",
             "sizes": ["story"],
@@ -1038,9 +1038,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l33",
             "sizes": ["landscape"],
@@ -1311,9 +1311,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 1,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l43",
             "sizes": ["square"],
@@ -1340,9 +1340,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 1,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l44",
             "sizes": ["portrait"],
@@ -1369,9 +1369,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 1,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l45",
             "sizes": ["story"],
@@ -1398,9 +1398,9 @@
               "lineHeight": 1.06
             },
             "fit": {
-              "minScale": 1,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l46",
             "sizes": ["landscape"],

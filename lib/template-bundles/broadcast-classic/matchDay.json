@@ -1,6 +1,6 @@
 {
   "name": "Broadcast match day",
-  "version": 10,
+  "version": 11,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -594,7 +594,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:01rh1xw1ni7muv"
           },
@@ -623,7 +623,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:1mcqxpz08thq6i"
           },
@@ -652,7 +652,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:1iyc5n60lx3t07"
           },

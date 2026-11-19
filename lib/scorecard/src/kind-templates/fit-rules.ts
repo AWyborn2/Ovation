@@ -23,7 +23,7 @@ import { templateKindFor } from "./pages";
 import type { LayoutWarningReason } from "./warnings";
 
 /** Bump when the renderer changes how a template draws, so stored reports show their age. */
-export const TEMPLATE_FIT_VERSION = "2026-11-18.3";
+export const TEMPLATE_FIT_VERSION = "2026-11-19.1";
 
 /** Why a variant fails the fit check: a layout warning, or a fit rule. */
 export type FitIssueReason =
@@ -42,6 +42,8 @@ export type FitIssueReason =
   | "rows-overlap"
   /** A list's text drawn outside its cell or its row (a stat value cut off or out of its tile). */
   | "rows-text-outside"
+  /** A title (a Match Day game's grade heading or a side's name) cut short with "…". */
+  | "title-ellipsis"
   /** Something that shows data sits outside the artboard. */
   | "off-artboard"
   /** An image from somewhere a template may not load from. */
@@ -72,6 +74,38 @@ export type TemplateFitReport = {
   fonts: string;
   checkedAt: string;
 };
+
+/** The tokens a single-game Match Day page sets as its titles: the grade heading, each side's name. */
+const TITLE_TOKENS = new Set([
+  "grade",
+  "gradeHeading",
+  "clubName",
+  "opposition.name",
+  "opposition.barName",
+]);
+
+/** The tokens a text layer shows: its content's `{{token}}`s and the field it binds. */
+function textTokens(layer: TemplateLayerV2): string[] {
+  if (layer.kind !== "text") return [];
+  const content = String((layer as { content?: unknown }).content ?? "");
+  const bind = (layer as { bind?: unknown }).bind;
+  return [
+    ...[...content.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)].map((m) => m[1]!),
+    ...(typeof bind === "string" ? [bind] : []),
+  ];
+}
+
+/**
+ * A title on a single-game Match Day page (dev retest 6): the game's grade
+ * heading (a junior one is the longest: "YEAR 9 BOYS SOUTH WEST GOLD"), or a
+ * side's name (the club, the opposition), on every size. A title fits by
+ * shrinking and, where its box allows, wrapping to two lines; it is never cut
+ * short with "…" (`title-ellipsis`).
+ */
+export function isTitleLayer(layer: TemplateLayerV2, kind: string, page: PageKey): boolean {
+  if (templateKindFor(kind) !== "matchDay" || page !== "fixture") return false;
+  return textTokens(layer).some((t) => TITLE_TOKENS.has(t));
+}
 
 /** The most issues a report keeps; the count beyond it is in `truncated`. */
 export const MAX_FIT_ISSUES = 200;

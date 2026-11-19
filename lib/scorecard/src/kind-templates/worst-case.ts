@@ -188,8 +188,13 @@ function summary(i: number, junior: boolean, image: (n: string) => string): Matc
     matchType: "Two Day",
     date: "Wed 31 Dec 2026",
     venue: pick(N.venues, i),
-    result: `${WORST.club} won by 10 wickets (DLS method)`,
-    resultWinner: "club",
+    // Every other game of a results day a loss, so its rows carry the longest
+    // result label a row draws, "RESULT", beside "WIN" (dev retest 6, set 992).
+    result:
+      i % 2 === 1
+        ? `${pick(N.teams, i).raw} won by 10 wickets (DLS method)`
+        : `${WORST.club} won by 10 wickets (DLS method)`,
+    resultWinner: i % 2 === 1 ? "opposition" : "club",
     club: {
       name: WORST.club,
       primaryColor: "#333F48",
