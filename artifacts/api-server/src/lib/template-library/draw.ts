@@ -43,6 +43,7 @@ import { BLANK_PACK_ID, ensureKindTemplate, type TemplatedDesign } from "../kind
 import { loadCopy } from "./copies";
 import { TemplateLibraryError } from "./errors";
 import { loadLibraryVersion } from "./store";
+import { layoutCheckOwed } from "../layout-check-state";
 
 /** A template's document, the ref that names it, and the look it belongs to. */
 type DrawnTemplate = {
@@ -109,7 +110,7 @@ export async function designFromRef(
     adjustments: structuredClone(t.document),
     templateVersion: t.ref.version,
     templateRef: t.ref,
-    layoutCheckPending: true,
+    ...layoutCheckOwed(),
   };
 }
 

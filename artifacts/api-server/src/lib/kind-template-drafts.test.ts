@@ -357,20 +357,20 @@ describe("layout checks (KTD10)", () => {
 
   it("stops a club's checks at its render budget", async () => {
     for (let i = 0; i < 3; i += 1) await draft({ layoutCheckPending: true, layoutWarnings: null });
-    expect(await runPendingLayoutChecks(tenantId, logger, 20, 2)).toBe(2);
+    expect((await runPendingLayoutChecks(tenantId, logger, 20, 2)).checked).toBe(2);
     expect(renders).toHaveLength(2);
   });
 
   it("run for pending drafts only, and leave them pending without a render harness", async () => {
     const pending = await draft({ layoutCheckPending: true, layoutWarnings: null });
     const done = await draft();
-    expect(await runPendingLayoutChecks(tenantId, logger)).toBe(1);
+    expect((await runPendingLayoutChecks(tenantId, logger)).checked).toBe(1);
     expect((await reload(pending.id)).layoutCheckPending).toBe(false);
     expect(renders).toHaveLength(1);
 
     const another = await draft({ layoutCheckPending: true, layoutWarnings: null });
     setStillRenderer(null);
-    expect(await runPendingLayoutChecks(tenantId, logger)).toBe(0);
+    expect((await runPendingLayoutChecks(tenantId, logger)).checked).toBe(0);
     expect((await reload(another.id)).layoutCheckPending).toBe(true);
     expect((await reload(done.id)).layoutCheckPending).toBe(false);
   });

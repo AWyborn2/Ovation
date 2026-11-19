@@ -38,6 +38,7 @@ import {
   draftSource,
   draftStatus,
   draftSubline,
+  clubDateTimeLabel,
   isJuniorDraft,
   layoutReasons,
   layoutState,
@@ -134,11 +135,13 @@ export function DraftDrawer({
   // the admin confirms they've seen why.
   const markReady = async () => {
     if (
-      layout === "needs-look" &&
+      (layout === "needs-look" || layout === "check-failed") &&
       !(await confirm({
         title: "Mark ready anyway?",
         description:
-          "Some of this card doesn't fit its design. It will post as it looks now. You can fix the design first instead.",
+          layout === "check-failed"
+            ? "This card's layout couldn't be checked, so some of it may not fit its design. It will post as it looks now. You can open the design first instead."
+            : "Some of this card doesn't fit its design. It will post as it looks now. You can fix the design first instead.",
         confirmText: "Mark ready anyway",
       }))
     ) {
@@ -190,7 +193,9 @@ export function DraftDrawer({
             )}
             {status === "awaiting_review" && (
               <Button type="button" onClick={markReady} disabled={busy}>
-                {layout === "needs-look" ? "Mark ready anyway" : "Mark ready"}
+                {layout === "needs-look" || layout === "check-failed"
+                  ? "Mark ready anyway"
+                  : "Mark ready"}
               </Button>
             )}
             {status === "ready" && (
@@ -251,6 +256,37 @@ export function DraftDrawer({
               <p className="text-muted-foreground">
                 Automatic posting skips this card until it&apos;s fixed. Shorten the text or change
                 the design, or mark it ready anyway.
+              </p>
+              <Link
+                href={`/admin/social/editor/${current.id}`}
+                className="font-medium text-primary-text underline"
+              >
+                Edit design
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {layout === "check-failed" && (
+          <div
+            role="status"
+            aria-label="Layout check failed"
+            className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+            <div className="space-y-2">
+              <p className="font-medium">The layout check failed, so this card needs a look</p>
+              <p>
+                It was tried {current.layoutCheckAttempts ?? 0}{" "}
+                {(current.layoutCheckAttempts ?? 0) === 1 ? "time" : "times"}
+                {current.layoutCheckLastTriedAt
+                  ? `, last on ${clubDateTimeLabel(current.layoutCheckLastTriedAt)}`
+                  : ""}
+                .{current.layoutCheckError ? ` The last try said: ${current.layoutCheckError}` : ""}
+              </p>
+              <p className="text-muted-foreground">
+                Automatic posting skips this card. Check its photos and logos, then edit the design
+                to check it again, or mark it ready anyway.
               </p>
               <Link
                 href={`/admin/social/editor/${current.id}`}

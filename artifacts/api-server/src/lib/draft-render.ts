@@ -23,7 +23,12 @@ import { ensureSettings } from "./social-cards-helpers";
 import { getTenantBrand } from "./tenant-brand";
 import { cardSponsors } from "@workspace/scorecard/card-sponsors";
 import { loadActiveSponsors } from "./active-sponsors";
-import { renderCardStill } from "./card-video-renderer";
+import {
+  BACKGROUND_BOOT_TIMEOUT_MS,
+  renderCardStill,
+  type StillLimits,
+} from "./card-video-renderer";
+import { LAYOUT_CHECK_MAX_ATTEMPTS, layoutCheckErrorText } from "./layout-check-state";
 import { isAutoPhoto, resolveDraftPack } from "./draft-enrich";
 import { loadCardNames } from "./card-content/names";
 import {
@@ -48,6 +53,7 @@ type StillRenderer = (
   input: unknown,
   options: unknown,
   harnessOrigin?: string | null,
+  limits?: StillLimits,
 ) => Promise<{ buffer: Buffer; contentType: string; warnings?: LayoutWarning[] }>;
 
 let renderer: StillRenderer = renderCardStill;
@@ -128,13 +134,33 @@ export async function enabledSizes(tenantId: number): Promise<CardSize[]> {
   return sizes.length ? sizes : ["square"];
 }
 
+/**
+ * What a render is for. A post (the default: posts, post packs, emails, Meta
+ * publishing) waits for every image and fails rather than draw a blank tile
+ * (round 6). A layout check only measures whether the text fits its boxes,
+ * which no image changes, so it draws whatever loads: a missing photo or logo
+ * must not leave the draft "Checking layout" forever (retest 7). It also runs
+ * in the background, so it gets one try per sweep with longer waits.
+ */
+export type RenderPurpose = "post" | "layoutCheck";
+
+/** Still limits for a layout check: one try (the sweep retries), longer waits. */
+export const LAYOUT_CHECK_STILL_LIMITS: StillLimits = {
+  attempts: 1,
+  attemptTimeoutMs: 120_000,
+  bootTimeoutMs: BACKGROUND_BOOT_TIMEOUT_MS,
+};
+
 export async function renderDraftSlides(
   saved: SocialDraftRow,
   sizes: CardSize[],
   harnessOrigin: string | null,
   log: Logger,
+  purpose: RenderPurpose = "post",
 ): Promise<RenderedSlide[]> {
   const tenantId = saved.tenantId;
+  const strict = purpose !== "layoutCheck";
+  const limits = purpose === "layoutCheck" ? LAYOUT_CHECK_STILL_LIMITS : undefined;
   // A junior who is private now is withheld now, whenever the draft was built
   // (fails closed, round 3 retest P0 2).
   saved = redactDraftRow(saved, await loadWithheldJuniorNames(tenantId));
@@ -171,10 +197,11 @@ export async function renderDraftSlides(
                 data: carouselSlideData(carousel, stored),
                 junior: stored.junior,
                 sponsorsOn: stored.sponsorsOn,
-                strictImages: true,
+                strictImages: strict,
                 adjustments: setPageRenderDocument(set, slide.page),
               },
               harnessOrigin,
+              limits,
             ),
           );
           rendered.push({ size, png: buffer, page: i + 1, of: mapped.slides.length, warnings });
@@ -193,7 +220,7 @@ export async function renderDraftSlides(
               data: slide.data,
               junior: slide.junior,
               sponsorsOn: slide.sponsorsOn,
-              strictImages: true,
+              strictImages: strict,
               // A templated (version 3) set draws every slide from its one
               // assembled document; each slide picks its page from its input.
               adjustments:
@@ -202,6 +229,7 @@ export async function renderDraftSlides(
                   : queuedSlideAdjustments(slide, size),
             },
             harnessOrigin,
+            limits,
           ),
         );
         rendered.push({ size, png: buffer, page: i + 1, of: carousel.slides.length, warnings });
@@ -324,7 +352,8 @@ export async function renderDraftSlides(
               sponsorsOn,
               // Every post and post pack waits for each image and fails rather
               // than draw a blank logo or photo, as a carousel does (round 6).
-              strictImages: true,
+              // A layout check doesn't (see RenderPurpose).
+              strictImages: strict,
               junior: slideJunior,
               theme: null,
               data: slideData,
@@ -332,6 +361,7 @@ export async function renderDraftSlides(
               adjustments: setPageRenderDocument(set, slide.page),
             },
             harnessOrigin,
+            limits,
           ),
         );
         rendered.push({
@@ -374,7 +404,7 @@ export async function renderDraftSlides(
           {
             size,
             sponsorsOn,
-            strictImages: true,
+            strictImages: strict,
             junior: slideJunior,
             theme: null,
             data: slideData,
@@ -382,6 +412,7 @@ export async function renderDraftSlides(
             adjustments: adjustmentsFor(slide.key),
           },
           harnessOrigin,
+          limits,
         ),
       );
       rendered.push({
@@ -417,31 +448,44 @@ export function canRenderHeadless(): boolean {
 export type LayoutCheck = { warnings: DraftLayoutWarnings; renders: number; stored: boolean };
 
 /**
+ * SQL for "the draft is unchanged since `draft` was read": the same pending
+ * check, design, template version and card data. A write guarded by it can
+ * never land on a draft an apply, edit or data refresh changed meanwhile.
+ */
+function unchangedSince(draft: SocialDraftRow) {
+  return and(
+    eq(socialDraftsTable.id, draft.id),
+    eq(socialDraftsTable.layoutCheckPending, true),
+    draft.templateVersion === null
+      ? isNull(socialDraftsTable.templateVersion)
+      : eq(socialDraftsTable.templateVersion, draft.templateVersion),
+    sql`${socialDraftsTable.adjustments} is not distinct from ${JSON.stringify(draft.adjustments ?? null)}::jsonb`,
+    sql`${socialDraftsTable.cardInput} is not distinct from ${JSON.stringify(draft.cardInput ?? null)}::jsonb`,
+  );
+}
+
+/**
  * Render a templated draft at every enabled size and store its layout
  * warnings (KTD10). A full check replaces the stored warnings, so a size the
  * club has since turned off can't keep the draft blocked. The result is only
  * stored if the draft is unchanged since it was read — an apply, edit or data
  * refresh during the render leaves it pending for the next sweep, so a stale
- * clean result can never clear a design nobody checked.
+ * clean result can never clear a design nobody checked. The render draws
+ * whatever images load (see RenderPurpose).
  */
 export async function checkDraftLayout(draft: SocialDraftRow, log: Logger): Promise<LayoutCheck> {
   const sizes = await enabledSizes(draft.tenantId);
-  const slides = await renderDraftSlides(draft, sizes, null, log);
+  const slides = await renderDraftSlides(draft, sizes, null, log, "layoutCheck");
   const warnings = layoutWarningsFrom(slides, sizes);
   const updated = await db
     .update(socialDraftsTable)
-    .set({ layoutWarnings: warnings, layoutCheckPending: false })
-    .where(
-      and(
-        eq(socialDraftsTable.id, draft.id),
-        eq(socialDraftsTable.layoutCheckPending, true),
-        draft.templateVersion === null
-          ? isNull(socialDraftsTable.templateVersion)
-          : eq(socialDraftsTable.templateVersion, draft.templateVersion),
-        sql`${socialDraftsTable.adjustments} is not distinct from ${JSON.stringify(draft.adjustments ?? null)}::jsonb`,
-        sql`${socialDraftsTable.cardInput} is not distinct from ${JSON.stringify(draft.cardInput ?? null)}::jsonb`,
-      ),
-    )
+    .set({
+      layoutWarnings: warnings,
+      layoutCheckPending: false,
+      layoutCheckFailed: false,
+      layoutCheckError: null,
+    })
+    .where(unchangedSince(draft))
     .returning({ id: socialDraftsTable.id });
   return { warnings, renders: slides.length, stored: updated.length > 0 };
 }
@@ -457,17 +501,42 @@ export const LAYOUT_CHECKS_PER_SWEEP = 20;
 export const LAYOUT_RENDERS_PER_SWEEP = 60;
 
 /**
- * Run the layout checks templated drafts still owe, oldest first (ADR-003).
- * A draft whose check fails stays pending — and so stays out of automation —
- * until a later sweep succeeds. Without a render harness nothing runs and the
- * drafts stay pending (fail closed). Returns how many were checked.
+ * How long one club's layout checks may run per sweep before the rest wait
+ * for the next one. Each render has its own time limits; this keeps a few
+ * slow drafts from holding up the club's auto-posting and every other club's
+ * sweep behind it.
+ */
+export const LAYOUT_CHECK_SWEEP_BUDGET_MS = 5 * 60_000;
+
+/** What one sweep's layout checks did. */
+export type LayoutCheckRun = {
+  /** Checks that ran and stored their result. */
+  checked: number;
+  /** Tries that failed this sweep (the draft stays pending). */
+  failed: number;
+  /** Drafts that gave up this sweep: "check failed, needs a look". */
+  gaveUp: number;
+};
+
+/**
+ * Run the layout checks templated drafts still owe (ADR-003). The least
+ * recently tried go first (never tried first, then oldest), so a draft that
+ * keeps failing can't hold the front of the line and starve newer drafts.
+ * Each try is counted before it renders, so even a render that takes the
+ * process down counts. A failed try leaves the draft pending (out of
+ * automation); after LAYOUT_CHECK_MAX_ATTEMPTS tries it is marked failed:
+ * still pending, still out of automation, shown in the queue as needing a
+ * look, and not tried again until an edit, apply or data refresh resets it.
+ * Without a render harness nothing runs and nothing is counted (fail closed).
  */
 export async function runPendingLayoutChecks(
   tenantId: number,
   log: Logger,
   limit = LAYOUT_CHECKS_PER_SWEEP,
   renderBudget = LAYOUT_RENDERS_PER_SWEEP,
-): Promise<number> {
+  timeBudgetMs = LAYOUT_CHECK_SWEEP_BUDGET_MS,
+): Promise<LayoutCheckRun> {
+  const run: LayoutCheckRun = { checked: 0, failed: 0, gaveUp: 0 };
   const pending = await db
     .select()
     .from(socialDraftsTable)
@@ -475,33 +544,77 @@ export async function runPendingLayoutChecks(
       and(
         eq(socialDraftsTable.tenantId, tenantId),
         eq(socialDraftsTable.layoutCheckPending, true),
+        eq(socialDraftsTable.layoutCheckFailed, false),
         inArray(socialDraftsTable.status, ["awaiting_review", "ready"]),
       ),
     )
-    .orderBy(asc(socialDraftsTable.createdAt))
+    .orderBy(
+      sql`${socialDraftsTable.layoutCheckLastTriedAt} asc nulls first`,
+      asc(socialDraftsTable.createdAt),
+      asc(socialDraftsTable.id),
+    )
     .limit(limit);
-  if (pending.length === 0) return 0;
+  if (pending.length === 0) return run;
   if (!canRenderHeadless()) {
     log.warn(
       { tenantId, pending: pending.length },
       "layout checks skipped: no render harness configured",
     );
-    return 0;
+    return run;
   }
-  let checked = 0;
+  const started = Date.now();
   let renders = 0;
-  for (const draft of pending) {
+  for (const [i, draft] of pending.entries()) {
     if (renders >= renderBudget) break;
+    if (Date.now() - started >= timeBudgetMs) {
+      log.warn(
+        { tenantId, waiting: pending.length - i },
+        "layout checks: this sweep's time is spent; the rest wait for the next one",
+      );
+      break;
+    }
+    // Count the try first. A draft changed since it was read isn't counted
+    // (its tries were just reset) and is left for the next sweep.
+    const [counted] = await db
+      .update(socialDraftsTable)
+      .set({
+        layoutCheckAttempts: sql`${socialDraftsTable.layoutCheckAttempts} + 1`,
+        layoutCheckLastTriedAt: new Date(),
+      })
+      .where(and(unchangedSince(draft), eq(socialDraftsTable.layoutCheckFailed, false)))
+      .returning({ attempts: socialDraftsTable.layoutCheckAttempts });
+    if (!counted) continue;
     try {
       const result = await checkDraftLayout(draft, log);
       renders += result.renders;
-      if (result.stored) checked += 1;
+      if (result.stored) run.checked += 1;
     } catch (err) {
+      // A failed render still used the browser: count it against the budget.
+      renders += 1;
+      run.failed += 1;
+      const gaveUp = counted.attempts >= LAYOUT_CHECK_MAX_ATTEMPTS;
+      const [marked] = await db
+        .update(socialDraftsTable)
+        .set({
+          layoutCheckError: layoutCheckErrorText(err),
+          ...(gaveUp ? { layoutCheckFailed: true } : {}),
+        })
+        .where(unchangedSince(draft))
+        .returning({ id: socialDraftsTable.id });
+      if (gaveUp && marked) run.gaveUp += 1;
       log.warn(
-        { err, tenantId, draftId: draft.id },
-        "layout check failed; draft stays out of automation",
+        {
+          err,
+          tenantId,
+          draftId: draft.id,
+          attempt: counted.attempts,
+          of: LAYOUT_CHECK_MAX_ATTEMPTS,
+        },
+        gaveUp
+          ? "layout check failed for the last time; the draft needs a look and stays out of automation"
+          : "layout check failed; draft stays out of automation",
       );
     }
   }
-  return checked;
+  return run;
 }

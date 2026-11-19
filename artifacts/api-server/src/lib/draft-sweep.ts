@@ -226,10 +226,10 @@ export async function runDraftSweep(
       // Every club's drafts are templated since the library (ADR-011), so SRE
       // watches this time per club (T3.23).
       const started = Date.now();
-      const checked = await runPendingLayoutChecks(tenantId, appLogger);
-      if (checked > 0) {
+      const run = await runPendingLayoutChecks(tenantId, appLogger);
+      if (run.checked > 0 || run.failed > 0) {
         logger.info(
-          { tenantId, checked, renderMs: Date.now() - started },
+          { tenantId, ...run, renderMs: Date.now() - started },
           "sweep layout checks rendered",
         );
       }
