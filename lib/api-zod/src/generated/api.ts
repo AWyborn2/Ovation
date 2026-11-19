@@ -9586,6 +9586,7 @@ export const getWeekendCarouselSourcesQuerySetTypeDefault = `matchDay`;
 export const getWeekendCarouselSourcesQueryAudienceDefault = `all`;
 export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getWeekendCarouselSourcesQueryIdsRegExp = new RegExp('^-?\\d+(,-?\\d+)\*$');
 
 
 export const GetWeekendCarouselSourcesQueryParams = zod.object({
@@ -9593,7 +9594,8 @@ export const GetWeekendCarouselSourcesQueryParams = zod.object({
   "audience": zod.enum(['all', 'senior', 'junior']).default(getWeekendCarouselSourcesQueryAudienceDefault).describe('Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.'),
   "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
   "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp),
-  "fields": zod.coerce.string().optional().describe('Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.')
+  "fields": zod.coerce.string().optional().describe('Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.'),
+  "ids": zod.coerce.string().regex(getWeekendCarouselSourcesQueryIdsRegExp).optional().describe('Only these games, comma-separated carousel game ids (the `gameIds` of the rounds picked from getCarouselRounds or getJuniorCarouselRounds). Games outside the date range are still left out. Absent: every game in the range.')
 })
 
 export const GetWeekendCarouselSourcesResponse = zod.object({
@@ -9846,6 +9848,62 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "fixtures": zod.record(zod.string(), zod.number().nullable()).describe('By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id.')
 }).optional().describe('Match Day sets: the automatic photos (ADR-010 P4), the least recently posted photo of each slide\'s pool. Null when nothing fits (the slide prints on the brand background). The admin can swap any pick; a swap is saved in the carousel\'s content override.'),
   "warnings": zod.array(zod.string())
+})
+
+
+/**
+ * Senior games only. Team List and Match Day sets list the club's fixtures for the current and upcoming seasons, by each fixture's round label. Results and Match Summary sets list every completed senior game the club has, from central for a central-read club (filtered to its club, senior grades only, before-boundary seasons left out), every season. Games with no round label are in their season's "Other games". `gameIds` are the ids getWeekendCarouselSources gives the same games, so a pick passes them as `ids`.
+ * @summary The club's seasons and rounds to fill a senior carousel set from
+ */
+export const getCarouselRoundsQuerySetTypeDefault = `matchDay`;
+
+export const GetCarouselRoundsQueryParams = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getCarouselRoundsQuerySetTypeDefault)
+})
+
+export const GetCarouselRoundsResponse = zod.object({
+  "seasons": zod.array(zod.object({
+  "season": zod.number().describe('Season start year (2025 = 2025\/26)'),
+  "label": zod.string().describe('The season\'s name, \"2025\/26\"'),
+  "rounds": zod.array(zod.object({
+  "key": zod.string().describe('Unique within its season (\"other\" for Other games)'),
+  "label": zod.string().describe('The round as the club names it (\"Round 5\", \"Semi Final\", \"Other games\")'),
+  "from": zod.string().describe('The round\'s first game day, YYYY-MM-DD, club time'),
+  "to": zod.string().describe('The round\'s last game day, YYYY-MM-DD, club time'),
+  "other": zod.boolean().describe('Games with no round label'),
+  "gameIds": zod.array(zod.number()).describe('The round\'s games, as getWeekendCarouselSources ids them')
+}))
+})),
+  "defaultSeason": zod.number().nullable().describe('The season the picker opens on; null when no game has a round label'),
+  "defaultRounds": zod.array(zod.string()).describe('Round keys the picker opens on: the next round (Team List, Match Day) or the most recent completed round (Results, Match Summary).')
+})
+
+
+/**
+ * Junior tables only, never senior or central data (juniors isolation). Team List and Match Day sets list junior fixtures for the current and upcoming seasons; Results and Match Summary sets list completed junior games, every season. Junior fixtures carry no round label, so they are in their season's "Other games". Fixtures are empty while the club's junior sync is switched off.
+ * @summary The club's junior seasons and rounds to fill a junior carousel set from
+ */
+export const getJuniorCarouselRoundsQuerySetTypeDefault = `matchDay`;
+
+export const GetJuniorCarouselRoundsQueryParams = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getJuniorCarouselRoundsQuerySetTypeDefault)
+})
+
+export const GetJuniorCarouselRoundsResponse = zod.object({
+  "seasons": zod.array(zod.object({
+  "season": zod.number().describe('Season start year (2025 = 2025\/26)'),
+  "label": zod.string().describe('The season\'s name, \"2025\/26\"'),
+  "rounds": zod.array(zod.object({
+  "key": zod.string().describe('Unique within its season (\"other\" for Other games)'),
+  "label": zod.string().describe('The round as the club names it (\"Round 5\", \"Semi Final\", \"Other games\")'),
+  "from": zod.string().describe('The round\'s first game day, YYYY-MM-DD, club time'),
+  "to": zod.string().describe('The round\'s last game day, YYYY-MM-DD, club time'),
+  "other": zod.boolean().describe('Games with no round label'),
+  "gameIds": zod.array(zod.number()).describe('The round\'s games, as getWeekendCarouselSources ids them')
+}))
+})),
+  "defaultSeason": zod.number().nullable().describe('The season the picker opens on; null when no game has a round label'),
+  "defaultRounds": zod.array(zod.string()).describe('Round keys the picker opens on: the next round (Team List, Match Day) or the most recent completed round (Results, Match Summary).')
 })
 
 

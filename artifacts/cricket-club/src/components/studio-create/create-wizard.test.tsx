@@ -3,7 +3,7 @@
  * in a draft opened straight in the editor.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithHistory } from "@/test/render";
 import { teamListName } from "@/lib/pack-render/bind";
 import type { TeamListPlayer } from "@/lib/share-card";
@@ -146,6 +146,7 @@ function stubApi() {
         ],
       },
     ],
+    ["/weekend-carousel/rounds", { seasons: [], defaultSeason: null, defaultRounds: [] }],
     ["/social-drafts", { id: 501 }],
     ["/social-settings", { settings: {}, brand: {} }],
     ["/club-photos", []],
@@ -328,5 +329,51 @@ describe("Create wizard", () => {
     });
     // Senior team lists and fixtures were never read.
     expect(calls.some((c) => /\/api\/fixtures|social-prefill\/team-list/.test(c.url))).toBe(false);
+  });
+  it("Carousel set asks which set first, each opening its own kind as a carousel", async () => {
+    stubApi();
+    const { url } = renderWithHistory(<CreateWizard />, "/admin/social/create");
+    fireEvent.click(await screen.findByRole("button", { name: "Carousel set" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/create?kind=carousel&step=2"));
+    const sets = screen.getByRole("list", { name: "Carousel sets" });
+    const names = within(sets)
+      .getAllByRole("button")
+      .map((b) => b.querySelector("span")!.textContent);
+    expect(names).toEqual(["Team List (round)", "Match Day", "Results", "Match Summary"]);
+    // Team List and Match Day come from fixtures; Results and Match Summary any season.
+    expect(within(sets).getByRole("button", { name: /Team List \(round\)/ })).toHaveTextContent(
+      "Upcoming and recent games",
+    );
+    expect(within(sets).getByRole("button", { name: /^Match Day/ })).toHaveTextContent(
+      "Upcoming and recent games",
+    );
+    expect(within(sets).getByRole("button", { name: /^Results/ })).toHaveTextContent(
+      "Any round, from any season",
+    );
+    expect(
+      screen.getByRole("button", { name: "Pick by hand: a blank carousel" }),
+    ).toBeInTheDocument();
+    fireEvent.click(within(sets).getByRole("button", { name: /^Results/ }));
+    await waitFor(() =>
+      expect(url()).toBe("/admin/social/create?kind=resultsSummary&mode=many&step=3"),
+    );
+  });
+
+  it("Juniors' Carousel set keeps the junior sets, and a hand-picked one is a junior draft", async () => {
+    const calls = stubApi();
+    const { url } = renderWithHistory(
+      <CreateWizard />,
+      "/admin/social/create?team=junior&kind=carousel&step=2",
+    );
+    const sets = await screen.findByRole("list", { name: "Carousel sets" });
+    expect(
+      within(sets)
+        .getAllByRole("button")
+        .map((b) => b.querySelector("span")!.textContent),
+    ).toEqual(["Junior Team List (round)", "Junior Match Day", "Junior Match Summary"]);
+    fireEvent.click(screen.getByRole("button", { name: "Pick by hand: a blank carousel" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/set/501"));
+    const post = calls.find((c) => c.method === "POST" && c.url.includes("/social-drafts"))!;
+    expect(post.body).toMatchObject({ cardInput: { junior: true } });
   });
 });

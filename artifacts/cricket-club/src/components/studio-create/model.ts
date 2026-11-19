@@ -16,7 +16,8 @@ export type CreateStep = 1 | 2 | 3 | 4;
 
 export type CreateState = {
   team: CreateTeam;
-  kind: CardKind | "blank" | null;
+  /** "carousel": Carousel set's own chooser (which set to make), at step 2. */
+  kind: CardKind | "blank" | "carousel" | null;
   mode: CreateMode;
   step: CreateStep;
 };
@@ -54,7 +55,9 @@ export const CAROUSEL_SET_OF: Partial<Record<CardKind, CarouselSetType>> = {
 
 /** Whether "one or many" offers a carousel for this kind. */
 export function offersCarousel(kind: CreateState["kind"]): boolean {
-  return kind !== null && kind !== "blank" && CAROUSEL_SET_OF[kind] !== undefined;
+  return (
+    kind !== null && kind !== "blank" && kind !== "carousel" && CAROUSEL_SET_OF[kind] !== undefined
+  );
 }
 
 /** A kind that only comes as a carousel for this team (Junior Match Day). */
@@ -71,9 +74,11 @@ export function parseCreateState(search: string, juniorsOn = true): CreateState 
   const kind =
     rawKind === "blank" && team === "senior"
       ? "blank"
-      : rawKind && kinds.includes(rawKind as CardKind)
-        ? (rawKind as CardKind)
-        : null;
+      : rawKind === "carousel"
+        ? "carousel"
+        : rawKind && kinds.includes(rawKind as CardKind)
+          ? (rawKind as CardKind)
+          : null;
   const mode: CreateMode =
     carouselOnly(team, kind) || (q.get("mode") === "many" && offersCarousel(kind)) ? "many" : "one";
   const n = Number(q.get("step"));
@@ -82,7 +87,7 @@ export function parseCreateState(search: string, juniorsOn = true): CreateState 
   // kind skips moves on to the next one it has.
   if (kind === null) step = 1;
   const steps = stepsFor(kind, team);
-  if (!steps.includes(step)) step = steps.find((x) => x > step) ?? 4;
+  if (!steps.includes(step)) step = steps.find((x) => x > step) ?? steps[steps.length - 1]!;
   return { team, kind, mode, step };
 }
 
@@ -116,11 +121,46 @@ export function prevStep(s: CreateState): CreateStep {
 
 /** The steps a kind goes through, in order. */
 export function stepsFor(kind: CreateState["kind"], team: CreateTeam = "senior"): CreateStep[] {
+  // Carousel set: what, then which set; the set's own kind takes it from there.
+  if (kind === "carousel") return [1, 2];
   const steps: CreateStep[] = [1];
   if (offersCarousel(kind) && !carouselOnly(team, kind)) steps.push(2);
   if (kind !== "blank") steps.push(3);
   steps.push(4);
   return steps;
+}
+
+/** A set the Carousel set chooser offers: the kind it makes as "many", and what it covers. */
+export type CarouselChoice = { kind: CardKind; label: string; hint: string };
+
+/**
+ * Carousel set → which set (juniors get their own list, from junior data only). Team
+ * List and Match Day come from fixtures, so they cover upcoming and recent games;
+ * Results and Match Summary come from scorecards, any round of any season.
+ */
+export function carouselChoices(team: CreateTeam): CarouselChoice[] {
+  const fixtures = "Upcoming and recent games, by round";
+  if (team === "junior")
+    return [
+      {
+        kind: "teamList",
+        label: "Junior Team List (round)",
+        hint: `${fixtures}: a slide per team`,
+      },
+      { kind: "matchDay", label: "Junior Match Day", hint: `${fixtures}: a slide per game` },
+      {
+        kind: "matchSummary",
+        label: "Junior Match Summary",
+        hint: "Completed junior games, any season: a slide per game",
+      },
+    ];
+  const history = "Any round, from any season the club has played";
+  return [
+    { kind: "teamList", label: "Team List (round)", hint: `${fixtures}: a slide per team` },
+    { kind: "matchDay", label: "Match Day", hint: `${fixtures}: a slide per game` },
+    { kind: "resultsSummary", label: "Results", hint: `${history}: a slide per result` },
+    { kind: "matchSummary", label: "Match Summary", hint: `${history}: a slide per game` },
+  ];
 }
 
 /** Where a team's names come from, shown on each team in "Which team?". */

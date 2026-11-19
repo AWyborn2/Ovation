@@ -45,6 +45,8 @@ export async function juniorCarouselContent(
   type: "matchDay" | "teamList",
   from: string,
   to: string,
+  /** Only these carousel game ids (a rounds pick); absent, every fixture in the range. */
+  only?: ReadonlySet<number>,
 ) {
   const fixtures: FixtureRow[] = [];
   const content: Record<string, Record<string, unknown>> = {};
@@ -68,10 +70,11 @@ export async function juniorCarouselContent(
       ),
     )
     .orderBy(asc(juniorFixturesTable.startAt), asc(juniorFixturesTable.id));
-  const eligible = rows.filter(eligibleJuniorCarouselFixture);
-  if (eligible.length < rows.length)
+  const picked = only ? rows.filter((r) => only.has(juniorCarouselFixtureId(r.id))) : rows;
+  const eligible = picked.filter(eligibleJuniorCarouselFixture);
+  if (eligible.length < picked.length)
     warnings.push(
-      `Excluded ${rows.length - eligible.length} junior bye, cancelled, abandoned or incomplete fixture(s).`,
+      `Excluded ${picked.length - eligible.length} junior bye, cancelled, abandoned or incomplete fixture(s).`,
     );
   if (!eligible.length) return { fixtures, content, warnings, junior };
 
