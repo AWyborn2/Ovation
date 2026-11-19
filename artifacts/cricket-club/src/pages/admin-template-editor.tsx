@@ -529,6 +529,8 @@ export type EditorDraftMode = {
       }) => ReactNode;
     }
   >;
+  /** The admin picked another size in Format (the draft saves it, Stage 2). */
+  onFormat?: (size: CardSize) => void;
   /** Top-bar controls, given the design as it would be saved and the card on show. */
   actions?: (ctx: {
     document: Record<string, unknown>;
@@ -1085,6 +1087,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         onFormat={(f) => {
           setFormat(f);
           slidesMode?.onSize?.(f);
+          draftMode?.onFormat?.(f);
           setSelection([]);
           setAddPrompt(null);
         }}

@@ -90,6 +90,7 @@ import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { notePhotoUsage } from "../lib/card-content/photos";
 import { layoutCheckOwed } from "../lib/layout-check-state";
+import { designSizeRefusal } from "../lib/draft-design-size";
 
 const router: IRouter = Router();
 
@@ -687,6 +688,23 @@ router.post(
       templated = { ...templated, adjustments: safe.design as typeof templated.adjustments };
     }
     adjustments = (await juniorSafeDesign(tenantId, juniorRow, adjustments)).design;
+    // The size the design is started at (Stage 2): an older size only when the
+    // new design has layers on it.
+    const designSize = parsed.data.designSize ?? null;
+    if (designSize) {
+      const refused = designSizeRefusal(
+        {
+          cardInput,
+          adjustments: templated ? templated.adjustments : adjustments,
+          templateVersion: templated ? templated.templateVersion : null,
+        },
+        designSize,
+      );
+      if (refused) {
+        res.status(400).json({ error: refused });
+        return;
+      }
+    }
     const [row] = await db
       .insert(socialDraftsTable)
       .values({
@@ -710,6 +728,7 @@ router.post(
         editedAt: carousel || adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
         subjectPlayerId,
+        designSize,
         ...(junior
           ? { sourceMatchIsJunior: true, ...(await photoColumns(tenantId, juniorPhoto)) }
           : carousel && isJuniorCarousel(carousel)
@@ -888,7 +907,7 @@ router.patch(
       res.status(409).json({ error: "Reopen the draft before editing it" });
       return;
     }
-    const { caption, photoUrl, photoPlayerId, playerOrder } = parsed.data;
+    const { caption, photoUrl, photoPlayerId, playerOrder, designSize } = parsed.data;
     const cardInput = draft.cardInput as Record<string, unknown>;
     // A Team List design's own player order (build decision 16): this draft only.
     if (playerOrder !== undefined && cardInput.kind !== "teamList") {
@@ -910,9 +929,41 @@ router.patch(
     // checks the request's shape.
     const adjustments = (req.body as { adjustments?: unknown }).adjustments as
       typeof parsed.data.adjustments | undefined;
+    // The editor's Format (Stage 2): saved at the top level, never inside the
+    // design. An older size only when the draft already has it, or its design
+    // (as this edit leaves it) has layers on it.
+    if (designSize !== undefined) {
+      const refused = designSizeRefusal(
+        adjustments !== undefined ? { ...draft, adjustments } : draft,
+        designSize,
+        draft.designSize,
+      );
+      if (refused) {
+        res.status(400).json({ error: refused });
+        return;
+      }
+    }
+    // Switching Format alone is not an edit: the card draws the same, so it
+    // keeps its revisions, its place in the queue and any auto-promotion.
+    if (
+      designSize !== undefined &&
+      caption === undefined &&
+      photoUrl === undefined &&
+      playerOrder === undefined &&
+      adjustments === undefined
+    ) {
+      const [row] = await db
+        .update(socialDraftsTable)
+        .set({ designSize })
+        .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+        .returning();
+      res.json(presentDraft(row));
+      return;
+    }
     const patch: Partial<typeof socialDraftsTable.$inferInsert> = {
       // A manual action: stop any pending auto-promotion (KTD4).
       autoReadyAt: null,
+      ...(designSize !== undefined ? { designSize } : {}),
     };
     if (caption !== undefined) {
       patch.caption = caption;

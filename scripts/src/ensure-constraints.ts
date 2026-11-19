@@ -161,6 +161,12 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "social_drafts_status_check",
     sql: `"status" IN ('awaiting_review', 'ready', 'dismissed', 'posted')`,
   },
+  // Portrait and Story sizes (migration 0081): the size a draft is designed at.
+  {
+    table: "social_drafts",
+    name: "social_drafts_design_size_check",
+    sql: `"design_size" IS NULL OR "design_size" IN ('square', 'portrait', 'story', 'landscape')`,
+  },
   {
     table: "social_draft_revisions",
     name: "social_draft_revisions_reason_check",

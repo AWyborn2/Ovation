@@ -4,6 +4,7 @@
  * Pure, so the ordering and the posting-plan split are tested on their own.
  */
 import { setDraftLayout } from "@/lib/set-draft";
+import { draftEditorHref } from "@/lib/draft-design-size";
 import { draftKind } from "@/components/social-queue/draft-meta";
 import type {
   CardSet,
@@ -116,9 +117,10 @@ export function recentDesigns(
       type: "draft",
       id: d.id,
       kind: draftKind(d),
-      size: null,
+      // The size it was last designed at (Stage 2); older drafts saved none.
+      size: d.designSize ?? null,
       editedAt: draftEditedAt(d),
-      href: set ? `/admin/social/set/${d.id}` : `/admin/social/editor/${d.id}`,
+      href: set ? `/admin/social/set/${d.id}` : draftEditorHref(d),
       draft: d,
     });
   }

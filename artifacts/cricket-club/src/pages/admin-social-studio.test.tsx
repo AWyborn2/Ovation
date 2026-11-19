@@ -80,10 +80,10 @@ const SETS = [
 
 type Write = { url: string; method: string; body: Record<string, unknown> | null };
 
-function open(path = "/admin/social") {
+function open(path = "/admin/social", drafts: Array<Record<string, unknown>> = DRAFTS) {
   installApiMock({
     "/social-settings": BUNDLE,
-    "/social-drafts": DRAFTS,
+    "/social-drafts": drafts,
     "/card-sets": SETS,
     "/template-library/preview-input": { kind: "milestone", source: "sample", input: null },
     "/template-library/elements": {
@@ -175,6 +175,8 @@ describe("Studio home", () => {
     expect(writes[0]!.body).toMatchObject({
       cardInput: { kind: "milestone" },
       templateRef: { libraryTemplateId: 1, version: 2 },
+      // Saved on the draft (Stage 2), so it reopens at Story from the queue.
+      designSize: "story",
     });
   });
 
@@ -184,7 +186,7 @@ describe("Studio home", () => {
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("radio", { name: "Landscape" }));
     await waitFor(() => expect(url()).toBe("/admin/social/editor/99?format=landscape"));
-    expect(writes[0]!.body).toMatchObject({ packId: "blank" });
+    expect(writes[0]!.body).toMatchObject({ packId: "blank", designSize: "landscape" });
   });
 
   it("lists recent work newest first, each opening where it's edited", async () => {
@@ -200,6 +202,16 @@ describe("Studio home", () => {
       "href",
       "/admin/social/designs",
     );
+  });
+
+  it("opens a draft at the size it was last designed at, and says which (round 7)", async () => {
+    open("/admin/social", [{ ...DRAFTS[0], designSize: "story" }]);
+    const section = screen.getByRole("heading", { name: "Continue designing" }).closest("section")!;
+    expect(await within(section).findByRole("link", { name: "Open Milestone" })).toHaveAttribute(
+      "href",
+      "/admin/social/editor/41?format=story",
+    );
+    expect(within(section).getByText(/Draft · .* · Story/)).toBeInTheDocument();
   });
 
   it("dismisses a draft and deletes a carousel set from their tiles, after confirming", async () => {

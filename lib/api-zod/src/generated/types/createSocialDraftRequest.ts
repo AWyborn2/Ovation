@@ -7,6 +7,7 @@
  */
 import type { CardAdjustments } from './cardAdjustments';
 import type { CreateSocialDraftRequestCardInput } from './createSocialDraftRequestCardInput';
+import type { CreateSocialDraftRequestDesignSize } from './createSocialDraftRequestDesignSize';
 import type { TemplateRef } from './templateRef';
 
 export interface CreateSocialDraftRequest {
@@ -31,4 +32,6 @@ export interface CreateSocialDraftRequest {
      * @nullable
      */
   subjectPlayerId?: number | null;
+  /** The size the design is started at (Create's size), so it reopens there. Square or Landscape is refused when the new draft's design has no layers on it. */
+  designSize?: CreateSocialDraftRequestDesignSize;
 }

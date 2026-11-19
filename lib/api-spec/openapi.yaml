@@ -25401,6 +25401,13 @@ components:
           anyOf:
             - $ref: "#/components/schemas/TeamListPlayerOrder"
             - type: "null"
+        designSize:
+          type: string
+          enum: [square, portrait, story, landscape]
+          description: >-
+            The size the admin is designing the card at (the editor's Format), saved so the
+            draft reopens there. It doesn't change what renders. Square or Landscape is
+            refused unless the draft already has that size, or its design has layers on it.
 
     TeamListPlayerOrder:
       type: string
@@ -25441,6 +25448,12 @@ components:
             sponsors replace the club strip. Only on milestone, century, five-for,
             debut, player and new signing cards, never a junior card; must be one of
             the club's senior players.
+        designSize:
+          type: string
+          enum: [square, portrait, story, landscape]
+          description: >-
+            The size the design is started at (Create's size), so it reopens there.
+            Square or Landscape is refused when the new draft's design has no layers on it.
 
     TemplateRef:
       type: object
@@ -26677,6 +26690,13 @@ components:
         layoutCheckError:
           type: ["string", "null"]
           description: Why the last layout check try failed; null when it hasn't failed.
+        designSize:
+          type: ["string", "null"]
+          enum: [square, portrait, story, landscape, null]
+          description: >-
+            The size the admin designs the card at: where the editor opens and what the
+            queue shows. It doesn't change what renders. Null for a draft from before the
+            size was saved (it opens at Square).
         createdByAdminId:
           type: ["integer", "null"]
           description: "The admin who made the draft by hand; null for drafts the sweep made."
@@ -27004,6 +27024,10 @@ components:
         photoUrl: { type: ["string", "null"] }
         photoSource: { type: ["string", "null"] }
         adjustments: {}
+        designSize:
+          type: ["string", "null"]
+          enum: [square, portrait, story, landscape, null]
+          description: The draft's design size when this revision was taken; restored with it.
         reason: { type: string, enum: [refresh, edit, revert, template] }
         createdAt: { type: string, format: date-time }
 
