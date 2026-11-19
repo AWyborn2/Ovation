@@ -7,6 +7,7 @@ import type { LayoutWarning, TemplateFitReport } from "@workspace/scorecard/kind
 import { logger } from "./logger";
 import { env } from "../config";
 import { CARD_RENDER_CONTRACT } from "@workspace/scorecard/render-contract";
+import { RenderSlots } from "./render-slots";
 
 // The frontend exposes a hidden harness route that runs the EXACT same renderer
 // the browser preview uses, so server-rendered MP4s are pixel-identical to the
@@ -362,6 +363,12 @@ const STILL_TYPES = {
 // same harness page as the MP4 path, but drives its static mode: the harness
 // mounts <PackCard> unscaled at native px and we screenshot that element. No
 // prepareAnimation, no ffmpeg — a single frame straight to a buffer.
+//
+// Bounded and retried (round 6 retest): at most STILL_POOL_MAX stills draw at
+// once across every request (the rest wait in a short queue), each attempt has
+// a time limit, and a failed attempt (an image that didn't load whole, a hung
+// page) is tried again on a fresh page with an empty image cache before the
+// render fails with the harness's own message.
 export async function renderCardStill(
   input: unknown,
   options: unknown,
@@ -370,63 +377,133 @@ export async function renderCardStill(
 ): Promise<StillRenderResult> {
   const format: StillFormat = out.format ?? "png";
   const url = harnessUrl(harnessOrigin);
+  const release = await stillSlots.acquire();
+  try {
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= STILL_ATTEMPTS; attempt++) {
+      try {
+        // A retry never reuses a warm page: its image cache may hold the cut-off copy.
+        return await stillAttempt(input, options, url, format, out.scale, attempt > 1);
+      } catch (err) {
+        if (err instanceof HarnessContractError) throw err;
+        lastError = err;
+        logger.warn(
+          { err: harnessMessage(err), attempt, of: STILL_ATTEMPTS },
+          "card still attempt failed",
+        );
+      }
+    }
+    throw new Error(harnessMessage(lastError));
+  } finally {
+    release();
+  }
+}
+
+/** The harness's own words for a failed render: its first line, no stack or "Error:". */
+export function harnessMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  const first = (raw.split("\n")[0] ?? "").trim();
+  return first.replace(/^(?:Error|TypeError):\s*/, "") || "The card could not be drawn.";
+}
+
+/** Tries per still: the first, then fresh pages (round 6 retest). */
+export const STILL_ATTEMPTS = 3;
+/** The longest one attempt may take, waits for images included. */
+export const STILL_ATTEMPT_TIMEOUT_MS = 60_000;
+
+async function stillAttempt(
+  input: unknown,
+  options: unknown,
+  url: string,
+  format: StillFormat,
+  scale: number | undefined,
+  fresh: boolean,
+): Promise<StillRenderResult> {
   // A warm harness page (round 3 retest, #9): loading the web app for every
   // still made each download slide take many seconds.
-  const lease = await acquireStillPage(url);
+  const lease = await acquireStillPage(url, fresh);
   const page: Page = lease.page;
   let reusable = false;
+  let timer: NodeJS.Timeout | null = null;
   try {
-    // Mount the pack card at native size in-page (preloads fonts), get its box.
-    const meta = (await page.evaluate(
-      async (payload) => (globalThis as HarnessGlobal).__cardRenderHarness!.renderStill(payload),
-      { input, options } as { input: unknown; options: unknown },
-    )) as StillMeta;
-
-    // Match the viewport to the native card so the element is fully painted with
-    // no device scaling (1080px element → 1080px PNG).
-    // PDF is vector, so it prints at 1×; images render at the export scale.
-    await page.setViewport({
-      width: meta.width,
-      height: meta.height,
-      deviceScaleFactor: format === "pdf" ? 1 : clampScale(out.scale),
+    const work = drawStill(page, input, options, format, scale);
+    // Closing the page after a time-out rejects `work`; nobody waits for it then.
+    work.catch(() => {});
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () =>
+          reject(
+            new Error(
+              `The card took longer than ${STILL_ATTEMPT_TIMEOUT_MS / 1000} s to draw (an image may be very slow).`,
+            ),
+          ),
+        STILL_ATTEMPT_TIMEOUT_MS,
+      );
     });
-
-    const el = await page.$(meta.selector);
-    if (!el) {
-      throw new Error(`Card still element ${meta.selector} not found`);
-    }
-    // The card is fixed at the page's top-left, so a page the card's size
-    // prints exactly the card.
-    const shot =
-      format === "pdf"
-        ? await page.pdf({
-            width: `${meta.width}px`,
-            height: `${meta.height}px`,
-            printBackground: true,
-            pageRanges: "1",
-          })
-        : await el.screenshot(format === "jpg" ? { type: "jpeg", quality: 92 } : { type: "png" });
-    const buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
+    const result = await Promise.race([work, timeout]);
     reusable = true;
-
-    return {
-      buffer,
-      contentType: STILL_TYPES[format],
-      ext: format,
-      width: meta.width,
-      height: meta.height,
-      warnings: meta.warnings ?? [],
-    };
+    return result;
   } finally {
-    try {
-      await page.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
-    } catch {
-      // page may already be gone
-      reusable = false;
+    if (timer) clearTimeout(timer);
+    if (reusable) {
+      try {
+        await page.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
+      } catch {
+        // page may already be gone
+        reusable = false;
+      }
     }
     // A page that failed is never reused: the next still gets a fresh one.
     await releaseStillPage(lease, reusable);
   }
+}
+
+async function drawStill(
+  page: Page,
+  input: unknown,
+  options: unknown,
+  format: StillFormat,
+  scale: number | undefined,
+): Promise<StillRenderResult> {
+  // Mount the pack card at native size in-page (preloads fonts), get its box.
+  const meta = (await page.evaluate(
+    async (payload) => (globalThis as HarnessGlobal).__cardRenderHarness!.renderStill(payload),
+    { input, options } as { input: unknown; options: unknown },
+  )) as StillMeta;
+
+  // Match the viewport to the native card so the element is fully painted with
+  // no device scaling (1080px element → 1080px PNG).
+  // PDF is vector, so it prints at 1×; images render at the export scale.
+  await page.setViewport({
+    width: meta.width,
+    height: meta.height,
+    deviceScaleFactor: format === "pdf" ? 1 : clampScale(scale),
+  });
+
+  const el = await page.$(meta.selector);
+  if (!el) {
+    throw new Error(`Card still element ${meta.selector} not found`);
+  }
+  // The card is fixed at the page's top-left, so a page the card's size
+  // prints exactly the card.
+  const shot =
+    format === "pdf"
+      ? await page.pdf({
+          width: `${meta.width}px`,
+          height: `${meta.height}px`,
+          printBackground: true,
+          pageRanges: "1",
+        })
+      : await el.screenshot(format === "jpg" ? { type: "jpeg", quality: 92 } : { type: "png" });
+  const buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
+  return {
+    buffer,
+    contentType: STILL_TYPES[format],
+    ext: format,
+    width: meta.width,
+    height: meta.height,
+    warnings: meta.warnings ?? [],
+  };
 }
 
 // ── Warm still pages (round 3 retest, #9) ──────────────────────────────────
@@ -435,29 +512,52 @@ export async function renderCardStill(
 // and the club's images stay loaded. Each page has a browser context of its
 // own (a second tab in one context is hidden in headless Chrome and gets no
 // animation frames, which the harness waits on). A page is dropped after any
-// failure, and an idle one after STILL_PAGE_IDLE_MS, so a redeployed web app
-// is picked up (and its render contract checked again) within that time.
+// failure, and once it is STILL_PAGE_IDLE_MS old, so a redeployed web app
+// is picked up (and its render contract checked again) within that time. An
+// old page is closed on a timer too, not only when the next still comes.
 
 type StillLease = { page: Page; context: BrowserContext; url: string; createdAt: number };
 const STILL_PAGE_IDLE_MS = 10 * 60 * 1000;
 const STILL_POOL_MAX = 2;
 const idleStillPages: StillLease[] = [];
+// The still gate (round 6 retest): as many draw at once as the pool keeps warm.
+const stillSlots = new RenderSlots(STILL_POOL_MAX, 24, 120_000);
+let reapTimer: NodeJS.Timeout | null = null;
+
+/** Stills drawing now and waiting, and warm pages kept (tests, diagnostics). */
+export function stillRenderLoad(): { running: number; queued: number; idle: number } {
+  return { running: stillSlots.running, queued: stillSlots.queued, idle: idleStillPages.length };
+}
 
 async function closeLease(lease: StillLease): Promise<void> {
   await lease.context.close().catch(() => {});
 }
 
-async function acquireStillPage(url: string): Promise<StillLease> {
-  const now = Date.now();
+function reapStalePages(now = Date.now()): void {
   for (let i = idleStillPages.length - 1; i >= 0; i--) {
     const lease = idleStillPages[i]!;
-    const stale = now - lease.createdAt > STILL_PAGE_IDLE_MS || lease.page.isClosed();
-    if (stale) {
+    if (now - lease.createdAt > STILL_PAGE_IDLE_MS || lease.page.isClosed()) {
       idleStillPages.splice(i, 1);
       void closeLease(lease);
-    } else if (lease.url === url) {
-      idleStillPages.splice(i, 1);
-      return lease;
+    }
+  }
+}
+
+function scheduleReap(): void {
+  if (reapTimer || idleStillPages.length === 0) return;
+  reapTimer = setTimeout(() => {
+    reapTimer = null;
+    reapStalePages();
+    scheduleReap();
+  }, 60_000);
+  reapTimer.unref?.();
+}
+
+async function acquireStillPage(url: string, fresh = false): Promise<StillLease> {
+  reapStalePages();
+  if (!fresh) {
+    for (let i = idleStillPages.length - 1; i >= 0; i--) {
+      if (idleStillPages[i]!.url === url) return idleStillPages.splice(i, 1)[0]!;
     }
   }
   const browser = await getBrowser();
@@ -483,6 +583,7 @@ async function acquireStillPage(url: string): Promise<StillLease> {
 async function releaseStillPage(lease: StillLease, reusable: boolean): Promise<void> {
   if (reusable && !lease.page.isClosed() && idleStillPages.length < STILL_POOL_MAX) {
     idleStillPages.push(lease);
+    scheduleReap();
     return;
   }
   await closeLease(lease);
@@ -490,6 +591,8 @@ async function releaseStillPage(lease: StillLease, reusable: boolean): Promise<v
 
 /** Close every warm still page (tests, shutdown). */
 export async function closeStillPages(): Promise<void> {
+  if (reapTimer) clearTimeout(reapTimer);
+  reapTimer = null;
   await Promise.all(idleStillPages.splice(0).map(closeLease));
 }
 

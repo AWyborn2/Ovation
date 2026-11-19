@@ -81,4 +81,48 @@ describe("Share panel", () => {
     await waitFor(() => expect(saveFiles).toHaveBeenCalled());
     expect(saveFiles.mock.calls[0]![0].map((f) => f.name)).toEqual(["results-02.jpg"]);
   });
+
+  it("a slide whose image won't load stops the download, names the slide and saves nothing", async () => {
+    renderDownload.mockImplementation(async (card?: unknown) => {
+      if ((card as { input: { kind: string; photoUrl?: unknown } }).input.photoUrl === "/bad.jpg")
+        throw Object.assign(new Error("Request failed"), {
+          status: 500,
+          data: {
+            error:
+              "Card render failed: An image on this card didn't load: bad.jpg (incomplete). Check that photo or logo, then try again.",
+          },
+        });
+      return new Blob(["x"], { type: "image/png" });
+    });
+    const bad = {
+      ...slide("Sponsors"),
+      input: { kind: "teamList", photoUrl: "/bad.jpg" },
+    } as unknown as EditorSlide;
+    render(
+      <SharePanel
+        name="Match Day"
+        set={{
+          slides: [slide("Cover"), slide("A Grade"), bad, slide("B Grade")],
+          current: "Cover",
+          size: "square",
+          documentFor: () => ({}),
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download 4 images" }));
+    expect(
+      await screen.findByText(
+        "Nothing was saved. Slide 3 (Sponsors) couldn't be saved. An image on this card didn't load: bad.jpg (incomplete). Check that photo or logo, then try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(saveFiles).not.toHaveBeenCalled();
+    // Tried twice, then given up.
+    const badTries = renderDownload.mock.calls.filter(
+      (c) => (c as unknown as [{ input: { photoUrl?: unknown } }])[0].input.photoUrl === "/bad.jpg",
+    );
+    expect(badTries).toHaveLength(2);
+    renderDownload.mockReset();
+    renderDownload.mockImplementation(async () => new Blob(["x"], { type: "image/png" }));
+  });
 });

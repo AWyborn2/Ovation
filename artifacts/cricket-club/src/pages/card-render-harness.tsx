@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import {
@@ -21,7 +22,7 @@ import type {
 } from "@workspace/scorecard/kind-templates";
 import { createFitMount } from "@/lib/pack-render/fit-mount";
 import { runTemplateFit } from "@/lib/pack-render/template-fit";
-import { waitForImages } from "@/lib/pack-render/wait-images";
+import { imageProblemMessage, verifyImages, waitForImages } from "@/lib/pack-render/wait-images";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 import type { CaptureApi } from "@/lib/pack-render/capture";
 import { CARD_RENDER_CONTRACT } from "@workspace/scorecard/render-contract";
@@ -274,20 +275,25 @@ export default function CardRenderHarness() {
       // equal to the native width makes its internal scale factor exactly 1, so
       // the DOM renders at true 1080-wide native resolution with no cropping.
       stillRoot = createRoot(stillContainer);
-      stillRoot.render(
-        <PackCard
-          input={input}
-          size={size}
-          sponsorsOn={options.sponsorsOn}
-          theme={options.theme ?? null}
-          junior={options.junior}
-          data={options.data ?? null}
-          packId={options.packId ?? null}
-          adjustments={options.adjustments ?? null}
-          page={options.page}
-          animate={animate}
-          width={native.w}
-        />,
+      // Committed now, so every image tag is in the page before the wait below
+      // looks for them (round 6 retest: never wait before a src is set).
+      const root = stillRoot;
+      flushSync(() =>
+        root.render(
+          <PackCard
+            input={input}
+            size={size}
+            sponsorsOn={options.sponsorsOn}
+            theme={options.theme ?? null}
+            junior={options.junior}
+            data={options.data ?? null}
+            packId={options.packId ?? null}
+            adjustments={options.adjustments ?? null}
+            page={options.page}
+            animate={animate}
+            width={native.w}
+          />,
+        ),
       );
 
       // Settle web fonts, then wait for slot images, then two animation frames
@@ -307,18 +313,15 @@ export default function CardRenderHarness() {
       // waitForImages) — otherwise the first card in a batch exports a blank
       // photo while the image is still fetching.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      await waitForImages(stillContainer);
-      await prepareTeamNames(stillContainer);
-      if (
-        options.strictImages &&
-        Array.from(stillContainer.querySelectorAll("img")).some(
-          (img) => !img.complete || img.naturalWidth === 0,
-        )
-      ) {
-        throw new Error(
-          "A card image could not be loaded. Check the selected photo and club/sponsor logos, then retry.",
-        );
+      if (options.strictImages) {
+        // Downloads and posts: every image loaded, decoded and whole, or the
+        // render fails naming them; never a file with a blank tile (round 6).
+        const problems = await verifyImages(stillContainer);
+        if (problems.length) throw new Error(imageProblemMessage(problems));
+      } else {
+        await waitForImages(stillContainer);
       }
+      await prepareTeamNames(stillContainer);
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );

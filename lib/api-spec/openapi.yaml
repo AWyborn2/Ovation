@@ -11296,6 +11296,12 @@ paths:
           description: Invalid request body
         "403":
           description: Not an authenticated admin / entitlement missing
+        "500":
+          description: >-
+            The card could not be drawn (for example an image that would not
+            load whole after retries); `error` names the cause
+        "503":
+          description: The renderer is busy with other renders; try again shortly
 
   /tenant-brand:
     get:

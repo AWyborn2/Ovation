@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { Readable } from "stream";
+import { streamBody } from "../lib/stream-body";
 import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
@@ -144,8 +144,9 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
     setSafeObjectHeaders(res);
 
     if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
+      streamBody(response.body as ReadableStream<Uint8Array>, res, (err) =>
+        req.log.warn({ err }, "public object stream failed part way"),
+      );
     } else {
       res.end();
     }
@@ -198,8 +199,9 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
     setSafeObjectHeaders(res);
 
     if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
+      streamBody(response.body as ReadableStream<Uint8Array>, res, (err) =>
+        req.log.warn({ err }, "object stream failed part way"),
+      );
     } else {
       res.end();
     }
