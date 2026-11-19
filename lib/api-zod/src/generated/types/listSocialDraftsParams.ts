@@ -9,6 +9,10 @@ import type { SocialDraftStatus } from './socialDraftStatus';
 
 export type ListSocialDraftsParams = {
 status?: SocialDraftStatus;
+/**
+ * true leaves out posted and dismissed drafts, so a screen that only shows the queue's open work (Studio home's Your designs) doesn't load the club's whole posting history.
+ */
+open?: boolean;
 family?: string;
 grade?: string;
 };
