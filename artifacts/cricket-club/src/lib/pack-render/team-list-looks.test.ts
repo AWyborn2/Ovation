@@ -716,13 +716,9 @@ describe("Sponsor tiles inside their sheet with 1, 3, 7, 8, 12 and the most spon
     );
   });
 
-  // Clubhouse's sponsors page is being rebuilt on another branch (#676; it was
-  // a Duotone copy): until then it is held to round 5's counts (7, 8, 16).
-  const countsFor = (name: string) =>
-    name === "clubhouse/matchDay" ? [7, 8, MAX_SPONSORS_PER_SLIDE] : SPONSOR_COUNTS;
   for (const { name, doc } of pages)
     it(`${name}: every sponsor tile stays on its sheet at every size, game or no game`, () => {
-      expect(tilesOutsideSheet(name, doc, countsFor(name))).toEqual([]);
+      expect(tilesOutsideSheet(name, doc)).toEqual([]);
     });
 
   it("would catch Duotone's sponsors page as it was (one sheet, the no-game grid below it)", () => {
