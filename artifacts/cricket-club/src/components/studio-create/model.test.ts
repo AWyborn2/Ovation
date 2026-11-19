@@ -5,6 +5,8 @@ import {
   nextStep,
   parseCreateState,
   blankCarouselDocument,
+  carouselChoices,
+  stepsFor,
   prevStep,
   teamSourceOf,
   teamSourcesById,
@@ -95,6 +97,31 @@ describe("Create wizard model", () => {
       ["page-1", "page", 0],
       ["page-2", "page", 0],
       ["page-3", "page", 0],
+    ]);
+  });
+  it("Carousel set asks which set first, then hands over to that set as a carousel", () => {
+    expect(parseCreateState("kind=carousel&step=2")).toEqual({
+      team: "senior",
+      kind: "carousel",
+      mode: "one",
+      step: 2,
+    });
+    // Steps past the chooser belong to the set picked: back to the chooser.
+    expect(parseCreateState("kind=carousel&step=4").step).toBe(2);
+    expect(stepsFor("carousel")).toEqual([1, 2]);
+    expect(nextStep(parseCreateState("kind=carousel"))).toBe(2);
+    expect(parseCreateState("team=junior&kind=carousel&step=2").team).toBe("junior");
+    expect(carouselChoices("senior").map((c) => c.kind)).toEqual([
+      "teamList",
+      "matchDay",
+      "resultsSummary",
+      "matchSummary",
+    ]);
+    // Juniors keep their own list (no junior Results card).
+    expect(carouselChoices("junior").map((c) => c.kind)).toEqual([
+      "teamList",
+      "matchDay",
+      "matchSummary",
     ]);
   });
 });

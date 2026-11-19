@@ -57,6 +57,11 @@ vi.mock("@/components/weekend-carousel/weekend-carousel", () => ({
 vi.mock("@/components/weekend-carousel/template-choice", () => ({
   CarouselTemplatePicker: () => <p>looks</p>,
 }));
+// The Season and Round picker has its own suite (round-picker.test.tsx).
+vi.mock("./round-picker", () => ({
+  useRoundPick: () => ({ loading: false, mode: "rounds" }),
+  RoundPicker: () => <p>season and rounds</p>,
+}));
 
 const { CarouselFlow } = await import("./carousel-flow");
 
@@ -132,6 +137,7 @@ describe("Create's carousel flow", () => {
       <CarouselFlow setType="results" audience="senior" step={3} onNext={onNext} />,
       "/admin/social/create",
     );
+    expect(screen.getByText("season and rounds")).toBeInTheDocument();
     expect(screen.getByText("games in range")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(onNext).toHaveBeenCalled();
