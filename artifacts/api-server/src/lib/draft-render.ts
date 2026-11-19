@@ -322,6 +322,9 @@ export async function renderDraftSlides(
             {
               size,
               sponsorsOn,
+              // Every post and post pack waits for each image and fails rather
+              // than draw a blank logo or photo, as a carousel does (round 6).
+              strictImages: true,
               junior: slideJunior,
               theme: null,
               data: slideData,
@@ -371,6 +374,7 @@ export async function renderDraftSlides(
           {
             size,
             sponsorsOn,
+            strictImages: true,
             junior: slideJunior,
             theme: null,
             data: slideData,

@@ -18,6 +18,7 @@ import { renderDownload } from "./download";
 import {
   downloadSafeInput,
   pickedSlides,
+  renderSlidesInOrder,
   slideFilename,
   zipFilename,
   type PageChoice,
@@ -59,13 +60,12 @@ export function SharePanel({ set, name }: { set: SetShareContext; name: string }
     setProgress({ done: 0, total: picked.length });
     try {
       // Two slides at a time (the server keeps two warm render pages), files
-      // kept in slide order (round 3 retest, #9).
-      const files: File[] = new Array(picked.length);
-      let done = 0;
-      let next = 0;
-      const worker = async () => {
-        while (next < picked.length) {
-          const n = next++;
+      // kept in slide order (round 3 retest, #9). A slide that fails is tried
+      // once more; one that still fails stops the download and is named, so a
+      // set is never saved with a slide drawn without its images (round 6).
+      const files = await renderSlidesInOrder(
+        picked.length,
+        async (n) => {
           const i = picked[n]!;
           const slide = set.slides[i]!;
           const blob = await renderDownload(
@@ -81,11 +81,13 @@ export function SharePanel({ set, name }: { set: SetShareContext; name: string }
             format,
             1,
           );
-          files[n] = toFile(blob, slideFilename(name, i, format));
-          setProgress({ done: ++done, total: picked.length });
-        }
-      };
-      await Promise.all([worker(), worker()]);
+          return toFile(blob, slideFilename(name, i, format));
+        },
+        {
+          label: (n) => `Slide ${picked[n]! + 1} (${set.slides[picked[n]!]!.label})`,
+          onSaved: (done) => setProgress({ done, total: picked.length }),
+        },
+      );
       // One image, or a zip of them on a computer; the share sheet on a phone.
       await saveFiles(files, { zipName: zipFilename(name) });
     } catch (e) {

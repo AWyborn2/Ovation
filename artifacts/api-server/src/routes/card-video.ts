@@ -1,6 +1,7 @@
 import { redactRenderRequest } from "../lib/junior-name-redaction";
 import { Router, type IRouter } from "express";
 import { createReadStream } from "node:fs";
+import { pipeline } from "node:stream";
 import { stat } from "node:fs/promises";
 import { CreateCardVideoJobBody } from "@workspace/api-zod";
 import { eq } from "drizzle-orm";
@@ -80,7 +81,10 @@ router.get("/card-video/jobs/:id/download", requireAdmin, async (req, res): Prom
   res.setHeader("Content-Type", job.contentType);
   res.setHeader("Content-Length", String(size));
   res.setHeader("Content-Disposition", `attachment; filename="${job.filename ?? `${job.id}.mp4`}"`);
-  createReadStream(job.filePath).pipe(res);
+  // pipeline, not pipe: a read error must not stop the process (round 6).
+  pipeline(createReadStream(job.filePath), res, (err) => {
+    if (err) res.destroy(err);
+  });
 });
 
 export default router;
