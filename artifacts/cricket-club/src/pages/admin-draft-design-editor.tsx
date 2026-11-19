@@ -73,7 +73,9 @@ export function DraftDesignEditor({
   const { input, data, bundle, theme, refresh, panels } = useDraftContent(draft);
 
   // Where it opens (Stage 2): the link's size, else the size it was last
-  // designed at, else a carousel's size, else square (an older draft, as before).
+  // designed at, else a carousel's size, else Square for an older draft (as
+  // before) and Portrait for a new one. The editor opens only at a size the
+  // design draws (round 9 B13).
   const search = useSearch();
   const [location] = useLocation();
   const initialFormat = useMemo<CardSize>(
@@ -150,6 +152,8 @@ export function DraftDesignEditor({
     blank: isBlankDesignDraft(draft),
     panels,
     onFormat: saveFormat,
+    // Older sizes only where the card was made in them (round 9 B8).
+    olderSizes: draft.olderSizes ?? [],
     actions: ({ document, size, input: shown, data: shownData }) => (
       <>
         <button

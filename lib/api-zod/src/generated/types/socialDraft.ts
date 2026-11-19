@@ -9,6 +9,7 @@ import type { LayerPhotos } from './layerPhotos';
 import type { PhotoFocus } from './photoFocus';
 import type { SocialDraftDesignSize } from './socialDraftDesignSize';
 import type { SocialDraftLayoutWarnings } from './socialDraftLayoutWarnings';
+import type { SocialDraftOlderSizesItem } from './socialDraftOlderSizesItem';
 import type { SocialDraftPlannedBy } from './socialDraftPlannedBy';
 import type { SocialDraftStatus } from './socialDraftStatus';
 import type { SocialPublication } from './socialPublication';
@@ -101,6 +102,8 @@ export interface SocialDraft {
      * @nullable
      */
   designSize?: SocialDraftDesignSize;
+  /** The older sizes (Square, Landscape) this draft was made in and its design still draws: its saved size or a revision's, a queued carousel's saved size, or every older size its design draws for an older draft (no saved size, made before sizes were saved). The only older sizes its editor, the queue and the share window offer. A template having layers on an older size is not enough. */
+  olderSizes?: SocialDraftOlderSizesItem[];
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable

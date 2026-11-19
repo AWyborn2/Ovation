@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type { CardSize } from "@/lib/share-card";
 import { useModalSizes } from "./use-modal-sizes";
+import { isOlderPackVariant } from "./use-layout-template";
 
 /**
  * The share card modal (the queue's Share to socials) keeps a stored draft's
@@ -45,5 +46,46 @@ describe("useModalSizes", () => {
       "square",
       "portrait",
     ]);
+  });
+
+  it("round 9 B11: a Story card offers Story even with the club's Story off", () => {
+    const storyOff = { ...SQUARE_OFF, sizeStory: false };
+    const out = renderHook(() =>
+      useModalSizes({ open: true, settings: storyOff, olderSizes: [], designSize: "story" }),
+    ).result.current;
+    expect(out.enabledSizes).toEqual(["portrait", "story"]);
+  });
+
+  it("round 9 B11/B13: a new card from a four-size look: Portrait and Story, nothing it doesn't draw", () => {
+    const all: CardSize[] = ["square", "portrait", "story", "landscape"];
+    const four = renderHook(() =>
+      useModalSizes({ open: true, settings: SQUARE_OFF, olderSizes: [], drawnSizes: all }),
+    ).result.current;
+    expect(four.enabledSizes).toEqual(["portrait", "story"]);
+    // Card 1022 (no Story layers): Portrait only.
+    const t20 = renderHook(() =>
+      useModalSizes({
+        open: true,
+        settings: SQUARE_OFF,
+        olderSizes: [],
+        designSize: "portrait",
+        drawnSizes: ["square", "portrait", "landscape"],
+      }),
+    ).result.current;
+    expect(t20.enabledSizes).toEqual(["portrait"]);
+    expect(t20.activeSize).toBe("portrait");
+  });
+});
+
+describe("the share window's Layout menu (round 9 B11)", () => {
+  it("drops a design pack's Square and Landscape rows, keeps Portrait, Story and BYO layouts", () => {
+    const pack = (packVariant: string) => ({ source: "pack" as const, packVariant });
+    expect(isOlderPackVariant(pack("square"))).toBe(true);
+    expect(isOlderPackVariant(pack("landscape"))).toBe(true);
+    expect(isOlderPackVariant(pack("portrait"))).toBe(false);
+    expect(isOlderPackVariant(pack("story"))).toBe(false);
+    // A club's own layout is never a pack size row.
+    expect(isOlderPackVariant({ source: "layers", packVariant: null })).toBe(false);
+    expect(isOlderPackVariant({ source: "background", packVariant: "square" })).toBe(false);
   });
 });

@@ -248,6 +248,10 @@ const savedPage = async (requests: Req[]) => {
 describe("editing inside a group", () => {
   it("double-click goes inside a group, edits a child there, and Esc comes back up", async () => {
     const requests = open();
+    // Club templates open at Portrait (round 9 B12); this one is edited at Square.
+    fireEvent.change(await screen.findByRole("combobox", { name: "Format" }), {
+      target: { value: "square" },
+    });
     await waitFor(() => expect(overlay("score")).toBeTruthy());
     expect(overlay("runs")).toBeNull();
 

@@ -163,6 +163,19 @@ describe("auto-publish candidates", () => {
     expect(ready).toHaveLength(0);
   });
 
+  it("round 9 D17: with Story on (every club after 0084), auto-post still posts feed only (D6)", async () => {
+    await settings({ sizeStory: true, sizePortrait: true, sizeSquare: false });
+    const d = await autoDraft(13);
+    await db
+      .update(socialDraftsTable)
+      .set({ status: "ready" })
+      .where(eq(socialDraftsTable.id, d.id));
+    expect([...(await scheduleAutoPublish(tenantId, new Date()))]).toEqual([d.id]);
+    const pubs = await pubsFor(d.id);
+    expect(pubs.map((p) => p.platform).sort()).toEqual(["facebook", "instagram"]);
+    expect(pubs.map((p) => p.postType)).toEqual(["feed", "feed"]);
+  });
+
   it("Covers AE2: switching auto-publish on publishes fresh ready drafts, not old ones", async () => {
     await settings({ autoPublishEnabled: false });
     const fresh = await autoDraft(13);

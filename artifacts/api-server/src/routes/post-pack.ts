@@ -7,7 +7,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { objectUrl, photoStore } from "../lib/photo-store";
-import { draftSizes, renderDraftSlides } from "../lib/draft-render";
+import { draftSizes, EmptySizeError, renderDraftSlides } from "../lib/draft-render";
 import { ensureSettings } from "../lib/social-cards-helpers";
 
 export { setStillRenderer, type CardSize } from "../lib/draft-render";
@@ -80,6 +80,11 @@ router.post(
         zipUrl: objectUrl(zipPath),
       });
     } catch (err) {
+      // A size the design doesn't draw is refused, never sent blank (round 9 B13).
+      if (err instanceof EmptySizeError) {
+        res.status(422).json({ error: err.message });
+        return;
+      }
       req.log.error({ err, draftId: id }, "post pack render failed");
       const detail = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: `Post pack failed: ${detail}` });

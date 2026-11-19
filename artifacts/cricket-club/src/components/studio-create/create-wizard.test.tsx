@@ -68,7 +68,7 @@ const source = (fixtureId: number, src: string, isPublished: boolean, playerCoun
 
 type Call = { url: string; method: string; body: unknown };
 
-function stubApi() {
+function stubApi(settings: Record<string, unknown> = {}) {
   const calls: Call[] = [];
   const routes: Array<[string, unknown]> = [
     [
@@ -148,7 +148,7 @@ function stubApi() {
     ],
     ["/weekend-carousel/rounds", { seasons: [], defaultSeason: null, defaultRounds: [] }],
     ["/social-drafts", { id: 501 }],
-    ["/social-settings", { settings: {}, brand: {} }],
+    ["/social-settings", { settings, brand: {} }],
     ["/club-photos", []],
   ];
   vi.stubGlobal(
@@ -309,6 +309,17 @@ describe("Create wizard", () => {
       packId: expect.any(String),
       adjustments: expect.any(Object),
     });
+  });
+
+  it("round 9 D17: offers only the sizes the club has on", async () => {
+    stubApi({ sizeSquare: false, sizePortrait: true, sizeStory: false, sizeLandscape: false });
+    const { url } = renderWithHistory(<CreateWizard />, "/admin/social/create");
+    fireEvent.click(await screen.findByRole("button", { name: "Blank design" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/create?kind=blank&step=4"));
+    await waitFor(() => expect(screen.queryByRole("radio", { name: "Story" })).toBeNull());
+    expect(screen.getByRole("radio", { name: "Portrait" })).toBeInTheDocument();
+    // Never an older size, even one the club still has on.
+    expect(screen.queryByRole("radio", { name: "Square" })).toBeNull();
   });
 
   it("makes a junior team's list from the junior tables only", async () => {

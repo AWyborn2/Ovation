@@ -140,6 +140,10 @@ describe("layers drawer", () => {
       </Route>,
       "/admin/social/template/9",
     );
+    // Club templates open at Portrait (round 9 B12); this one is edited at Square.
+    fireEvent.change(await screen.findByRole("combobox", { name: "Format" }), {
+      target: { value: "square" },
+    });
     await waitFor(() => expect(document.querySelector('[data-testid^="layer-"]')).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "Layers" }));
     const list = await screen.findByRole("complementary", { name: "Layers" });

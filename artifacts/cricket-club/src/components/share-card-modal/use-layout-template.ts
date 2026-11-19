@@ -17,6 +17,10 @@ import { packImageSlots } from "@/lib/pack-render";
 import { useCurrentAdmin } from "@/lib/admin-auth";
 import type { Props } from "./constants";
 
+/** A design pack's row for an older size (Square, Landscape), retired for new cards. */
+export const isOlderPackVariant = (t: Pick<CardTemplate, "source" | "packVariant">): boolean =>
+  t.source === "pack" && (t.packVariant === "square" || t.packVariant === "landscape");
+
 /**
  * Which design renders this card: BYO template vs built-in, the resolved
  * design pack, the admin's saved per-kind layout, the layout editor toggle,
@@ -52,13 +56,17 @@ export function useLayoutTemplate({
       return next;
     });
 
-  // Custom "bring your own" templates that apply to this card kind.
+  // Custom "bring your own" templates that apply to this card kind. A design
+  // pack's Square and Landscape rows are older sizes, retired for new cards
+  // (round 9 B11): the Layout menu lists the pack once per size it offers.
   const templatesQ = useListCardTemplates({
     query: { enabled: open, queryKey: getListCardTemplatesQueryKey() },
   });
   const applicableTemplates = useMemo<CardTemplate[]>(() => {
     if (!input) return [];
-    return (templatesQ.data ?? []).filter((t) => templateAppliesToKind(t, input.kind));
+    return (templatesQ.data ?? []).filter(
+      (t) => templateAppliesToKind(t, input.kind) && !isOlderPackVariant(t),
+    );
   }, [templatesQ.data, input]);
   // `null` = built-in layout; otherwise a template id.
   const [layoutId, setLayoutId] = useState<number | null>(null);

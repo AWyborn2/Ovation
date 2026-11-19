@@ -11,6 +11,7 @@ import {
   clubSizes,
   designSizes,
   draftSizes,
+  EmptySizeError,
   feedSize,
   type CardSize,
   type DraftDesign,
@@ -214,6 +215,22 @@ describe("draftSizes", () => {
     expect(draftSizes(carousel("landscape", null, 1), squareOff, "download")).toEqual([
       "landscape",
     ]);
+  });
+  it("round 9 B13: a carousel saved at a size its design doesn't draw is refused, never drawn blank", () => {
+    const on: SizeSwitches = {
+      sizeSquare: false,
+      sizePortrait: true,
+      sizeStory: true,
+      sizeLandscape: false,
+    };
+    const portraitOnly = setDoc([{ id: "page-1", layers: [text("a", ["portrait"])] }]);
+    expect(() => draftSizes(carousel("story", portraitOnly), on, "download")).toThrow(
+      EmptySizeError,
+    );
+    expect(() => draftSizes(carousel("story", portraitOnly), on, "download")).toThrow(
+      "This design has no Story size, so it can't download at Story. Change its look or size in the editor.",
+    );
+    expect(draftSizes(carousel("portrait", portraitOnly), on, "download")).toEqual(["portrait"]);
   });
 });
 

@@ -32,9 +32,13 @@ import { CarouselTemplatePicker } from "@/components/weekend-carousel/template-c
 import type { CarouselAudience } from "@/components/weekend-carousel/model";
 import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import { SIZES, type CardSize } from "@/lib/share-card";
+import { useClubCreateSizes } from "@/lib/offered-sizes";
 import { cn } from "@/lib/utils";
 
-/** The sizes a new carousel set comes in: Portrait (the default) and Story. */
+/**
+ * The sizes a new carousel set comes in: Portrait (the default) and Story,
+ * those of them the club has on (round 9, D17).
+ */
 export const CAROUSEL_SIZES: { value: CardSize; label: string }[] = [
   { value: "portrait", label: "Portrait" },
   { value: "story", label: "Story" },
@@ -64,6 +68,13 @@ export function CarouselFlow({
 }) {
   const [, navigate] = useLocation();
   const s = useWeekendCarousel(setType, audience);
+  // Only the sizes the club has on (round 9, D17).
+  const clubSizes = useClubCreateSizes();
+  const offKey = clubSizes.includes(s.size) ? null : clubSizes[0]!;
+  useEffect(() => {
+    if (offKey) s.setSize(offKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offKey]);
   const pick = useRoundPick(s, setType, audience);
   const [phase, setPhase] = useState<Phase>("idle");
   const [problem, setProblem] = useState<string | null>(null);
@@ -168,7 +179,7 @@ export function CarouselFlow({
         Pick a look and size
       </h3>
       <div role="radiogroup" aria-label="Size" className="flex flex-wrap gap-2">
-        {CAROUSEL_SIZES.map((o) => (
+        {CAROUSEL_SIZES.filter((o) => clubSizes.includes(o.value)).map((o) => (
           <button
             key={o.value}
             type="button"
@@ -191,6 +202,13 @@ export function CarouselFlow({
         ))}
       </div>
       <CarouselTemplatePicker s={s} />
+      {s.drawnWith && s.picked && (
+        // Never a silent swap (round 9 B13): say what draws the set instead.
+        <p role="status" className="text-sm text-muted-foreground">
+          {s.picked.name} can&rsquo;t draw every page this carousel needs, so it&rsquo;s drawn with
+          your club&rsquo;s pack look instead. Pick another look to change it.
+        </p>
+      )}
       {/* What these cards show: this carousel's own Minimal / Standard / Full. */}
       {setType === "matchDay" ? <ContentOverridePanel s={s} /> : <SetKindContentPanel s={s} />}
       {setType === "teamList" && (

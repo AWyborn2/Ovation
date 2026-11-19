@@ -10,20 +10,18 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
 import {
   expandSetSlides,
-  isDocumentV2,
   isSetDocument,
   mapCarouselSlides,
-  normaliseDocument,
-  pageForInput,
   planTemplateSlides,
   setPageRenderDocument,
-  sizesWithLayers,
-  TEMPLATE_SIZE_ORDER,
   type DraftLayoutWarnings,
   type LayerDocument,
   type LayoutWarning,
-  type PageKey,
 } from "@workspace/scorecard/kind-templates";
+import {
+  DESIGN_SIZE_LABEL,
+  designSizes as sharedDesignSizes,
+} from "@workspace/scorecard/design-sizes";
 import { env } from "../config";
 import { ensureSettings } from "./social-cards-helpers";
 import { getTenantBrand } from "./tenant-brand";
@@ -43,7 +41,6 @@ import {
   queuedSlideAdjustments,
   carouselPackId,
   carouselSlideData,
-  carouselTemplateKind,
 } from "@workspace/scorecard/queued-carousel";
 
 /**
@@ -156,35 +153,6 @@ export async function enabledSizes(tenantId: number): Promise<CardSize[]> {
 /** What `draftSizes` reads from a draft. */
 export type DraftDesign = Pick<SocialDraftRow, "cardInput" | "adjustments" | "templateVersion">;
 
-/** The sizes every one of `pages` that has layers puts a layer on (none when no page has any). */
-function pagesCoverage(pages: readonly LayerDocument[]): CardSize[] {
-  const drawn = pages.filter((p) => Array.isArray(p.layers) && p.layers.length > 0);
-  if (drawn.length === 0) return [];
-  return TEMPLATE_SIZE_ORDER.filter((size) =>
-    drawn.every((p) => sizesWithLayers(p).includes(size)),
-  );
-}
-
-/**
- * The sizes a layer document covers: a flat (v1) document is one page; a
- * page-based (v2) one is read for the pages `inputs` draw, chosen as the
- * renderer chooses them.
- */
-function layerDocumentCoverage(
-  doc: unknown,
-  kind: string,
-  inputs: readonly Record<string, unknown>[],
-): CardSize[] {
-  const normalised = normaliseDocument(doc, kind);
-  if (!isDocumentV2(doc)) return pagesCoverage(Object.values(normalised.pages).filter((p) => !!p));
-  const pages = new Set<PageKey>(
-    inputs.map((input) =>
-      pageForInput({ ...input, kind: typeof input.kind === "string" ? input.kind : kind }),
-    ),
-  );
-  return pagesCoverage([...pages].map((page) => normalised.pages[page] ?? { layers: [] }));
-}
-
 /**
  * The sizes a draft's design draws (portrait and story sizes plan, Stage 1),
  * read from its document, never guessed: a templated card's layer document
@@ -192,29 +160,10 @@ function layerDocumentCoverage(
  * the library's coverage reads them), a templated carousel's pages for its
  * slides. A pack-based draft or carousel (before the template library)
  * covers all four, and so does a document no size can be read from: it
- * renders as it does today.
+ * renders as it does today. Shared with the web (`@workspace/scorecard/design-sizes`).
  */
 export function designSizes(draft: DraftDesign): CardSize[] {
-  const input = (draft.cardInput ?? {}) as Record<string, unknown>;
-  const kind = typeof input.kind === "string" ? input.kind : "card";
-  const carousel = readQueuedCarousel(input);
-  let covered: CardSize[];
-  if (carousel) {
-    if (carousel.version !== 3) return [...TEMPLATE_SIZE_ORDER];
-    covered = isSetDocument(draft.adjustments)
-      ? pagesCoverage(draft.adjustments.pages)
-      : layerDocumentCoverage(
-          draft.adjustments,
-          carouselTemplateKind(carousel.setType),
-          carousel.slides.map((s) => s.input as unknown as Record<string, unknown>),
-        );
-  } else {
-    if (draft.templateVersion === null) return [...TEMPLATE_SIZE_ORDER];
-    covered = isSetDocument(draft.adjustments)
-      ? pagesCoverage(draft.adjustments.pages)
-      : layerDocumentCoverage(draft.adjustments, kind, [input]);
-  }
-  return covered.length ? covered : [...TEMPLATE_SIZE_ORDER];
+  return sharedDesignSizes(draft);
 }
 
 /**
@@ -227,6 +176,20 @@ export function feedSize(design: readonly CardSize[], settings: SizeSwitches): C
   if (design.includes("portrait") && (settings.sizePortrait || !design.includes("square")))
     return "portrait";
   return design.includes("square") ? "square" : null;
+}
+
+/**
+ * A download asked for at a size the design doesn't draw (round 9 B13): it
+ * would be a blank image, so it is refused with a message the admin can act on.
+ */
+export class EmptySizeError extends Error {
+  constructor(readonly size: CardSize) {
+    const label = DESIGN_SIZE_LABEL[size];
+    super(
+      `This design has no ${label} size, so it can't download at ${label}. Change its look or size in the editor.`,
+    );
+    this.name = "EmptySizeError";
+  }
 }
 
 /**
@@ -256,7 +219,12 @@ export function draftSizes(
 ): CardSize[] {
   if (use === "download") {
     const carousel = readQueuedCarousel(draft.cardInput ?? {});
-    if (carousel) return [carousel.size];
+    if (carousel) {
+      // Never a blank file (round 9 B13): a carousel saved at a size its
+      // design doesn't draw is refused, not drawn empty or swapped for another.
+      if (!designSizes(draft).includes(carousel.size)) throw new EmptySizeError(carousel.size);
+      return [carousel.size];
+    }
   }
   const design = designSizes(draft);
   const narrowed = clubSizes(settings).filter((size) => design.includes(size));

@@ -60,6 +60,12 @@ describe("SettingsCard output sizes", () => {
     setup(settings());
     expect(await screen.findByRole("switch", { name: "Feed portrait" })).toBeTruthy();
     expect(sw("Story / TikTok")).toBeTruthy();
+    // Round 9, D17: Story stays switchable, and says what it does.
+    expect(
+      screen.getByText(
+        "Create offers Story while this is on. Automatic posts go to the feed only.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("switch", { name: "Feed square" })).toBeNull();
     expect(screen.queryByRole("switch", { name: "Landscape (links, X)" })).toBeNull();
     expect(screen.queryByText(OLDER)).toBeNull();

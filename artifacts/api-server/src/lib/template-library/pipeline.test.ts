@@ -38,6 +38,7 @@ const LOOKS = [
   "broadcast-classic",
   "club-kit-classic",
   `pl-${STAMP}`,
+  `t20-${STAMP}`,
 ];
 const tenants: number[] = [];
 const ids: Record<string, number> = {};
@@ -47,6 +48,17 @@ const layer = (id: string) => ({
   id,
   kind: "shape",
   geometry: { square: box, portrait: box, story: box, landscape: box },
+});
+/** A layer pinned at Square, Portrait and Landscape: an OMG T20 look has no Story (round 9 B13). */
+const noStoryLayer = (id: string) => ({
+  id,
+  kind: "shape",
+  sizes: ["square", "portrait", "landscape"],
+  geometry: { square: box, portrait: box, landscape: box },
+});
+const noStoryDoc = (name: string, pages: PageKey[]) => ({
+  formatVersion: 2,
+  pages: Object.fromEntries(pages.map((p) => [p, { layers: [noStoryLayer(`${name}-${p}`)] }])),
 });
 /** A v2 document with one shape per page, named after the template and page. */
 const pagesDoc = (name: string, pages: PageKey[]) => ({
@@ -129,6 +141,13 @@ beforeAll(async () => {
   await libraryTemplate("duotone", "matchDay", pagesDoc("dt-md", ["fixture", "title", "sponsors"]));
   // A look with a Match Summary but no Match Day template.
   await libraryTemplate(`pl-${STAMP}`, "matchSummary", pagesDoc("pl-ms", ["result", "day"]));
+  // A T20 look with every page but no Story size (round 9 B13).
+  await libraryTemplate(`t20-${STAMP}`, "matchSummary", noStoryDoc("t20-ms", ["result", "day"]));
+  await libraryTemplate(
+    `t20-${STAMP}`,
+    "matchDay",
+    noStoryDoc("t20-md", ["fixture", "title", "sponsors"]),
+  );
 });
 
 afterAll(async () => {
@@ -389,6 +408,58 @@ describe("carousel assembly (T3.20)", () => {
     const fromSlides = await assembleCarouselDocument(t, resultsSet(), opts);
     const fromPages = await assembleCarouselPages(t, "matchSummary", ["result"], opts);
     expect(fromPages).toEqual(fromSlides);
+  });
+
+  it("refuses a picked look that has no Story size for a Story set, never swaps it (round 9 B13)", async () => {
+    const t = await tenant("asm7");
+    const templateRef = { libraryTemplateId: ids[`t20-${STAMP}/matchSummary`]!, version: 1 };
+    await expect(
+      assembleCarouselDocument(t, resultsSet(), {
+        templateRef,
+        packId: "club-kit-v1",
+        size: "story",
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      body: {
+        error:
+          "This look has no Story size, so it can't draw this carousel at Story. Pick a look that comes in Story, or another size.",
+      },
+    });
+    await expect(
+      assembleCarouselPages(t, "matchSummary", ["result"], {
+        templateRef,
+        packId: "club-kit-v1",
+        size: "story",
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("draws the same look at a size it has, with its own bookends", async () => {
+    const t = await tenant("asm8");
+    const templateRef = { libraryTemplateId: ids[`t20-${STAMP}/matchSummary`]!, version: 1 };
+    for (const size of ["portrait", undefined] as const) {
+      const { document, templateRef: drawn } = await assembleCarouselDocument(t, resultsSet(), {
+        templateRef,
+        packId: "club-kit-v1",
+        ...(size ? { size } : {}),
+      });
+      expect(drawn).toEqual(templateRef);
+      expect(document.pages.result!.layers[0]!.id).toBe("t20-ms-result");
+      expect(document.pages.title!.layers[0]!.id).toBe("t20-md-title");
+    }
+  });
+
+  it("a default set at Story draws with the club's default, which has Story", async () => {
+    const t = await tenant("asm9");
+    const { templateRef, document } = await assembleCarouselDocument(t, resultsSet(), {
+      packId: "club-kit-v1",
+      size: "story",
+    });
+    // The club's default copy, from its pack look (Club Kit draws all four sizes).
+    expect(templateRef.copyId).toBeTypeOf("number");
+    expect(document.pages.result!.layers[0]!.id).toBe("ck-ms-result");
+    expect(document.pages.title!.layers[0]!.id).toBe("ck-md-title");
   });
 
   it("refuses a template of another kind, and another club's template", async () => {

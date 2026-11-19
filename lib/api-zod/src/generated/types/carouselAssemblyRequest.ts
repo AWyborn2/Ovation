@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CarouselAssemblyRequestSetType } from './carouselAssemblyRequestSetType';
+import type { CarouselAssemblyRequestSize } from './carouselAssemblyRequestSize';
 import type { TemplateRef } from './templateRef';
 
 export interface CarouselAssemblyRequest {
@@ -17,4 +18,6 @@ export interface CarouselAssemblyRequest {
   pages: string[];
   /** The picked template; absent for the club's default. */
   templateRef?: TemplateRef | null;
+  /** The size the set is made at. Every page must draw it: a picked template that doesn't is refused (409), never swapped for another look. */
+  size?: CarouselAssemblyRequestSize;
 }

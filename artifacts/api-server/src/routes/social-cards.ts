@@ -45,6 +45,9 @@ import { getOrCreateSettings } from "../lib/settings";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
 import { renderCardStill, harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { RendererBusyError } from "../lib/render-slots";
+import { emptySizeRefusal } from "@workspace/scorecard/design-sizes";
+import { BLANK_PACK_ID } from "../lib/kind-templates";
+import { TEMPLATE_SIZE_ORDER, type TemplateSize } from "@workspace/scorecard/kind-templates";
 import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
 import { resolveFamilyConfig, syncFamilySettings } from "../lib/social-families";
 import { persistDueDrafts } from "../lib/effective-draft-state";
@@ -487,6 +490,21 @@ router.put(
   },
 );
 
+/**
+ * Why a still on the blank base can't be drawn at its size: its layer
+ * document draws other sizes but not this one (null when it can, or when the
+ * card isn't drawn from a layer document on the blank base).
+ */
+export function blankBaseEmptySize(
+  input: Record<string, unknown>,
+  options: Record<string, unknown>,
+): string | null {
+  const size = options.size;
+  if (options.packId !== BLANK_PACK_ID || options.adjustments == null) return null;
+  if (typeof size !== "string" || !TEMPLATE_SIZE_ORDER.includes(size as TemplateSize)) return null;
+  return emptySizeRefusal(options.adjustments, input, size as TemplateSize);
+}
+
 // --- Static (pack) PNG render ----------------------------------------------
 // Standard "Broadcast Dark" pack cards are rendered pixel-true through the
 // headless-Chromium harness in its static mode (mount <PackCard> at native px,
@@ -501,6 +519,13 @@ router.post(
     const parsed = CreateCardRenderStillBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    // Never a blank file (round 9 B13): a design on the blank base that draws
+    // other sizes but not this one is refused, with what to pick instead.
+    const empty = blankBaseEmptySize(parsed.data.input, parsed.data.options);
+    if (empty) {
+      res.status(422).json({ error: empty });
       return;
     }
     try {

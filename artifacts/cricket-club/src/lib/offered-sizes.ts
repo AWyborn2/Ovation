@@ -16,6 +16,12 @@ import {
   TEMPLATE_SIZE_ORDER,
   type LayerDocument,
 } from "@workspace/scorecard/kind-templates";
+import { pagesCoverage } from "@workspace/scorecard/design-sizes";
+import {
+  getGetSocialSettingsQueryKey,
+  useGetSocialSettings,
+  type SocialSettingsBundle,
+} from "@workspace/api-client-react";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
 
@@ -84,12 +90,62 @@ export function clubSizesFor(
   settings: SizeSwitches | null | undefined,
   older: readonly CardSize[] = [],
   keep?: CardSize,
+  drawn?: readonly CardSize[],
 ): CardSize[] {
   const on = (size: CardSize) => !settings || settings[SWITCH[size]] === true;
-  const out = TEMPLATE_SIZE_ORDER.filter((size) =>
-    isOlderSize(size) ? size === keep || older.includes(size) : on(size),
+  const out = TEMPLATE_SIZE_ORDER.filter(
+    (size) =>
+      (isOlderSize(size) ? size === keep || older.includes(size) : on(size) || size === keep) &&
+      (!drawn || drawn.includes(size)),
   );
-  return out.length ? out : [DEFAULT_NEW_SIZE];
+  if (out.length) return out;
+  // Nothing the club has on is drawn: the design's own sizes, never an empty one.
+  const own = drawn?.filter((s) => !isOlderSize(s) || older.includes(s) || s === keep) ?? [];
+  return own.length ? own : drawn?.length ? [...drawn] : [DEFAULT_NEW_SIZE];
+}
+
+/**
+ * The sizes Create offers a new design (round 9, D17): Portrait and Story
+ * where the club has them on (both while its settings load), so Create and
+ * the club's settings can't disagree. Never empty: Portrait.
+ */
+export function createSizesFor(settings: SizeSwitches | null | undefined): CardSize[] {
+  // A switch not read yet counts as on (both default on), so only a saved "off" hides a size.
+  const out = OFFERED_SIZES.filter((size) => !settings || settings[SWITCH[size]] !== false);
+  return out.length ? [...out] : [DEFAULT_NEW_SIZE];
+}
+
+/** `createSizesFor` the club's own settings. */
+export function useClubCreateSizes(): CardSize[] {
+  const q = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
+  return createSizesFor((q.data as SocialSettingsBundle | undefined)?.settings);
+}
+
+/**
+ * The sizes the Format menu offers for a draft's design (round 9 B13, B8):
+ * only the sizes it draws (every page with layers has layers on it), and of
+ * the older sizes (Square, Landscape) only those the draft was made in
+ * (`madeIn`, the server's `olderSizes`). Library looks draw all four, so
+ * having layers on an older size is not enough. A design with no layers yet
+ * offers Portrait and Story. Never empty.
+ */
+export function draftFormatSizes(
+  pages: readonly LayerDocument[],
+  madeIn: readonly CardSize[],
+): CardSize[] {
+  const drawn = pagesCoverage(pages);
+  if (drawn.length === 0) return [...OFFERED_SIZES];
+  const out = drawn.filter((s) => !isOlderSize(s) || madeIn.includes(s));
+  return out.length ? out : drawn;
+}
+
+/** The size to open at among `sizes`: `wanted` when offered, else Portrait, Story, then the rest. */
+export function openingSizeAmong(sizes: readonly CardSize[], wanted?: CardSize): CardSize {
+  if (wanted && sizes.includes(wanted)) return wanted;
+  for (const size of [...OFFERED_SIZES, ...TEMPLATE_SIZE_ORDER]) {
+    if (sizes.includes(size)) return size;
+  }
+  return DEFAULT_NEW_SIZE;
 }
 
 /**

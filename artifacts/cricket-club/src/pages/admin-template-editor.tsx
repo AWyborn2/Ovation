@@ -195,7 +195,7 @@ import { draftInput } from "@/components/social-queue/draft-meta";
 import { kindLabel } from "@/lib/social-studio";
 import { ensureDocumentFonts } from "@/lib/document-fonts";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
-import { olderSizesIn } from "@/lib/offered-sizes";
+import { draftFormatSizes, olderSizesIn, openingSizeAmong } from "@/lib/offered-sizes";
 
 /** Below this width (a phone) templates aren't edited; tablets and up are (R23). */
 export const TEMPLATE_EDITOR_MIN_WIDTH = 768;
@@ -343,7 +343,9 @@ export default function AdminTemplateEditor({ id: idProp }: { id?: number } = {}
       key={templateQ.data.id}
       template={templateQ.data}
       initialFormat={
-        size === "portrait" || size === "story" || size === "landscape" ? size : undefined
+        size === "square" || size === "portrait" || size === "story" || size === "landscape"
+          ? size
+          : undefined
       }
       viewport={viewport}
       onReload={async () => (await templateQ.refetch()).data}
@@ -497,6 +499,11 @@ export type EditorSlidesMode = {
   actions?: ReactNode;
   /** What the slides are, in the empty-slide note ("this round's teams"). */
   noun?: string;
+  /**
+   * The older sizes (Square, Landscape) the draft was made in (the server's
+   * `olderSizes`): the only older sizes Format offers (round 9 B8).
+   */
+  olderSizes?: readonly CardSize[];
 };
 
 /**
@@ -533,6 +540,11 @@ export type EditorDraftMode = {
   >;
   /** The admin picked another size in Format (the draft saves it, Stage 2). */
   onFormat?: (size: CardSize) => void;
+  /**
+   * The older sizes (Square, Landscape) the draft was made in (the server's
+   * `olderSizes`): the only older sizes Format offers (round 9 B8).
+   */
+  olderSizes?: readonly CardSize[];
   /** Top-bar controls, given the design as it would be saved and the card on show. */
   actions?: (ctx: {
     document: Record<string, unknown>;
@@ -559,6 +571,8 @@ export type EditorActionsContext = {
     edit: (fn: (doc: EditorTemplateDoc) => EditorTemplateDoc, show?: string) => void;
   };
 };
+
+const EMPTY_SIZES: readonly CardSize[] = [];
 
 export function TemplateEditorV2<T extends EditorTemplate>({
   template,
@@ -647,13 +661,48 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const [sample, setSample] = useState(0);
   const [preset, setPreset] = useState<ContentPreset>("standard");
   const pageFull = pageDoc(full, cur.id);
-  const [format, setFormat] = useState<CardSize>(slidesMode?.size ?? initialFormat ?? "square");
+  // A draft (a card, a set, one slide of a set) is offered only the sizes its
+  // design draws, and of the older sizes only those it was made in (round 9
+  // B13, B8). A template keeps Portrait and Story to design in, plus the older
+  // sizes it has layers on (KTD15 keeps those it had).
+  const editingDraft = !!draftMode || !!slidesMode;
+  const madeIn = draftMode?.olderSizes ?? slidesMode?.olderSizes ?? EMPTY_SIZES;
+  const draftSizesNow = (doc: EditorTemplateDoc) =>
+    draftFormatSizes(
+      pageList.map((p) => pageDoc(doc, p.id)),
+      madeIn,
+    );
+  // Where it opens: the size asked for when the design draws it (a draft) or
+  // has it (a template), else Portrait (round 9 B12: never an older size by
+  // default), else the first size it has.
+  const [format, setFormat] = useState<CardSize>(() => {
+    const wanted = slidesMode?.size ?? initialFormat;
+    const sizes = editingDraft
+      ? draftSizesNow(full)
+      : sizesToOffer(allPages.map((p) => pageDoc(full, p.id)));
+    return openingSizeAmong(sizes, wanted);
+  });
   // The design's own sizes (Stage 3): Portrait and Story, plus an older size
   // (Square, Landscape) only where one of its pages already has layers on it.
   const ownSizes = useMemo(
     () => sizesToOffer(allPages.map((p) => pageDoc(full, p.id))),
     [allPages, full],
   );
+  // The Format menu for a draft: the sizes its design draws (and the one on show).
+  const draftFormats = useMemo(
+    () => (editingDraft ? draftSizesNow(full) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editingDraft, full, pageList, madeIn],
+  );
+  // A set keeps its own size in step when it opened somewhere else (its saved
+  // size isn't one its design draws), so it saves the size on show.
+  const opened0 = useRef(format);
+  useEffect(() => {
+    if (slidesMode?.size && opened0.current !== slidesMode.size)
+      slidesMode.onSize?.(opened0.current);
+    // Once, at open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // The level being edited: the page, or a group or list entered by double-click (A2, A3).
   const [scope, setScope] = useState<string | null>(null);
   const doc = scopeDoc(pageFull, scope, format);
@@ -858,7 +907,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           h.present,
           cur.id,
           scope,
-          addToOtherSizes(level, addPrompt.ids, addPrompt.from, ownSizes),
+          addToOtherSizes(level, addPrompt.ids, addPrompt.from, draftFormats ?? ownSizes),
           format,
         ),
       );
@@ -1106,6 +1155,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           setAddPrompt(null);
         }}
         olderFormats={olderSizesIn(ownSizes)}
+        formats={draftFormats}
         inheritedFormats={[]}
         formatLabel={(f) => {
           // One size for the whole design: flag a size any page has nothing on.
@@ -1376,7 +1426,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             )}
           </div>
 
-          {addPrompt && (
+          {addPrompt && (!draftFormats || draftFormats.length > 1) && (
             <div
               role="dialog"
               aria-label="Add to other sizes"

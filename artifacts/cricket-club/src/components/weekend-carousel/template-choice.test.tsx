@@ -107,11 +107,48 @@ describe("useCarouselAssembly", () => {
     const idle = renderHook(() => useCarouselAssembly("matchDay", SLIDES, null), {
       wrapper: wrapper(),
     });
-    expect(idle.result.current).toEqual({ document: undefined, loading: false, error: null });
+    expect(idle.result.current).toEqual({
+      document: undefined,
+      loading: false,
+      error: null,
+      drawnWith: null,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
     const { result } = renderHook(() => useCarouselAssembly("matchDay", SLIDES, pick), {
       wrapper: wrapper(),
     });
     await waitFor(() => expect(result.current.error).toMatch(/every page/));
+  });
+
+  it("round 9 B13: sends the set's size, and says when another template draws the set", async () => {
+    const bodies: unknown[] = [];
+    const packLook = { libraryTemplateId: 60, version: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)));
+        return new Response(
+          JSON.stringify({
+            document: { formatVersion: 2, pages: { fixture: { layers: [] } } },
+            templateRef: packLook,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+    const { result } = renderHook(() => useCarouselAssembly("matchDay", SLIDES, pick, "story"), {
+      wrapper: wrapper(),
+    });
+    await waitFor(() => expect(result.current.document).toBeTruthy());
+    expect(bodies).toEqual([
+      {
+        setType: "matchDay",
+        pages: ["day", "fixture", "sponsors", "title"],
+        templateRef: pick.ref,
+        size: "story",
+      },
+    ]);
+    // Never a silent swap: the template that drew it instead is named.
+    expect(result.current.drawnWith).toEqual(packLook);
   });
 });

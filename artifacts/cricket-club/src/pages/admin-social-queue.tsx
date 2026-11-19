@@ -64,8 +64,8 @@ import {
   type DraftStatus,
   type Family,
 } from "@/components/social-queue/draft-meta";
-import type { ShareCardInput } from "@/lib/share-card";
-import { draftOlderSizes } from "@/lib/offered-sizes";
+import type { CardSize, ShareCardInput } from "@/lib/share-card";
+import { designSizes } from "@workspace/scorecard/design-sizes";
 import { cn } from "@/lib/utils";
 import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 
@@ -602,8 +602,12 @@ export default function AdminSocialQueue() {
             ? ((preview.adjustments ?? null) as LayerDocument | null)
             : null
         }
-        // A stored draft keeps the older sizes its design has (D7).
-        olderSizes={preview ? draftOlderSizes(preview) : []}
+        // The club's sizes, the card's own size (a Story card offers Story),
+        // and an older size only where the card was made in it (round 9 B11);
+        // never a size its design doesn't draw (B13).
+        olderSizes={preview?.olderSizes ?? []}
+        designSize={(preview?.designSize as CardSize | null | undefined) ?? null}
+        drawnSizes={preview ? designSizes(preview) : undefined}
         playerId={playerIdFromAppPath(preview?.appPath)}
         sponsorPlayerId={preview?.subjectPlayerId ?? null}
         onApprove={

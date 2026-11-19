@@ -14,18 +14,20 @@ const asSize = (value: unknown): CardSize | null =>
 /**
  * The size the editor opens a draft at: the URL's `?format=` when it names a
  * size, else the draft's saved size, else a queued carousel's own size, else
- * Square (today's default, so a draft from before sizes were saved opens as
- * it always has).
+ * Square for an older draft made at it (D5: a draft from before sizes were
+ * saved opens as it always has) and Portrait for a new one (round 9 B8: a
+ * sweep's new card saves no size, and isn't an older Square card). The editor
+ * then opens only at a size the design draws.
  */
 export function editorOpeningSize(
   search: string,
-  draft: Pick<SocialDraft, "designSize" | "cardInput">,
+  draft: Pick<SocialDraft, "designSize" | "cardInput" | "olderSizes">,
 ): CardSize {
   return (
     asSize(new URLSearchParams(search).get("format")) ??
     asSize(draft.designSize) ??
     readQueuedCarousel(draft.cardInput ?? {})?.size ??
-    "square"
+    (draft.olderSizes?.includes("square") ? "square" : "portrait")
   );
 }
 

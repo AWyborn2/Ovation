@@ -23,6 +23,7 @@ import {
   milestoneEventsTable,
   matchesTable,
   juniorMatchesTable,
+  type DraftDesignSize,
   type SocialDraftRow,
 } from "@workspace/db";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
@@ -90,7 +91,11 @@ import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { notePhotoUsage } from "../lib/card-content/photos";
 import { layoutCheckOwed } from "../lib/layout-check-state";
-import { designSizeRefusal } from "../lib/draft-design-size";
+import {
+  designSizeRefusal,
+  madeInOlderSizes,
+  revisionSizesByDraft,
+} from "../lib/draft-design-size";
 
 const router: IRouter = Router();
 
@@ -115,6 +120,22 @@ export function presentDraft<
       ? { packId: resolveActivePackId(row.packId) }
       : {};
   return { ...row, ...pack, status: effectiveDraftStatus(row, autoPost, now) };
+}
+
+/**
+ * `presentDraft`, plus the older sizes (Square, Landscape) the draft was made
+ * in and still draws (round 9 B8): the only older sizes its editor, queue and
+ * share window offer. `revisionSizes` are its revisions' saved sizes; read
+ * here when not given.
+ */
+async function presentSized(
+  row: SocialDraftRow,
+  autoPost?: AutoPost,
+  now?: Date,
+  revisionSizes?: DraftDesignSize[],
+) {
+  const sizes = revisionSizes ?? (await revisionSizesByDraft([row.id])).get(row.id) ?? [];
+  return { ...presentDraft(row, autoPost, now), olderSizes: madeInOlderSizes(row, sizes) };
 }
 
 /**
@@ -216,8 +237,10 @@ router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
     rows.map((r) => r.id),
   );
   const names = await creatorNames(tenantId, rows);
+  const revisionSizes = await revisionSizesByDraft(rows.map((r) => r.id));
   const drafts = rows.map((r) => ({
     ...presentDraft(r, autoPost, now),
+    olderSizes: madeInOlderSizes(r, revisionSizes.get(r.id) ?? []),
     ...draftPublishing(pubs.get(r.id)),
     createdBy: r.createdByAdminId != null ? (names.get(r.createdByAdminId) ?? null) : null,
   }));
@@ -270,7 +293,7 @@ router.get("/social-drafts/:id", requireAdmin, async (req, res, next): Promise<v
   const pubs = await publicationsByDraft(tenantId, [row.id]);
   const names = await creatorNames(tenantId, [row]);
   res.json({
-    ...presentDraft(row, autoPost, new Date()),
+    ...(await presentSized(row, autoPost, new Date())),
     ...draftPublishing(pubs.get(row.id)),
     createdBy: row.createdByAdminId != null ? (names.get(row.createdByAdminId) ?? null) : null,
   });
@@ -331,7 +354,7 @@ router.post(
     } catch (err) {
       req.log?.warn({ err, tenantId, draftId: id }, "card-ready email not queued");
     }
-    res.json(presentDraft(updated));
+    res.json(await presentSized(updated));
   },
 );
 
@@ -363,7 +386,7 @@ router.post(
       .returning();
     // A draft back in review must not go out on its old schedule (R13).
     await cancelDraftPublications(tenantId, id, "Sent back to review.");
-    res.json(presentDraft(await resetPostingTiming(updated)));
+    res.json(await presentSized(await resetPostingTiming(updated)));
   },
 );
 
@@ -414,7 +437,7 @@ router.post(
           ),
         );
     }
-    res.json(presentDraft(updated));
+    res.json(await presentSized(updated));
   },
 );
 
@@ -481,7 +504,7 @@ router.post(
         .set({ status: "awaiting_review", autoReadyAt: null, reviewedAt: null })
         .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
         .returning();
-      res.json(presentDraft(await resetPostingTiming(updated)));
+      res.json(await presentSized(await resetPostingTiming(updated)));
     } catch (err) {
       // A newer undismissed draft already holds this event (dedupe index).
       if ((err as { code?: string }).code === "23505") {
@@ -612,7 +635,7 @@ router.post(
           ),
         );
       if (existing) {
-        res.status(200).json(presentDraft(existing));
+        res.status(200).json(await presentSized(existing));
         return;
       }
     }
@@ -655,6 +678,8 @@ router.post(
         const assembled = await assembleCarouselDocument(tenantId, carousel, {
           templateRef: carousel.templateRef,
           packId: await resolveDraftPack(tenantId, setTemplateKind(carousel.setType)),
+          // Every page draws the set's size, or the pick is refused (round 9 B13).
+          size: carousel.size,
         });
         // The set may have fallen back to the pack look; the payload names what drew it.
         (cardInput.weekendCarousel as Record<string, unknown>).templateRef = assembled.templateRef;
@@ -753,7 +778,7 @@ router.post(
           ),
         );
       if (existing) {
-        res.status(200).json(presentDraft(existing));
+        res.status(200).json(await presentSized(existing));
         return;
       }
     }
@@ -770,10 +795,10 @@ router.post(
         .set({ layerPhotos })
         .where(and(eq(socialDraftsTable.id, row.id), eq(socialDraftsTable.tenantId, tenantId)))
         .returning();
-      res.status(201).json(presentDraft(withPhotos ?? row));
+      res.status(201).json(await presentSized(withPhotos ?? row));
       return;
     }
-    res.status(201).json(presentDraft(row));
+    res.status(201).json(await presentSized(row));
   },
 );
 
@@ -937,6 +962,7 @@ router.patch(
         adjustments !== undefined ? { ...draft, adjustments } : draft,
         designSize,
         draft.designSize,
+        madeInOlderSizes(draft, (await revisionSizesByDraft([draft.id])).get(draft.id) ?? []),
       );
       if (refused) {
         res.status(400).json({ error: refused });
@@ -957,7 +983,7 @@ router.patch(
         .set({ designSize })
         .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
         .returning();
-      res.json(presentDraft(row));
+      res.json(await presentSized(row));
       return;
     }
     const patch: Partial<typeof socialDraftsTable.$inferInsert> = {
@@ -1021,7 +1047,7 @@ router.patch(
         .returning();
       return row;
     });
-    res.json(presentDraft(updated));
+    res.json(await presentSized(updated));
   },
 );
 
@@ -1084,7 +1110,7 @@ router.put(
         templateRef: parsed.data.templateRef ?? undefined,
         size: parsed.data.size,
       });
-      res.json(presentDraft(updated));
+      res.json(await presentSized(updated));
     } catch (err) {
       if (err instanceof TemplateLibraryError) {
         res.status(err.status).json(err.body);
@@ -1125,7 +1151,7 @@ router.post(
       res.status(404).json({ error: "Not found" });
       return;
     }
-    res.json(presentDraft(updated));
+    res.json(await presentSized(updated));
   },
 );
 

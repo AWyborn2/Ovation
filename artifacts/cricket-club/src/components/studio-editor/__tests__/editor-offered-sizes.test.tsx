@@ -3,6 +3,10 @@
  * the editor's Format menu lists Portrait and Story, and adds an older size
  * (Square, Landscape) only when the design has layers on it, labelled
  * "(older size)". An October landscape draft still opens at Landscape.
+ *
+ * Round 9: only sizes the design draws (B13), and an older size only where
+ * the draft was made in it (B8): the server's `olderSizes` says which. A new
+ * card from a four-size library look lists Portrait and Story only.
  */
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { screen, cleanup } from "@testing-library/react";
@@ -107,8 +111,8 @@ describe("the Format menu (Stage 3)", () => {
     expect(menu.options).toEqual(["Portrait", "Story"]);
   });
 
-  it("a four-size design lists its older sizes after them, as (older size)", async () => {
-    stubApi({ ...DRAFT, designSize: "portrait" });
+  it("a four-size design made in its older sizes lists them after, as (older size)", async () => {
+    stubApi({ ...DRAFT, designSize: "portrait", olderSizes: ["square", "landscape"] });
     openEditor("/admin/social/editor/11");
     const menu = await formatMenu();
     expect(menu.options).toEqual([
@@ -119,8 +123,30 @@ describe("the Format menu (Stage 3)", () => {
     ]);
   });
 
+  it("round 9 B8: a brand-new card from a four-size look lists no older size", async () => {
+    stubApi({ ...DRAFT, designSize: "portrait", olderSizes: [] });
+    openEditor("/admin/social/editor/11");
+    const menu = await formatMenu();
+    expect(menu.value).toBe("portrait");
+    expect(menu.options).toEqual(["Portrait", "Story"]);
+  });
+
+  it('round 9 B13: card 1022 (no Story layers) offers Portrait only, never "Story · empty"', async () => {
+    const t20 = {
+      layers: [
+        title({ square: box, portrait: box, landscape: box }, ["square", "portrait", "landscape"]),
+      ],
+    };
+    stubApi({ ...DRAFT, adjustments: t20, designSize: "portrait", olderSizes: [] });
+    // Even a link asking for Story opens at a size the design draws.
+    openEditor("/admin/social/editor/11?format=story");
+    const menu = await formatMenu();
+    expect(menu.value).toBe("portrait");
+    expect(menu.options).toEqual(["Portrait"]);
+  });
+
   it("an older draft with no saved size still opens at Square, as before", async () => {
-    stubApi({ ...DRAFT, designSize: null });
+    stubApi({ ...DRAFT, designSize: null, olderSizes: ["square", "landscape"] });
     openEditor("/admin/social/editor/11");
     const menu = await formatMenu();
     expect(menu.value).toBe("square");
@@ -128,7 +154,7 @@ describe("the Format menu (Stage 3)", () => {
   });
 
   it("an October landscape draft opens and stays at Landscape from its Format menu", async () => {
-    stubApi({ ...DRAFT, designSize: "landscape" });
+    stubApi({ ...DRAFT, designSize: "landscape", olderSizes: ["landscape"] });
     openEditor("/admin/social/editor/11");
     const menu = await formatMenu();
     expect(menu.value).toBe("landscape");

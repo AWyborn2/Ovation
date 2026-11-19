@@ -40,7 +40,7 @@ import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { kindLabel } from "@/lib/social-studio";
 import { splitPostedKinds } from "@/lib/studio-home";
 import { SIZES, type CardKind, type CardSize, type ShareCardInput } from "@/lib/share-card";
-import { DEFAULT_NEW_SIZE } from "@/lib/offered-sizes";
+import { DEFAULT_NEW_SIZE, useClubCreateSizes } from "@/lib/offered-sizes";
 import { cn } from "@/lib/utils";
 import {
   CAROUSEL_SET_OF,
@@ -104,7 +104,11 @@ export function CreateWizard() {
   };
 
   const [filled, setFilled] = useState<Filled | null>(null);
-  const [size, setSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
+  const [chosenSize, setSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
+  // Only the sizes the club has on (round 9, D17): Create and the club's
+  // settings never disagree. A size switched off since it was picked falls back.
+  const clubSizes = useClubCreateSizes();
+  const size = clubSizes.includes(chosenSize) ? chosenSize : clubSizes[0]!;
   const design = useStartDesign();
 
   const kind = s.kind && s.kind !== "blank" && s.kind !== "carousel" ? s.kind : null;
@@ -330,7 +334,7 @@ export function CreateWizard() {
             {s.kind === "blank" ? "Pick a size" : "Pick a look and size"}
           </h3>
           <div role="radiogroup" aria-label="Size" className="flex flex-wrap gap-2">
-            {CREATE_SIZES.map((o) => (
+            {CREATE_SIZES.filter((o) => clubSizes.includes(o.value)).map((o) => (
               <button
                 key={o.value}
                 type="button"

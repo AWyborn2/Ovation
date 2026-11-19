@@ -4,7 +4,11 @@
  * Landscape) a stored design keeps.
  */
 import { describe, it, expect } from "vitest";
-import { placeholderDocument, TEMPLATE_SIZE_ORDER } from "@workspace/scorecard/kind-templates";
+import {
+  placeholderDocument,
+  TEMPLATE_SIZE_ORDER,
+  type LayerDocument,
+} from "@workspace/scorecard/kind-templates";
 import { CREATE_SIZES } from "@/components/studio-home/create-picker";
 import { CAROUSEL_SIZES } from "@/components/studio-create/carousel-flow";
 import { SET_SIZES } from "@/components/template-library/make-set-dialog";
@@ -14,9 +18,12 @@ import { PLATFORM_HINT } from "@/components/studio-editor/export/download";
 import { clubKitBackgroundAdjustments } from "@/components/social-studio/editor-starters";
 import {
   clubSizesFor,
+  createSizesFor,
   DEFAULT_NEW_SIZE,
   designOwnSizes,
+  draftFormatSizes,
   draftOlderSizes,
+  openingSizeAmong,
   packDraftOlderSizes,
 } from "./offered-sizes";
 
@@ -45,6 +52,23 @@ describe("sizes offered for a new design", () => {
       "portrait",
       "story",
       "square",
+    ]);
+  });
+
+  it("round 9 B13: given a draft's sizes, the Format menu lists exactly those (and the one on show)", () => {
+    expect(formatOptions(["square"], "portrait", ["portrait"]).map((f) => f.value)).toEqual([
+      "portrait",
+    ]);
+    expect(
+      formatOptions([], "square", ["square", "portrait"]).map((f) => [f.value, f.older]),
+    ).toEqual([
+      ["portrait", false],
+      ["square", true],
+    ]);
+    // While on a size that has just emptied, it stays listed so the menu shows where it is.
+    expect(formatOptions([], "story", ["portrait"]).map((f) => f.value)).toEqual([
+      "portrait",
+      "story",
     ]);
   });
 
@@ -184,5 +208,92 @@ describe("the older screens' sizes (share card modal, Card Sets editor, D7)", ()
         sizeLandscape: false,
       }),
     ).toEqual(["portrait"]);
+  });
+});
+
+describe("round 9: never an empty size, older sizes only where made in them", () => {
+  const sized = (sizes: string[]) => ({
+    layers: [
+      {
+        id: "l",
+        kind: "shape",
+        sizes,
+        geometry: Object.fromEntries(sizes.map((s) => [s, box])),
+      },
+    ],
+  });
+  // An OMG T20 Match Summary design: Square, Portrait and Landscape, no Story (card 1022).
+  const t20 = sized(["square", "portrait", "landscape"]) as unknown as LayerDocument;
+  const squareOnly = sized(["square"]) as unknown as LayerDocument;
+  const fourSize = placeholderDocument("milestone") as unknown as LayerDocument;
+
+  it("B13/B8: the Format menu lists only the sizes a draft draws, older ones only when made in", () => {
+    // Brand-new card 1022: Portrait only (no Story layers, no older size made in).
+    expect(draftFormatSizes([t20], [])).toEqual(["portrait"]);
+    // A new card from a four-size library look: Portrait and Story, no older sizes.
+    expect(draftFormatSizes([fourSize], [])).toEqual(["portrait", "story"]);
+    // An older draft made at Square keeps Square, "(older size)".
+    expect(draftFormatSizes([fourSize], ["square"])).toEqual(["square", "portrait", "story"]);
+    // Every page with layers must draw the size.
+    expect(draftFormatSizes([t20, fourSize], ["landscape"])).toEqual(["portrait", "landscape"]);
+    // A design with no layers yet: Portrait and Story to start in.
+    expect(draftFormatSizes([{ layers: [] }], [])).toEqual(["portrait", "story"]);
+    // An older-only design not made in it still offers what it draws, never nothing.
+    expect(draftFormatSizes([squareOnly], [])).toEqual(["square"]);
+  });
+
+  it("B13: the editor opens at a size the design draws, Portrait first", () => {
+    expect(openingSizeAmong(["portrait"], "story")).toBe("portrait");
+    expect(openingSizeAmong(["square", "portrait", "story"], "square")).toBe("square");
+    expect(openingSizeAmong(["portrait", "story"], undefined)).toBe("portrait");
+    expect(openingSizeAmong(["story"], "square")).toBe("story");
+    expect(openingSizeAmong(["square", "landscape"])).toBe("square");
+  });
+
+  it("B12: a template with all four sizes opens at Portrait unless asked otherwise", () => {
+    expect(openingSizeAmong(["square", "portrait", "story", "landscape"])).toBe("portrait");
+    expect(openingSizeAmong(["square", "portrait", "story", "landscape"], "square")).toBe("square");
+  });
+
+  it("D17: Create offers only Portrait and Story the club has on", () => {
+    const on = { sizeSquare: false, sizePortrait: true, sizeStory: true, sizeLandscape: false };
+    expect(createSizesFor(on)).toEqual(["portrait", "story"]);
+    expect(createSizesFor({ ...on, sizeStory: false })).toEqual(["portrait"]);
+    // An older size switched on never comes back to Create.
+    expect(createSizesFor({ ...on, sizeSquare: true, sizeLandscape: true })).toEqual([
+      "portrait",
+      "story",
+    ]);
+    expect(createSizesFor(undefined)).toEqual(["portrait", "story"]);
+    expect(createSizesFor({ ...on, sizePortrait: false, sizeStory: false })).toEqual(["portrait"]);
+  });
+
+  it("B11: the share window offers the club's sizes, the card's own Story, and no size it doesn't draw", () => {
+    const noStory = {
+      sizeSquare: false,
+      sizePortrait: true,
+      sizeStory: false,
+      sizeLandscape: false,
+    };
+    // Story card 1023 at a club with Story off: Story is still there.
+    expect(clubSizesFor(noStory, [], "story")).toEqual(["portrait", "story"]);
+    // A library look draws all four, but a new card was made in no older size.
+    expect(
+      clubSizesFor(noStory, [], "story", ["square", "portrait", "story", "landscape"]),
+    ).toEqual(["portrait", "story"]);
+    // Card 1022 draws no Story: never offered, whatever the switches.
+    const on = { ...noStory, sizeStory: true };
+    expect(clubSizesFor(on, [], "portrait", ["square", "portrait", "landscape"])).toEqual([
+      "portrait",
+    ]);
+    // An older card made at Square keeps it.
+    expect(clubSizesFor(on, ["square"], undefined, ["square", "portrait"])).toEqual([
+      "square",
+      "portrait",
+    ]);
+    // Nothing the club has on is drawn: the design's own sizes, never an empty one.
+    expect(clubSizesFor({ ...on, sizePortrait: false }, [], undefined, ["portrait"])).toEqual([
+      "portrait",
+    ]);
   });
 });

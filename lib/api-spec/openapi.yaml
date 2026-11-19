@@ -6787,7 +6787,9 @@ paths:
         "404":
           description: The template isn't one the club can use
         "409":
-          description: No template the club can use has every page the set needs
+          description: >-
+            No template the club can use has every page the set needs, or the picked
+            template doesn't draw the size asked for
 
   /template-library/{id}:
     parameters:
@@ -8785,6 +8787,10 @@ paths:
                 $ref: "#/components/schemas/PostPack"
         "404":
           description: Not found
+        "422":
+          description: >-
+            A queued carousel saved at a size its design doesn't draw: refused rather than
+            downloaded blank; `error` says what to change
         "500":
           description: The render failed
 
@@ -11374,6 +11380,10 @@ paths:
           description: Invalid request body
         "403":
           description: Not an authenticated admin / entitlement missing
+        "422":
+          description: >-
+            A design on the blank base that doesn't draw the size asked for: refused rather
+            than rendered blank; `error` says what to pick instead
         "500":
           description: >-
             The card could not be drawn (for example an image that would not
@@ -26306,6 +26316,12 @@ components:
           oneOf:
             - $ref: "#/components/schemas/TemplateRef"
             - type: "null"
+        size:
+          type: string
+          enum: [square, portrait, story, landscape]
+          description: >-
+            The size the set is made at. Every page must draw it: a picked template that
+            doesn't is refused (409), never swapped for another look.
 
     CarouselAssembly:
       type: object
@@ -26697,6 +26713,17 @@ components:
             The size the admin designs the card at: where the editor opens and what the
             queue shows. It doesn't change what renders. Null for a draft from before the
             size was saved (it opens at Square).
+        olderSizes:
+          type: array
+          items:
+            type: string
+            enum: [square, landscape]
+          description: >-
+            The older sizes (Square, Landscape) this draft was made in and its design still
+            draws: its saved size or a revision's, a queued carousel's saved size, or every
+            older size its design draws for an older draft (no saved size, made before sizes
+            were saved). The only older sizes its editor, the queue and the share window
+            offer. A template having layers on an older size is not enough.
         createdByAdminId:
           type: ["integer", "null"]
           description: "The admin who made the draft by hand; null for drafts the sweep made."

@@ -563,8 +563,18 @@ describe("a set's size (portrait and story sizes plan, Stage 2)", () => {
   });
 
   it("an older set with no saved size opens at Square, as before", async () => {
-    open();
+    // The server says it was made before sizes were saved (round 9 B8).
+    open({ draft: { ...DRAFT, designSize: null, olderSizes: ["square", "landscape"] } });
     expect(await format()).toBe("square");
+  });
+
+  it("round 9 B8: a new set with no saved size opens at Portrait, its older sizes not offered", async () => {
+    open({ draft: { ...DRAFT, designSize: null, olderSizes: [] } });
+    expect(await format()).toBe("portrait");
+    const options = [
+      ...((await screen.findByRole("combobox", { name: "Format" })) as HTMLSelectElement).options,
+    ].map((o) => o.textContent ?? "");
+    expect(options.some((o) => /older size/.test(o))).toBe(false);
   });
 
   it("changing Format saves the size on the draft, as a single card's editor does", async () => {

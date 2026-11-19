@@ -284,6 +284,8 @@ function SetDraftEditor({
           slides: (doc) => setDraftSlides(current, doc, brand),
           size,
           onSize: pickSize,
+          // Older sizes only where the set was made in them (round 9 B8).
+          olderSizes: draft.olderSizes ?? [],
           // A free set of pages has no look's set to switch to.
           actions: pages ? undefined : (
             <button

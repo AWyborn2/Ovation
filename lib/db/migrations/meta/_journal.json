@@ -589,6 +589,13 @@
       "when": 1795067338612,
       "tag": "0083_square_off_all_clubs",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1795067398612,
+      "tag": "0084_story_on_all_clubs",
+      "breakpoints": true
     }
   ]
 }

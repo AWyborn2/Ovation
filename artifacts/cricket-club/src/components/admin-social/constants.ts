@@ -44,3 +44,10 @@ export const SIZE_KEYS: { key: SizeKey; label: string; code: string; older: bool
 
 /** The note under an older size's switch. */
 export const OLDER_SIZE_SETTING_NOTE = "Older size: kept for your existing cards";
+
+/**
+ * The note under Story's switch (round 9, D17): Create offers Story only
+ * while it's on, and automatic posts stay feed posts (D6).
+ */
+export const STORY_SETTING_NOTE =
+  "Create offers Story while this is on. Automatic posts go to the feed only.";

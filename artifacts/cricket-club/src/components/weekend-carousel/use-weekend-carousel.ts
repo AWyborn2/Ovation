@@ -499,7 +499,7 @@ export function useWeekendCarousel(
       bundle?.settings.clubHashtag,
       playerOrder,
     );
-  const assembly = useCarouselAssembly(setType, slides, picked);
+  const assembly = useCarouselAssembly(setType, slides, picked, size);
   const queueKey = JSON.stringify([slides, size, caption, picked?.ref ?? null, perSlideOverride]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
 
@@ -784,7 +784,7 @@ export function useWeekendCarousel(
     size,
     templateKind,
     picked,
-    setPicked: (value: PickedTemplate) => {
+    setPicked: (value: PickedTemplate | null) => {
       if (busy) return;
       setPicked(value);
       setQueueError(null);
@@ -794,6 +794,8 @@ export function useWeekendCarousel(
     document: assembly.document,
     assembling: assembly.loading,
     assemblyError: assembly.error,
+    /** The template drawing the set when the picked one couldn't (never silent, round 9 B13). */
+    drawnWith: assembly.drawnWith,
     setSize: (v: CardSize) => !busy && setSize(v),
     orderedPicks,
     selected,

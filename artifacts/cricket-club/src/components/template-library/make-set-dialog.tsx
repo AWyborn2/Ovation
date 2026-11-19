@@ -36,6 +36,7 @@ import { LoadingState } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
 import { SIZES, type CardSize } from "@/lib/share-card";
+import { useClubCreateSizes } from "@/lib/offered-sizes";
 import { SetPageThumb, useLibraryPreviewData } from "./previews";
 
 /** The set types offered, with what each repeats. */
@@ -68,7 +69,10 @@ export function MakeSetDialog({
   const [, navigate] = useLocation();
   const [type, setType] = useState<SetType>("teamLists");
   const [lookId, setLookId] = useState<number | null>(null);
-  const [size, setSize] = useState<CardSize>("portrait");
+  const [chosenSize, setSize] = useState<CardSize>("portrait");
+  // Only the sizes the club has on (round 9, D17), as Create offers them.
+  const clubSizes = useClubCreateSizes();
+  const size = clubSizes.includes(chosenSize) ? chosenSize : clubSizes[0]!;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const preview = useLibraryPreviewData();
@@ -173,7 +177,7 @@ export function MakeSetDialog({
         <fieldset className="space-y-2">
           <legend className="text-sm font-semibold">Size</legend>
           <div className="flex flex-wrap gap-2">
-            {SET_SIZES.map((s) => (
+            {SET_SIZES.filter((s) => clubSizes.includes(s)).map((s) => (
               <button
                 key={s}
                 type="button"

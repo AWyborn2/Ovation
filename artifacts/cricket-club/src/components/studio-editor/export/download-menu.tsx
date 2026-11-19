@@ -8,6 +8,7 @@ import {
   DOWNLOAD_FORMATS,
   PLATFORM_HINT,
   downloadFilename,
+  downloadRefusal,
   isClip,
   outputSize,
   renderDownload,
@@ -44,6 +45,8 @@ export function DownloadMenu({ card, baseName }: { card: CardRender; baseName: s
   }, [open]);
 
   const out = outputSize(card.size, format, scale);
+  // A size the design doesn't draw downloads nothing (round 9 B13).
+  const refused = downloadRefusal(card);
 
   const run = async () => {
     setError(null);
@@ -131,16 +134,16 @@ export function DownloadMenu({ card, baseName }: { card: CardRender; baseName: s
           <p className="text-xs text-[var(--ed-ink2)]">{PLATFORM_HINT[card.size]}</p>
         </div>
 
-        {error && (
+        {(refused ?? error) && (
           <p role="alert" className="text-sm text-[var(--ed-danger)]">
-            {error}
+            {refused ?? error}
           </p>
         )}
 
         <button
           type="button"
           onClick={() => void run()}
-          disabled={busy}
+          disabled={busy || !!refused}
           className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-[var(--ed-accent)] text-sm font-bold text-[var(--ed-on-accent)] disabled:opacity-60"
         >
           {busy ? (

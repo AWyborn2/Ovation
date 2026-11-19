@@ -109,9 +109,16 @@ const format = async () =>
 
 describe("where the editor opens a draft", () => {
   it("at the link's ?format= first", async () => {
-    stubApi({ ...DRAFT, designSize: "portrait" });
+    // An older size only where the draft was made in it (round 9 B8).
+    stubApi({ ...DRAFT, designSize: "portrait", olderSizes: ["landscape"] });
     openEditor("/admin/social/editor/11?format=landscape");
     expect(await format()).toBe("landscape");
+  });
+
+  it("round 9 B8: not at an older size the draft wasn't made in, whatever the link says", async () => {
+    stubApi({ ...DRAFT, designSize: "portrait", olderSizes: [] });
+    openEditor("/admin/social/editor/11?format=landscape");
+    expect(await format()).toBe("portrait");
   });
 
   it("at the saved design size when the link names none", async () => {
@@ -121,9 +128,15 @@ describe("where the editor opens a draft", () => {
   });
 
   it("at Square for an older draft with no saved size, as before", async () => {
-    stubApi({ ...DRAFT, designSize: null });
+    stubApi({ ...DRAFT, designSize: null, olderSizes: ["square", "landscape"] });
     openEditor("/admin/social/editor/11");
     expect(await format()).toBe("square");
+  });
+
+  it("round 9 B8: at Portrait for a new card with no saved size (a sweep's)", async () => {
+    stubApi({ ...DRAFT, designSize: null, olderSizes: [] });
+    openEditor("/admin/social/editor/11");
+    expect(await format()).toBe("portrait");
   });
 });
 

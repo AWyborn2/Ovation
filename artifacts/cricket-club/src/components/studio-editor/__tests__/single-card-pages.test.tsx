@@ -70,6 +70,8 @@ function openEditor(draft: boolean) {
           ? {
               input: previewSample("matchDay", "Test CC") as unknown as Record<string, unknown>,
               data: buildPackData(),
+              // An older card made at Square (round 9 B8: the server's olderSizes).
+              olderSizes: ["square"],
             }
           : undefined
       }

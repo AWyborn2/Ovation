@@ -36,11 +36,24 @@ export const OLDER_FORMATS: FormatOption[] = [
   { value: "landscape", label: "Landscape", dims: "1200 × 630" },
 ];
 
-/** The Format menu: Portrait and Story, then the older sizes given (and the one on show). */
+/**
+ * The Format menu: Portrait and Story, then the older sizes given (and the one
+ * on show). Given `only` (a draft's design, round 9 B13), exactly those sizes
+ * and the one on show, so a size the design doesn't draw is never offered.
+ */
 export function formatOptions(
   olderFormats: readonly CardSize[],
   current?: CardSize,
+  only?: readonly CardSize[],
 ): (FormatOption & { older: boolean })[] {
+  if (only) {
+    const offered = new Set<CardSize>(only);
+    if (current) offered.add(current);
+    return [
+      ...FORMATS.filter((f) => offered.has(f.value)).map((f) => ({ ...f, older: false })),
+      ...OLDER_FORMATS.filter((f) => offered.has(f.value)).map((f) => ({ ...f, older: true })),
+    ];
+  }
   const older = new Set<CardSize>(olderFormats);
   if (current) older.add(current);
   return [
@@ -59,6 +72,7 @@ export function EditorTopBar({
   format,
   onFormat,
   olderFormats = [],
+  formats,
   inheritedFormats,
   canUndo,
   canRedo,
@@ -80,6 +94,11 @@ export function EditorTopBar({
    * Portrait and Story as "(older size)". A new design has none.
    */
   olderFormats?: readonly CardSize[];
+  /**
+   * Exactly the sizes to offer (a draft's design: only the sizes it draws,
+   * round 9 B13). When given, `olderFormats` is ignored.
+   */
+  formats?: readonly CardSize[];
   /** Formats still using another format's layout (flagged for review). */
   inheritedFormats: CardSize[];
   canUndo: boolean;
@@ -114,7 +133,7 @@ export function EditorTopBar({
           onChange={(e) => onFormat(e.target.value as CardSize)}
           className="h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm font-semibold"
         >
-          {formatOptions(olderFormats, format).map((f) => (
+          {formatOptions(olderFormats, format, formats).map((f) => (
             <option key={f.value} value={f.value}>
               {f.label}
               {f.older ? " (older size)" : ""}
