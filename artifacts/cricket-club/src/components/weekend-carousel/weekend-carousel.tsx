@@ -209,42 +209,53 @@ export function WeekendCarouselBody({
   );
 }
 
-export function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
+export function RangeAndFixtures({
+  s,
+  byRound = false,
+}: {
+  s: WeekendCarouselState;
+  /** Create's round picker chose the games: no From/To here, and "tick a round" when empty. */
+  byRound?: boolean;
+}) {
   const lock = s.busy;
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="wk-from">From</Label>
-          <Input
-            id="wk-from"
-            type="date"
-            value={s.from}
-            disabled={lock}
-            onChange={(e) => s.setFrom(e.target.value)}
-            data-testid="input-weekend-from"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="wk-to">To</Label>
-          <Input
-            id="wk-to"
-            type="date"
-            value={s.to}
-            disabled={lock}
-            onChange={(e) => s.setTo(e.target.value)}
-            data-testid="input-weekend-to"
-          />
-        </div>
-        <Button variant="ghost" size="sm" disabled={lock} onClick={s.resetRange}>
-          <CalendarRange className="mr-1 h-3.5 w-3.5" aria-hidden />{" "}
-          {s.setType === "results" || s.setType === "matchSummary"
-            ? "Last completed weekend"
-            : "This weekend"}
-        </Button>
-        <p className="basis-full text-xs text-muted-foreground" data-testid="text-timezone">
-          Dates and start times use Perth time ({s.timeZone}), the app standard.
-        </p>
+        {!byRound && (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="wk-from">From</Label>
+              <Input
+                id="wk-from"
+                type="date"
+                value={s.from}
+                disabled={lock}
+                onChange={(e) => s.setFrom(e.target.value)}
+                data-testid="input-weekend-from"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="wk-to">To</Label>
+              <Input
+                id="wk-to"
+                type="date"
+                value={s.to}
+                disabled={lock}
+                onChange={(e) => s.setTo(e.target.value)}
+                data-testid="input-weekend-to"
+              />
+            </div>
+            <Button variant="ghost" size="sm" disabled={lock} onClick={s.resetRange}>
+              <CalendarRange className="mr-1 h-3.5 w-3.5" aria-hidden />{" "}
+              {s.setType === "results" || s.setType === "matchSummary"
+                ? "Last completed weekend"
+                : "This weekend"}
+            </Button>
+            <p className="basis-full text-xs text-muted-foreground" data-testid="text-timezone">
+              Dates and start times use Perth time ({s.timeZone}), the app standard.
+            </p>
+          </>
+        )}
         {s.sourceWarnings.length > 0 && (
           <ul
             className="basis-full space-y-1 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2"
@@ -259,15 +270,17 @@ export function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
         )}
       </div>
 
-      {!s.rangeValid ? (
+      {byRound && s.onlyIds?.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Tick a round to see its games.</p>
+      ) : !s.rangeValid ? (
         <p className="text-sm text-destructive" role="alert">
           The start date must be on or before the end date.
         </p>
       ) : s.orderedPicks.length === 0 ? (
         <EmptyState
           icon={<CalendarRange className="h-8 w-8" />}
-          title={`No ${s.setType === "matchDay" ? "fixtures" : s.setTypeLabel.toLowerCase()} in this range`}
-          message="Try another date range. Only available sources can be included; see any missing-data reasons above."
+          title={`No ${s.setType === "matchDay" ? "fixtures" : s.setTypeLabel.toLowerCase()} in this ${byRound ? "pick" : "range"}`}
+          message={`Try ${byRound ? "another round" : "another date range"}. Only available sources can be included; see any missing-data reasons above.`}
         />
       ) : (
         <div className="rounded-md border">

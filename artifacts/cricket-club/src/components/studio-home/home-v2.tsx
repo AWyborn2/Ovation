@@ -30,7 +30,7 @@ export function quickPicks(juniors: boolean): Array<{ label: string; href: strin
     ...(juniors
       ? [{ label: "Junior Team List", href: `${CREATE}?team=junior&kind=teamList&step=2` }]
       : []),
-    { label: "Carousel set", href: `${CREATE}?kind=matchDay&mode=many&step=3` },
+    { label: "Carousel set", href: `${CREATE}?kind=carousel&step=2` },
     { label: "Blank design", href: `${CREATE}?kind=blank&step=4` },
   ];
 }

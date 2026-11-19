@@ -21,7 +21,7 @@ describe("New Studio Home", () => {
     expect(labels(true)).toContain("Junior Team List");
     expect(labels(false)).not.toContain("Junior Team List");
     expect(quickPicks(true).find((q) => q.label === "Carousel set")!.href).toBe(
-      "/admin/social/create?kind=matchDay&mode=many&step=3",
+      "/admin/social/create?kind=carousel&step=2",
     );
   });
 });
