@@ -27,6 +27,7 @@ import { applyPackData, bindInput } from "../bind";
 import { fitLayersInDom } from "../layer-fit";
 import { BLANK_PACK_ID, packColourModeFor, renderPackCard } from "../render";
 import { prepareTeamNames } from "../team-name-fit";
+import { fitLogoPlates } from "../logo-plate-fit";
 import { packNativeSize } from "../tokens";
 import { captureCardDom, shortenUrls } from "./dom";
 import { captureRender, captureVariants, prepareCard } from "./plan";
@@ -245,6 +246,7 @@ async function mountHtml(html: string, size: CaptureSize): Promise<HTMLElement> 
   }
   await frame();
   await waitForImages(container);
+  fitLogoPlates(container);
   await prepareTeamNames(container);
   await frame();
   await frame();

@@ -23,6 +23,7 @@ import type {
 import { createFitMount } from "@/lib/pack-render/fit-mount";
 import { runTemplateFit } from "@/lib/pack-render/template-fit";
 import { imageProblemMessage, verifyImages, waitForImages } from "@/lib/pack-render/wait-images";
+import { fitLogoPlates } from "@/lib/pack-render/logo-plate-fit";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 import type { CaptureApi } from "@/lib/pack-render/capture";
 import { CARD_RENDER_CONTRACT } from "@workspace/scorecard/render-contract";
@@ -321,6 +322,8 @@ export default function CardRenderHarness() {
       } else {
         await waitForImages(stillContainer);
       }
+      // Every logo has loaded: each sponsor's light plate hugs its logo (retest 7).
+      fitLogoPlates(stillContainer);
       await prepareTeamNames(stillContainer);
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),

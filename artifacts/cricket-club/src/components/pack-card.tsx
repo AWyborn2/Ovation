@@ -4,6 +4,7 @@ import type { PageKey } from "@workspace/scorecard/kind-templates";
 import type { ShareCardInput, CardSize } from "@/lib/share-card";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import { prepareTeamNames } from "@/lib/pack-render/team-name-fit";
+import { watchLogoPlates } from "@/lib/pack-render/logo-plate-fit";
 import {
   renderPackCard,
   packNativeSize,
@@ -149,6 +150,8 @@ export function PackCard({
     let cancelled = false;
     setFitError(null);
     const root = contentRef.current;
+    // A sponsor's light plate hugs its logo once the logo has loaded (retest 7).
+    const unwatch = root ? watchLogoPlates(root) : null;
     if (root)
       void prepareTeamNames(root).catch((error) => {
         if (!cancelled)
@@ -156,6 +159,7 @@ export function PackCard({
       });
     return () => {
       cancelled = true;
+      unwatch?.();
     };
   }, [html, mounted]);
 

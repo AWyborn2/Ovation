@@ -45,11 +45,12 @@ import { SIZES } from "../share-card/types";
 import { distinctCompetitionLine } from "@workspace/scorecard/card-content";
 import { focusTransform, type PhotoFocus } from "@workspace/scorecard/photo-focus";
 import { escapeHtml } from "./html-utils";
+import { logoPlateAttrs } from "./logo-plate-fit";
 import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import {
   emptySlotFrames,
-  sponsorLogoPlates,
+  sponsorLogoPlateSlots,
   groupDepthAllowed,
   layerShows,
   renderGroup,
@@ -713,6 +714,9 @@ function logoPlate(spec: RowsSpec, field: string, bg: string | undefined): strin
   return /var\(--accent-ink\b/.test(bg) ? SPONSOR_LOGO_PLATE : bg;
 }
 
+/** The artboard as a box: where a page's own layers are placed. */
+const ARTBOARD_FRAME: LayerBox = { x: 0, y: 0, w: 100, h: 100 };
+
 /** The card's sliders as a layer's photo adjust (percent focal point); null while untouched. */
 function sliderPhoto(t: FreeLayerContext["photoTransform"]): PhotoAdjust | null {
   if (!t) return null;
@@ -982,18 +986,39 @@ export function renderFreeLayers(
   // A slot is filled when it is drawn with its image.
   const slotFilled = (token: string, slot: TemplateLayerV2) =>
     has(token) && layerShows(slot, layout);
-  const ownLayers = (siblings: readonly TemplateLayerV2[], styled = v2): TemplateLayerV2[] => {
+  /**
+   * Each light sponsor plate's markers, so the mounted card can size it to
+   * its logo as drawn (`fitLogoPlates`, Ash's decision "the plate hugs the
+   * logo", retest 7). Keyed by the plate as drawn.
+   */
+  const plateMarks = new WeakMap<TemplateLayerV2, string>();
+  /**
+   * `frame` is the box the siblings are placed in (the artboard, or their
+   * group's box); null in a stack group, where flex places them and a plate
+   * keeps its box.
+   */
+  const ownLayers = (
+    siblings: readonly TemplateLayerV2[],
+    styled = v2,
+    frame: LayerBox | null = ARTBOARD_FRAME,
+  ): TemplateLayerV2[] => {
     if (!styled) return [...siblings];
     const frames = emptySlotFrames(siblings, boxOn, slotFilled, layerTokens, { drawn: shown });
     const own = frames.size ? siblings.filter((layer) => !frames.has(layer)) : [...siblings];
     // A drawn sponsor logo's dark plate is drawn light (dev retest 6, card 978).
-    const plates = sponsorLogoPlates(own, boxOn, slotFilled, layerTokens);
+    const plates = sponsorLogoPlateSlots(own, boxOn, slotFilled, layerTokens);
     if (plates.size === 0) return own;
-    return own.map((layer) =>
-      plates.has(layer)
-        ? ({ ...layer, style: { ...layer.style, fill: SPONSOR_LOGO_PLATE } } as TemplateLayerV2)
-        : layer,
-    );
+    return own.map((layer) => {
+      const slot = plates.get(layer);
+      if (!slot) return layer;
+      const light = { ...layer, style: { ...layer.style, fill: SPONSOR_LOGO_PLATE } };
+      const plateBox = boxOn(layer);
+      const slotBox = boxOn(slot);
+      // A rotated plate or logo isn't an upright box to hug: it keeps its box.
+      if (frame && plateBox && slotBox && !num(plateBox.rotate) && !num(slotBox.rotate))
+        plateMarks.set(light, logoPlateAttrs(plateBox, slotBox, frame, SIZES[size], slot.id));
+      return light;
+    });
   };
 
   /**
@@ -1023,7 +1048,13 @@ export function renderFreeLayers(
     if (layer.kind === "group") {
       // Groups nest to MAX_STACK_DEPTH; a deeper one isn't drawn.
       if (!groupDepthAllowed(depth)) return null;
-      const children = ownLayers(Array.isArray(layer.children) ? layer.children : [], styled)
+      const stack = (layer as GroupLayerV2).stack;
+      const stacked = !!stack && typeof stack === "object";
+      const children = ownLayers(
+        Array.isArray(layer.children) ? layer.children : [],
+        styled,
+        stacked ? null : box.value,
+      )
         .map((child) =>
           draw(child, depth + 1, styled, {
             w: (num(box.value.w) / 100) * parentPx.w,
@@ -1082,7 +1113,7 @@ export function renderFreeLayers(
       `height:${num(h)}%`,
       ...style,
     ];
-    const attrs = ` data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""}`;
+    const attrs = ` data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""}${plateMarks.get(layer) ?? ""}`;
     const html = `<div${attrs} style="${css.join(";")}">${inner}</div>`;
     return { layer, box: box.value, attrs, style, inner, html };
   };
