@@ -136,14 +136,14 @@ A pack-based draft (before the template library) is treated as covering all four
 
 ## Stages
 
-| Stage                                                                          | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Done means                                                                                                                                                         |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **1. Safe rendering for designs that lack a size** (server only, no UI change) | New `draftSizes(draft, settings)` in `draft-render.ts`: the club's enabled sizes **narrowed to the sizes the draft's design covers**, never empty. Feed size: portrait when the design covers portrait and either the club has portrait on or the design has no square; otherwise square (today's rule, unchanged for every stored design, because they all cover all four). Used by `checkDraftLayout`, `prepareMedia`, `post-pack.ts` and `email-outbox.ts`. A Story on a design without story boxes is refused with a clear message                                                                                       | A portrait-and-story design never renders a blank square or landscape anywhere. Every existing draft renders at exactly the sizes it does today (tests pin it)     |
-| **2. Save the size** (migration 0081)                                          | `social_drafts.design_size` (null = older draft). Set on create (`CreateSocialDraftRequest.designSize`), saved when Format changes in the editor (`PATCH /social-drafts/:id` top-level `designSize`, not inside `adjustments`, so the Zod strip in #515 can't drop it), recorded on revisions and restored with them. Page sets save it the same way; queued carousels keep `weekendCarousel.size`. The editor opens at: URL `?format=` if given, else `design_size`, else the carousel's size, else **square** (today's default, so older drafts open as they do now). The queue and Continue designing show the saved size | Pick Story at Create, leave, reopen from the queue: it opens at Story. An older draft opens at Square, as now                                                      |
-| **3. Offer Portrait and Story only** (web only)                                | `CREATE_SIZES`, `CAROUSEL_SIZES`, `SET_SIZES`, `FORMATS`, `PACK_PREVIEW_FORMATS`, `SIZE_OPTIONS` become Portrait and Story, default **Portrait**. The Format menu adds an older size only when the design has layers on it, labelled "(older size)". Blank starters and placeholders get portrait and story boxes only (with `sizes` set, so they don't fall back to all four). "Add to the other sizes" (`template-ops.ts` line 56) adds to the design's own sizes, not all four. Download keeps offering whatever the editor shows. `PLATFORM_HINT` for square and landscape reads "Older size"                            | A new design can't be started, or grown, at Square or Landscape. A landscape draft from October still opens, edits and downloads at Landscape from its Format menu |
-| **4. Templates and the library**                                               | KTD15 relaxed: a document must have layers on **portrait and story**, and on any older size **its previous version covered** (so an existing four-size template keeps its strictness). New club copies and console designs need only portrait and story. `documentCoverage` unchanged. Create picker keeps filtering by size, so four-size templates still appear under Portrait and Story. Library chips show older sizes as "older"                                                                                                                                                                                        | A Portrait and Story template saves, lists and drafts. Editing an existing four-size template still can't empty its square or landscape by accident                |
-| **5. Bundle fit check**                                                        | `look.json` gets an optional `sizes` (new looks: `["portrait", "story"]`). `check-template-bundles-core.ts` adds two pure checks: a look with `sizes` must cover exactly those on every page (no square or landscape layers); a look without it (every current look) must still cover all four. `fitMatrix` already checks only covered sizes, so new looks skip retired sizes and existing looks keep their full check, retired sizes included. Known-failures file unchanged                                                                                                                                               | CI fails if a new look draws square or landscape, or if an existing look loses one. Existing looks are still fit-checked at all four sizes                         |
-| **6. Club settings**                                                           | Settings card shows Portrait and Story switches. Square and Landscape switches show only while a club has them on, labelled "Older size: kept for your existing cards". No club's stored switches change (see D3). Runbook gets a short "Sizes" section                                                                                                                                                                                                                                                                                                                                                                      | Settings can't switch an older size back on once it's off; nothing a club has on today changes                                                                     |
+| Stage                                                                          | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Done means                                                                                                                                                         |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **1. Safe rendering for designs that lack a size** (server only, no UI change) | New `draftSizes(draft, settings)` in `draft-render.ts`: the club's enabled sizes **narrowed to the sizes the draft's design covers**, never empty. Feed size: portrait when the design covers portrait and either the club has portrait on or the design has no square; otherwise square (today's rule, unchanged for every stored design, because they all cover all four). Used by `checkDraftLayout`, `prepareMedia`, `post-pack.ts` and `email-outbox.ts`. Downloads (post pack, editor Download) also keep a design's own older size even when the club has it off (D3). A Story on a design without story boxes is refused with a clear message | A portrait-and-story design never renders a blank square or landscape anywhere. Every existing draft renders at exactly the sizes it does today (tests pin it)     |
+| **2. Save the size** (migration 0081)                                          | `social_drafts.design_size` (null = older draft). Set on create (`CreateSocialDraftRequest.designSize`), saved when Format changes in the editor (`PATCH /social-drafts/:id` top-level `designSize`, not inside `adjustments`, so the Zod strip in #515 can't drop it), recorded on revisions and restored with them. Page sets save it the same way; queued carousels keep `weekendCarousel.size`. The editor opens at: URL `?format=` if given, else `design_size`, else the carousel's size, else **square** (today's default, so older drafts open as they do now). The queue and Continue designing show the saved size                          | Pick Story at Create, leave, reopen from the queue: it opens at Story. An older draft opens at Square, as now                                                      |
+| **3. Offer Portrait and Story only** (web only)                                | `CREATE_SIZES`, `CAROUSEL_SIZES`, `SET_SIZES`, `FORMATS`, `PACK_PREVIEW_FORMATS`, `SIZE_OPTIONS` become Portrait and Story, default **Portrait**. The Format menu adds an older size only when the design has layers on it, labelled "(older size)". Blank starters and placeholders get portrait and story boxes only (with `sizes` set, so they don't fall back to all four). "Add to the other sizes" (`template-ops.ts` line 56) adds to the design's own sizes, not all four. Download keeps offering whatever the editor shows. `PLATFORM_HINT` for square and landscape reads "Older size"                                                     | A new design can't be started, or grown, at Square or Landscape. A landscape draft from October still opens, edits and downloads at Landscape from its Format menu |
+| **4. Templates and the library**                                               | KTD15 relaxed: a document must have layers on **portrait and story**, and on any older size **its previous version covered** (so an existing four-size template keeps its strictness). New club copies and console designs need only portrait and story. `documentCoverage` unchanged. Create picker keeps filtering by size, so four-size templates still appear under Portrait and Story. Library chips show older sizes as "older"                                                                                                                                                                                                                 | A Portrait and Story template saves, lists and drafts. Editing an existing four-size template still can't empty its square or landscape by accident                |
+| **5. Bundle fit check**                                                        | `look.json` gets an optional `sizes` (new looks: `["portrait", "story"]`). `check-template-bundles-core.ts` adds two pure checks: a look with `sizes` must cover exactly those on every page (no square or landscape layers); a look without it (every current look) must still cover all four. `fitMatrix` already checks only covered sizes, so new looks skip retired sizes and existing looks keep their full check, retired sizes included. Known-failures file unchanged                                                                                                                                                                        | CI fails if a new look draws square or landscape, or if an existing look loses one. Existing looks are still fit-checked at all four sizes                         |
+| **6. Club settings**                                                           | Settings card shows Portrait and Story switches. Square and Landscape switches show only while a club has them on, labelled "Older size: kept for your existing cards". Migrations 0082 (new clubs) and 0083 (Square off for every club, Portrait switched on first where it was off; see D3). Runbook gets a short "Sizes" section                                                                                                                                                                                                                                                                                                                   | Settings can't switch an older size back on once it's off; after 0083 no club has Square on and every club has a feed size                                         |
 
 Stages 1 and 2 go first, in that order: 1 makes every later stage safe, 2 fixes the Round 7 bug
 whatever Ash decides about the rest. Stage 3 needs 2 (so a new design's size sticks). Stages 4 and 5
@@ -167,21 +167,27 @@ are independent of each other and need 3. Stage 6 can go any time after 1.
 The byte-identical fixture (`pack-render/__fixtures__/v1-render-hashes.json`) must not be refreshed
 by any stage. A PR that needs `UPDATE_V1_RENDER_HASHES=1` has changed legacy output and is wrong.
 
-## Decisions for Ash
+## Decisions (Ash, 19 Nov 2026)
 
-- **D1, proposed:** New designs cover both Portrait and Story; Format switches between them. Feed
+- **D1, agreed:** New designs cover both Portrait and Story; Format switches between them. Feed
   posts always use Portrait, Stories always use Story, whatever the saved size. (Instagram's feed
   can't take 9:16, so a Story design can't post to the feed at its own size.)
-- **D2, proposed:** The saved size picks where the editor opens, the queue thumbnail, and which post
+- **D2, agreed:** The saved size picks where the editor opens, the queue thumbnail, and which post
   type the Schedule panel ticks first (a Story design ticks Story). It doesn't change what renders.
-- **D3, proposed:** Don't change any club's stored size switches. Clubs with Square on keep getting
-  square layout checks and post packs for their older designs. Only the default for **new** clubs
-  changes: `size_square` defaults to off (SQL below), so a new club posts portrait from day one.
-- **D4, proposed:** Keep all landscape code (letterbox, `landscapeSummary`, pack branches) while any
-  landscape draft, carousel or club switch exists. Removing it is a later, separate cleanup, only
-  after the read-only counts below reach zero.
-- **D5, proposed:** Older drafts get no backfill: their size was never stored, so any guess could
-  open a card at a size the admin didn't use. They open at Square, as now.
+- **D3, changed:** Square goes **off for every club**, not just new ones (migration 0083, Stage 6).
+  - Turning it off must never leave a club without a feed size: any club with Portrait off gets
+    Portrait switched on in the same change.
+  - Older square designs keep rendering, opening and downloading. Stage 1's `draftSizes` keeps a
+    design's own older size for **downloads** (post pack, editor Download) even when the club has
+    that size off; only posting and layout checks follow the club's switches.
+  - New clubs also start with Square off (0082).
+- **D4, agreed:** Keep all landscape code (letterbox, `landscapeSummary`, pack branches). Removing it
+  is a later, separate decision, after the read-only counts below reach zero.
+- **D5, agreed:** Older drafts get no backfill: their size was never stored, so any guess could open
+  a card at a size the admin didn't use. They open at Square, as now.
+- **D6, agreed:** Auto-post stays feed only for now. No automatic Stories.
+- **D7, agreed:** Square is retired on the older screens too (the old Create page, the share card
+  modal, the Card Sets editor), in Stage 3. Older square items there must still open.
 
 ## Migration
 
@@ -212,13 +218,37 @@ The check allows the older sizes on purpose: the server refuses a **new** square
 in code (only a draft that already covers that size may save it), so a legacy draft can still save
 "Landscape" when an admin edits it there.
 
-**0082_new_clubs_portrait_feed.sql** (Stage 6, only if Ash agrees D3). Changes the default for rows
-inserted later; no existing row changes. Safe while live, and safe to run twice.
+**0082_new_clubs_portrait_feed.sql** (Stage 6). Changes the default for rows inserted later.
+Safe while live, and safe to run twice.
 
 ```sql
 -- New clubs start without the retired Square size (plan 2026-11-19, D3).
--- Existing clubs' switches are untouched.
 ALTER TABLE "social_settings" ALTER COLUMN "size_square" SET DEFAULT false;
+```
+
+**0083_square_off_all_clubs.sql** (Stage 6, a data change, D3). Each statement runs on its own (the
+production SQL runner runs only the first statement of a paste), in this order. Both are guarded, so
+running them again changes nothing.
+
+```sql
+-- 1. A club about to lose Square with Portrait off gets Portrait on first, so no club is left
+--    without a feed size.
+UPDATE "social_settings" SET "size_portrait" = true WHERE "size_square" = true AND "size_portrait" = false;
+```
+
+```sql
+-- 2. Square off for every club (Portrait is on for all of them after step 1).
+UPDATE "social_settings" SET "size_square" = false WHERE "size_square" = true AND "size_portrait" = true;
+```
+
+Read-only check, before and after (expect `square_on = 0` and `no_feed_size = 0` after):
+
+```sql
+select count(*) as clubs,
+       count(*) filter (where size_square) as square_on,
+       count(*) filter (where size_portrait) as portrait_on,
+       count(*) filter (where not size_square and not size_portrait) as no_feed_size
+  from social_settings;
 ```
 
 Drizzle: `sizeSquare` default in `lib/db/src/schema/social_cards.ts` follows, plus `_journal.json`
@@ -266,14 +296,10 @@ select count(*) filter (where size_landscape) as landscape_on,
   Page and Instagram (feed and Story). Open an October landscape draft and a square carousel: they
   open, download and post as before.
 
-## Open questions for Ash
+## Questions answered (Ash, 19 Nov 2026)
 
-1. **D3:** Leave every club's Square switch as it is (proposed), or switch Square off for all clubs
-   now? Off means older square cards post at portrait, which they can, but it changes their output.
-2. **D1:** Is "every new design is both Portrait and Story" right, or should a new design be one
-   size only (Portrait **or** Story), with the other size added on request?
-3. Should auto-post also post a Story for Story designs? Today it posts feed only.
-4. **D4:** Once the counts reach zero, do you want the landscape code removed, or kept for a club
-   that later asks for link-preview images?
-5. The older surfaces (the old Create page, the share card modal, the Card Sets editor): retire
-   their Square option too, or leave them alone until they're removed?
+1. Square: off for every club, with the Portrait guard (D3).
+2. New designs: both Portrait and Story (D1).
+3. Auto-post: feed only for now (D6).
+4. Landscape code: kept; removing it is a later decision (D4).
+5. Older screens: Square retired there too; older square items still open (D7).
