@@ -110,6 +110,7 @@ import type {
   CardVideoJobInput,
   CarouselAssembly,
   CarouselAssemblyRequest,
+  CarouselRounds,
   Century,
   CheckSlugAvailableParams,
   CheckoutBody,
@@ -186,10 +187,12 @@ import type {
   FixtureForecast,
   FixturesResultsPage,
   GenerateCardSetBody,
+  GetCarouselRoundsParams,
   GetFixtureForecastParams,
   GetFixturesResultsLadderParams,
   GetGradeDistributionParams,
   GetGradeLeaderboardParams,
+  GetJuniorCarouselRoundsParams,
   GetJuniorMatchParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
@@ -18797,6 +18800,176 @@ export function useGetWeekendCarouselSources<TData = Awaited<ReturnType<typeof g
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetWeekendCarouselSourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCarouselRoundsUrl = (params?: GetCarouselRoundsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekend-carousel/rounds?${stringifiedParams}` : `/api/weekend-carousel/rounds`
+}
+
+/**
+ * Senior games only. Team List and Match Day sets list the club's fixtures for the current and upcoming seasons, by each fixture's round label. Results and Match Summary sets list every completed senior game the club has, from central for a central-read club (filtered to its club, senior grades only, before-boundary seasons left out), every season. Games with no round label are in their season's "Other games". `gameIds` are the ids getWeekendCarouselSources gives the same games, so a pick passes them as `ids`.
+ * @summary The club's seasons and rounds to fill a senior carousel set from
+ */
+export const getCarouselRounds = async (params?: GetCarouselRoundsParams, options?: RequestInit): Promise<CarouselRounds> => {
+
+  return customFetch<CarouselRounds>(getGetCarouselRoundsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCarouselRoundsQueryKey = (params?: GetCarouselRoundsParams,) => {
+    return [
+    `/api/weekend-carousel/rounds`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCarouselRoundsQueryOptions = <TData = Awaited<ReturnType<typeof getCarouselRounds>>, TError = ErrorType<void>>(params?: GetCarouselRoundsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCarouselRounds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCarouselRoundsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCarouselRounds>>> = ({ signal }) => getCarouselRounds(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCarouselRounds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCarouselRoundsQueryResult = NonNullable<Awaited<ReturnType<typeof getCarouselRounds>>>
+export type GetCarouselRoundsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's seasons and rounds to fill a senior carousel set from
+ */
+
+export function useGetCarouselRounds<TData = Awaited<ReturnType<typeof getCarouselRounds>>, TError = ErrorType<void>>(
+ params?: GetCarouselRoundsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCarouselRounds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCarouselRoundsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorCarouselRoundsUrl = (params?: GetJuniorCarouselRoundsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/carousel-rounds?${stringifiedParams}` : `/api/juniors/carousel-rounds`
+}
+
+/**
+ * Junior tables only, never senior or central data (juniors isolation). Team List and Match Day sets list junior fixtures for the current and upcoming seasons; Results and Match Summary sets list completed junior games, every season. Junior fixtures carry no round label, so they are in their season's "Other games". Fixtures are empty while the club's junior sync is switched off.
+ * @summary The club's junior seasons and rounds to fill a junior carousel set from
+ */
+export const getJuniorCarouselRounds = async (params?: GetJuniorCarouselRoundsParams, options?: RequestInit): Promise<CarouselRounds> => {
+
+  return customFetch<CarouselRounds>(getGetJuniorCarouselRoundsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorCarouselRoundsQueryKey = (params?: GetJuniorCarouselRoundsParams,) => {
+    return [
+    `/api/juniors/carousel-rounds`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetJuniorCarouselRoundsQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorCarouselRounds>>, TError = ErrorType<void>>(params?: GetJuniorCarouselRoundsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorCarouselRounds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorCarouselRoundsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorCarouselRounds>>> = ({ signal }) => getJuniorCarouselRounds(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorCarouselRounds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorCarouselRoundsQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorCarouselRounds>>>
+export type GetJuniorCarouselRoundsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's junior seasons and rounds to fill a junior carousel set from
+ */
+
+export function useGetJuniorCarouselRounds<TData = Awaited<ReturnType<typeof getJuniorCarouselRounds>>, TError = ErrorType<void>>(
+ params?: GetJuniorCarouselRoundsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorCarouselRounds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorCarouselRoundsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

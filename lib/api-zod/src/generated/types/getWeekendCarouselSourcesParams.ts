@@ -26,4 +26,9 @@ to: string;
  * Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.
  */
 fields?: string;
+/**
+ * Only these games, comma-separated carousel game ids (the `gameIds` of the rounds picked from getCarouselRounds or getJuniorCarouselRounds). Games outside the date range are still left out. Absent: every game in the range.
+ * @pattern ^-?\d+(,-?\d+)*$
+ */
+ids?: string;
 };
