@@ -6,13 +6,9 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { Plus } from "lucide-react";
-import {
-  getListSocialDraftsQueryKey,
-  useListSocialDrafts,
-  type SocialDraft,
-} from "@workspace/api-client-react";
+import { type SocialDraft } from "@workspace/api-client-react";
 import { useLibraryPreviewData } from "@/components/template-library/previews";
-import { ContinueDesigning } from "@/components/studio-home/recent-designs";
+import { ContinueDesigning, useOpenDrafts } from "@/components/studio-home/recent-designs";
 import { draftStatus, isJuniorDraft } from "@/components/social-queue/draft-meta";
 import { useEntitlements } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
@@ -83,9 +79,9 @@ function NeedTile({
 export function StudioHomeV2() {
   const preview = useLibraryPreviewData();
   const juniors = useEntitlements().juniors;
-  const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
-  });
+  // The same open-drafts request Continue designing reads (posted and
+  // dismissed drafts never count as needing anyone).
+  const draftsQ = useOpenDrafts();
   const needs = useMemo(() => needsYou((draftsQ.data ?? []) as SocialDraft[]), [draftsQ.data]);
 
   return (

@@ -121,6 +121,18 @@ export function bindInput(
         set(values, "opposition.oversLabel", `${oppInn.overs} OVERS`);
         set(values, "opposition.performers", inningsPerformers(oppInn));
       }
+      // A side with no innings played (an abandoned game, a side that never
+      // batted) shows no score: a dash, never the template's sample score or
+      // a "0/0" placeholder (retest 9, card 1023).
+      for (const [key, inn] of [
+        ["club", clubInn],
+        ["opposition", oppInn],
+      ] as const) {
+        if (inn) continue;
+        values[`${key}.score`] = "—";
+        values[`${key}.oversLabel`] = "";
+        values[`${key}.performers`] = "";
+      }
       if (typeof input.carouselDetail === "boolean") {
         // On-demand results include every innings score. Explicit blanks must
         // override template samples when a completed match has no score.

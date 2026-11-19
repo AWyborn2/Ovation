@@ -161,6 +161,48 @@ export function deriveWinner(
 }
 
 // ---------------------------------------------------------------------------
+// Recorded outcome and played innings (retest 9, card 1023)
+// ---------------------------------------------------------------------------
+
+/**
+ * A result line that records a draw or a tie: the competition's official
+ * outcome, not a missing one. PlayHQ can file a game as abandoned (its status)
+ * while recording the result "Match drawn" (the ladder counts it as a draw).
+ */
+const RECORDED_DRAW = /\bdrawn?\b|\btie[ds]?\b/i;
+
+/**
+ * Whether a card treats the match as abandoned. The abandoned flag (central's
+ * status, or a native import's) says play stopped; a recorded draw or tie is
+ * still that outcome, so the card says "Match drawn" as the result line and
+ * every list of results does, never "Match abandoned" against it. A line that
+ * itself says abandoned, no result, or names a winner keeps the flag.
+ */
+export function readsAsAbandoned(match: {
+  abandoned?: boolean | null;
+  result?: string | null;
+}): boolean {
+  if (match.abandoned !== true) return false;
+  const recorded = match.result?.trim() ?? "";
+  return !(RECORDED_DRAW.test(recorded) && !/abandon|no result/i.test(recorded));
+}
+
+/**
+ * Whether an innings was played: a score other than none or 0/0, or a batter
+ * who scored or faced a ball. An abandoned game's sides, or a side that never
+ * batted, otherwise come through as "0/0" placeholders (a card read
+ * "0/0 v 0/0"), so they are left out and the card shows no score for them.
+ */
+export function inningsWasPlayed(inn: {
+  totalRuns: number | null;
+  wickets: number | null;
+  batsmen: readonly { runs: number | null; balls: number | null }[];
+}): boolean {
+  if (inn.totalRuns != null && (inn.totalRuns > 0 || (inn.wickets ?? 0) > 0)) return true;
+  return inn.batsmen.some((b) => (b.runs ?? 0) > 0 || (b.balls ?? 0) > 0);
+}
+
+// ---------------------------------------------------------------------------
 // Senior match mapper
 // ---------------------------------------------------------------------------
 
@@ -202,22 +244,22 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
     };
   }
 
+  // A recorded draw is a draw even when play was abandoned (readsAsAbandoned).
+  const abandoned = readsAsAbandoned(match);
   const clubTeam = first.battingTeam.isHallsHead ? first.battingTeam : first.bowlingTeam;
   const oppTeam = first.battingTeam.isHallsHead ? first.bowlingTeam : first.battingTeam;
 
-  const innings: MatchSummaryInnings[] = sc.innings
-    .filter((inn) => inn.totalRuns != null || inn.batsmen.length > 0)
-    .map((inn, i) => ({
-      teamKey: inn.battingTeam.isHallsHead ? ("club" as const) : ("opposition" as const),
-      inningsNum: (i + 1) as 1 | 2,
-      totalRuns: String(inn.totalRuns ?? 0),
-      wickets: String(inn.wickets ?? 0),
-      overs: inn.oversTotal ?? "",
-      topBatters: topBatters(inn.batsmen),
-      topBowlers: topBowlers(inn.bowlers),
-      batters: allBatters(inn.batsmen),
-      bowlers: allBowlers(inn.bowlers),
-    }));
+  const innings: MatchSummaryInnings[] = sc.innings.filter(inningsWasPlayed).map((inn, i) => ({
+    teamKey: inn.battingTeam.isHallsHead ? ("club" as const) : ("opposition" as const),
+    inningsNum: (i + 1) as 1 | 2,
+    totalRuns: String(inn.totalRuns ?? 0),
+    wickets: String(inn.wickets ?? 0),
+    overs: inn.oversTotal ?? "",
+    topBatters: topBatters(inn.batsmen),
+    topBowlers: topBowlers(inn.bowlers),
+    batters: allBatters(inn.batsmen),
+    bowlers: allBowlers(inn.bowlers),
+  }));
 
   return {
     kind: "matchSummary",
@@ -226,10 +268,10 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
     matchType: match.competition ?? seasonLabel(match.season),
     date: match.matchDate ? formatMatchDate(match.matchDate) : null,
     venue: match.venue ?? null,
-    result: match.abandoned ? "Match abandoned" : (match.result ?? "Result unavailable"),
+    result: abandoned ? "Match abandoned" : (match.result ?? "Result unavailable"),
     // The recorded winner when the data has one (central); otherwise read
     // the result line, which may name the winning side.
-    resultWinner: match.abandoned
+    resultWinner: abandoned
       ? "draw"
       : match.clubWon === true
         ? "club"

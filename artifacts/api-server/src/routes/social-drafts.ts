@@ -12,7 +12,7 @@ import {
   isCarouselPackId,
   resolveActivePackId,
 } from "@workspace/scorecard/queued-carousel";
-import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, notInArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
   adminsTable,
@@ -197,6 +197,18 @@ router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
   }
   if (typeof req.query.grade === "string" && req.query.grade) {
     conditions.push(sql`${socialDraftsTable.cardInput}->>'grade' = ${req.query.grade}`);
+  }
+  // Open work only (Studio home's Your designs): a club's posted and dismissed
+  // drafts are its whole posting history, every one with its card input and
+  // design, and loading them all on a cold database kept Your designs waiting
+  // past the statement timeout (retest 9). Posted and dismissed are stored
+  // states (auto-post only ever promotes awaiting review to ready), so this can
+  // filter in SQL.
+  if (req.query.open === "true") {
+    conditions.push(notInArray(socialDraftsTable.status, ["posted", "dismissed"]));
+  } else if (req.query.open !== undefined && req.query.open !== "false") {
+    res.status(400).json({ error: "Invalid open" });
+    return;
   }
   // Every draft as it may be drawn now: a junior made private since it was
   // built is withheld in its thumbnail, preview and editor (P0 2).
