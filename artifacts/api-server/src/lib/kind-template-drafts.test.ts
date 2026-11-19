@@ -125,7 +125,10 @@ beforeAll(async () => {
     .values({ slug: `kind-drafts-${STAMP}`, centralClubId: 9971, name: "Layout Club", plan: "pro" })
     .returning();
   tenantId = t.id;
-  await db.insert(socialSettingsTable).values({ tenantId, sizePortrait: false, sizeStory: false });
+  // A club from before Stage 6: Square on (new clubs start with it off, migration 0082).
+  await db
+    .insert(socialSettingsTable)
+    .values({ tenantId, sizeSquare: true, sizePortrait: false, sizeStory: false });
 });
 
 beforeEach(() => {

@@ -575,6 +575,20 @@
       "when": 1795067218612,
       "tag": "0081_draft_design_size",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1795067278612,
+      "tag": "0082_new_clubs_portrait_feed",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1795067338612,
+      "tag": "0083_square_off_all_clubs",
+      "breakpoints": true
     }
   ]
 }

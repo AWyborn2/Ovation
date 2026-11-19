@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { ENGINES, SIZE_KEYS } from "./constants";
+import { ENGINES, OLDER_SIZE_SETTING_NOTE, SIZE_KEYS, type SizeKey } from "./constants";
 
 /**
  * Share buttons, season recap, output sizes, club URL / hashtag and the sponsor
@@ -55,6 +55,18 @@ export function SettingsCard({
   const set = <K extends keyof SocialSettings>(k: K, v: SocialSettings[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
 
+  // Portrait and Story always; an older size (Square, Landscape) only while
+  // the club has it on, so once it is saved off it can't come back.
+  const sizes = SIZE_KEYS.filter((s) => !s.older || settings[s.key]);
+  // Turning Square off never leaves the club without a feed size: Portrait
+  // comes on with it (as migration 0083 does).
+  const setSize = (key: SizeKey, on: boolean) =>
+    setDraft((d) => ({
+      ...d,
+      [key]: on,
+      ...(key === "sizeSquare" && !on && !d.sizePortrait ? { sizePortrait: true } : {}),
+    }));
+
   return (
     <Card>
       <CardHeader>
@@ -94,18 +106,36 @@ export function SettingsCard({
             Output sizes
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {SIZE_KEYS.map((s) => (
-              <div key={s.key} className="flex items-center justify-between border rounded p-3">
-                <div>
-                  <div className="font-medium text-sm">{s.label}</div>
-                  <div className="text-xs text-muted-foreground">{s.code}</div>
+            {sizes.map((s) => {
+              // Portrait is the feed size once Square is off: it stays on.
+              const onlyFeed = s.key === "sizePortrait" && !draft.sizeSquare && draft.sizePortrait;
+              return (
+                <div
+                  key={s.key}
+                  className="flex items-center justify-between gap-3 border rounded p-3"
+                  data-testid={`size-${s.key}`}
+                >
+                  <div>
+                    <div className="font-medium text-sm">{s.label}</div>
+                    <div className="text-xs text-muted-foreground">{s.code}</div>
+                    {s.older && (
+                      <div className="text-xs text-muted-foreground">{OLDER_SIZE_SETTING_NOTE}</div>
+                    )}
+                    {onlyFeed && (
+                      <div className="text-xs text-muted-foreground">
+                        Your feed size, so it stays on.
+                      </div>
+                    )}
+                  </div>
+                  <Switch
+                    aria-label={s.label}
+                    checked={draft[s.key] ?? false}
+                    disabled={onlyFeed}
+                    onCheckedChange={(v) => setSize(s.key, v)}
+                  />
                 </div>
-                <Switch
-                  checked={(draft[s.key] as boolean) ?? false}
-                  onCheckedChange={(v) => set(s.key, v as SocialSettings[typeof s.key])}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -135,7 +135,7 @@ describe("cardContent", () => {
   });
 
   it("other saves leave the content choices alone", async () => {
-    await patch(0, { sizeLandscape: true }).expect(200);
+    await patch(0, { sizeLandscape: false }).expect(200);
     expect((await get(0).expect(200)).body.settings.cardContent.matchDay.preset).toBe("minimal");
   });
 

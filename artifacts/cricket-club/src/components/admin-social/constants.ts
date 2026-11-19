@@ -27,13 +27,20 @@ export const PLATFORMS: { value: Platform; label: string }[] = [
   { value: "twitter", label: "X / Twitter" },
 ];
 
-export const SIZE_KEYS: {
-  key: "sizeSquare" | "sizePortrait" | "sizeStory" | "sizeLandscape";
-  label: string;
-  code: string;
-}[] = [
-  { key: "sizeSquare", label: "Feed square", code: "1080×1080" },
-  { key: "sizePortrait", label: "Feed portrait", code: "1080×1350" },
-  { key: "sizeStory", label: "Story / TikTok", code: "1080×1920" },
-  { key: "sizeLandscape", label: "Landscape (links, X)", code: "1200×630" },
+export type SizeKey = "sizeSquare" | "sizePortrait" | "sizeStory" | "sizeLandscape";
+
+/**
+ * The club's output sizes (portrait and story sizes plan, Stage 6). Portrait
+ * and Story are the sizes new designs come in; Square and Landscape are older
+ * sizes, shown only while a club has them on and never switched back on once
+ * off (the server refuses it too).
+ */
+export const SIZE_KEYS: { key: SizeKey; label: string; code: string; older: boolean }[] = [
+  { key: "sizePortrait", label: "Feed portrait", code: "1080×1350", older: false },
+  { key: "sizeStory", label: "Story / TikTok", code: "1080×1920", older: false },
+  { key: "sizeSquare", label: "Feed square", code: "1080×1080", older: true },
+  { key: "sizeLandscape", label: "Landscape (links, X)", code: "1200×630", older: true },
 ];
+
+/** The note under an older size's switch. */
+export const OLDER_SIZE_SETTING_NOTE = "Older size: kept for your existing cards";
