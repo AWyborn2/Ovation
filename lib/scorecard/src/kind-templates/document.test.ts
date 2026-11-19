@@ -9,7 +9,9 @@ import {
   TEMPLATE_SIZE_ORDER,
   layerOnSize,
   layersForSize,
+  missingSizes,
   placeBoxOnSize,
+  requiredSizes,
   rowsCapacity,
   sizesWithLayers,
   type TemplateLayerBase,
@@ -171,5 +173,40 @@ describe("offered sizes (portrait and story sizes plan, Stage 3)", () => {
         { layers: [layer({ sizes: ["landscape"] })] },
       ]),
     ).toEqual(["portrait", "story", "landscape"]);
+  });
+});
+
+describe("template save rules (KTD15, relaxed in the sizes plan's Stage 4)", () => {
+  const ps = layer({ sizes: ["portrait", "story"] });
+  const everySize = layer();
+
+  it("a new template needs only Portrait and Story", () => {
+    expect(requiredSizes()).toEqual(["portrait", "story"]);
+    expect(requiredSizes(null)).toEqual(["portrait", "story"]);
+    expect(missingSizes({ layers: [ps] })).toEqual([]);
+    expect(missingSizes({ layers: [layer({ sizes: ["portrait"] })] })).toEqual(["story"]);
+    expect(missingSizes({ layers: [] })).toEqual(["portrait", "story"]);
+  });
+
+  it("an older size is required only where the previous version had layers on it", () => {
+    const previous = { layers: [everySize] };
+    expect(requiredSizes(previous)).toEqual([...TEMPLATE_SIZE_ORDER]);
+    expect(missingSizes({ layers: [ps] }, previous)).toEqual(["square", "landscape"]);
+    expect(
+      missingSizes({ layers: [layer({ sizes: ["portrait", "story", "landscape"] })] }, previous),
+    ).toEqual(["square"]);
+    expect(missingSizes({ layers: [everySize] }, previous)).toEqual([]);
+    // A previous version with Landscape but no Square keeps only Landscape.
+    const landscapeOnly = { layers: [layer({ sizes: ["portrait", "story", "landscape"] })] };
+    expect(requiredSizes(landscapeOnly)).toEqual(["portrait", "story", "landscape"]);
+    expect(missingSizes({ layers: [ps] }, landscapeOnly)).toEqual(["landscape"]);
+  });
+
+  it("a Portrait and Story previous version never asks for an older size", () => {
+    expect(missingSizes({ layers: [ps] }, { layers: [ps] })).toEqual([]);
+  });
+
+  it("ignores a previous version that isn't a layer document", () => {
+    expect(requiredSizes({})).toEqual(["portrait", "story"]);
   });
 });

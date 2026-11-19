@@ -18,7 +18,11 @@ import {
   type ConsoleLibraryTemplate,
   type ListConsoleLibraryTemplatesParams,
 } from "@workspace/api-client-react";
-import { TEMPLATE_CARD_KINDS, placeholderDocument } from "@workspace/scorecard/kind-templates";
+import {
+  OFFERED_SIZES,
+  TEMPLATE_CARD_KINDS,
+  placeholderDocument,
+} from "@workspace/scorecard/kind-templates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusPill, type StatusPillTone } from "@/components/ui/stat-badge";
@@ -421,7 +425,11 @@ export default function LibraryPage() {
                     kind: newKind,
                     name: newName.trim(),
                     lookId: newLook ? Number(newLook) : null,
-                    document: placeholderDocument(newKind) as unknown as Record<string, unknown>,
+                    // A new design is Portrait and Story only (sizes plan, Stage 4).
+                    document: placeholderDocument(newKind, OFFERED_SIZES) as unknown as Record<
+                      string,
+                      unknown
+                    >,
                   },
                 });
               }}

@@ -7,8 +7,8 @@
  */
 import {
   addLayerToSizes,
-  emptySizes,
   kindFields,
+  missingSizes,
   layerOnSize,
   pickStat,
   TEMPLATE_SIZE_ORDER,
@@ -264,9 +264,14 @@ export function showsKeyField(doc: EditorDoc, kind: string): boolean {
   );
 }
 
-/** Why a template can't be saved yet; empty when it can (KTD15). */
-export function saveBlockers(doc: EditorDoc): string[] {
-  return emptySizes(doc).map(
+/**
+ * Why a template can't be saved yet; empty when it can (KTD15, relaxed by the
+ * sizes plan's Stage 4): Portrait and Story need something on them, and so
+ * does any older size (Square, Landscape) `previous`, the version last
+ * saved, had layers on. A new Portrait and Story design saves as it is.
+ */
+export function saveBlockers(doc: EditorDoc, previous?: EditorDoc | null): string[] {
+  return missingSizes(doc, previous).map(
     (s) => `${SIZE_LABEL[s as CardSize]} has no elements. Add at least one before saving.`,
   );
 }
