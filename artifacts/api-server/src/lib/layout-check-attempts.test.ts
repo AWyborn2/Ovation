@@ -131,7 +131,10 @@ beforeAll(async () => {
     })
     .returning();
   tenantId = t.id;
-  await db.insert(socialSettingsTable).values({ tenantId, sizePortrait: false, sizeStory: false });
+  // A club from before Stage 6: Square on (new clubs start with it off, migration 0082).
+  await db
+    .insert(socialSettingsTable)
+    .values({ tenantId, sizeSquare: true, sizePortrait: false, sizeStory: false });
   const [admin] = await db
     .insert(adminsTable)
     .values({ tenantId, username: `attempts_${STAMP}`, displayName: "Checker", passwordHash: "x" })

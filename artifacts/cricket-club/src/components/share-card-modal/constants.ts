@@ -54,9 +54,9 @@ export type Props = {
   templateDoc?: LayerDocument | null;
   /**
    * The older sizes (Square, Landscape) a stored item's design has (a queued
-   * draft's). They stay on offer where the club has them on, so an older
-   * square card still opens and downloads at Square. A new card has none:
-   * Portrait and Story only (portrait and story sizes plan, D7).
+   * draft's). They stay on offer whatever the club's switches, so an older
+   * square card still opens and downloads at Square after the club's Square
+   * goes off (D3). A new card has none: Portrait and Story only (D7).
    */
   olderSizes?: readonly CardSize[];
   /**

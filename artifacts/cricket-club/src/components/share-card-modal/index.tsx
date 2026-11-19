@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
@@ -26,12 +26,12 @@ import { packSupportsKind, type PackCardData } from "@/lib/pack-render";
 import { photoBoxSize } from "@/lib/pack-render/adjustments";
 import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
 import { OpenInEditorButton } from "@/components/studio-editor/open-in-editor";
-import { clubSizesFor, DEFAULT_NEW_SIZE } from "@/lib/offered-sizes";
 import type { Props } from "./constants";
 import { usePhotoControls } from "./use-photo-controls";
 import { PhotoControls } from "./photo-controls";
 import { useCaptions } from "./use-captions";
 import { useSponsors } from "./use-sponsors";
+import { useModalSizes } from "./use-modal-sizes";
 import { useCardPreview } from "./use-card-preview";
 import { useVideoExport } from "./use-video-export";
 import { useThemeStyle } from "./use-theme-style";
@@ -122,16 +122,11 @@ export function ShareCardModal({
   const motionAudio = useMotionAudio({ open, input, selectedTemplate });
   const { motion, durationMs, speed, audioSpec, previewSoundOn } = motionAudio;
 
-  // Portrait and Story where the club has them on (D7): Square and Landscape
-  // only for a stored item whose design has them, so an older square card
-  // still opens and downloads at Square while a new card can't.
-  const olderKey = (olderSizes ?? []).join(",");
-  const enabledSizes: CardSize[] = useMemo(
-    () => clubSizesFor(bundle?.settings, olderKey ? (olderKey.split(",") as CardSize[]) : []),
-    [bundle, olderKey],
-  );
-
-  const [activeSize, setActiveSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
+  const { enabledSizes, activeSize, setActiveSize } = useModalSizes({
+    open,
+    settings: bundle?.settings,
+    olderSizes,
+  });
 
   // A "pack" (standard / built-in) card is one with no BYO template selected
   // whose kind the Broadcast Dark pack renders. These export as PNG through the
@@ -160,12 +155,6 @@ export function ShareCardModal({
   const videoSupported = useMemo(() => canExportVideo(), []);
   const videoFormat = useMemo(() => videoFormatLabel(), []);
   const [includeSponsors, setIncludeSponsors] = useState(true);
-
-  useEffect(() => {
-    if (open && enabledSizes.length > 0 && !enabledSizes.includes(activeSize)) {
-      setActiveSize(enabledSizes[0]);
-    }
-  }, [open, enabledSizes, activeSize]);
 
   const { sponsors, presentingSponsorName, playerSponsors, sponsorSig } = useSponsors({
     bundle,

@@ -150,9 +150,20 @@ describe("the older screens' sizes (share card modal, Card Sets editor, D7)", ()
     expect(clubSizesFor({ ...club, sizeStory: false })).toEqual(["portrait"]);
   });
 
-  it("an older square item keeps Square where the club has it on", () => {
+  it("an older square item keeps its own Square, whatever the club's switches (D3)", () => {
     expect(clubSizesFor(club, ["square"])).toEqual(["square", "portrait", "story"]);
-    expect(clubSizesFor({ ...club, sizeSquare: false }, ["square"])).toEqual(["portrait", "story"]);
+    expect(clubSizesFor({ ...club, sizeSquare: false }, ["square"])).toEqual([
+      "square",
+      "portrait",
+      "story",
+    ]);
+    expect(
+      clubSizesFor({ ...club, sizeSquare: false, sizeLandscape: false }, ["square", "landscape"]),
+    ).toEqual(["square", "portrait", "story", "landscape"]);
+  });
+
+  it("an older size the item doesn't have stays off, even where the club has it on", () => {
+    expect(clubSizesFor(club, ["landscape"])).toEqual(["portrait", "story", "landscape"]);
   });
 
   it("an older set always keeps the size it was saved at, so it still opens there", () => {

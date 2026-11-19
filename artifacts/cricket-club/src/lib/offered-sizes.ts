@@ -74,9 +74,11 @@ const SWITCH: Record<CardSize, keyof SizeSwitches> = {
 /**
  * The sizes an older screen (the share card modal, the Card Sets editor)
  * offers for an item: Portrait and Story where the club has them on (both
- * while its settings load), plus an older size the item itself has (`older`)
- * where the club has it on, or always when `keep` names it (a set's saved
- * size, so an older set still opens at it). Never empty: Portrait.
+ * while its settings load), plus the older sizes the item itself has
+ * (`older`, or `keep`: a set's saved size). An item always keeps its own
+ * older sizes, whatever the club's switches, so an older square card still
+ * opens and downloads at Square after the club's Square goes off (D3). A
+ * new card gets no older size. Never empty: Portrait.
  */
 export function clubSizesFor(
   settings: SizeSwitches | null | undefined,
@@ -85,7 +87,7 @@ export function clubSizesFor(
 ): CardSize[] {
   const on = (size: CardSize) => !settings || settings[SWITCH[size]] === true;
   const out = TEMPLATE_SIZE_ORDER.filter((size) =>
-    isOlderSize(size) ? size === keep || (older.includes(size) && on(size)) : on(size),
+    isOlderSize(size) ? size === keep || older.includes(size) : on(size),
   );
   return out.length ? out : [DEFAULT_NEW_SIZE];
 }

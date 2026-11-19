@@ -598,7 +598,10 @@ export const socialSettingsTable = pgTable(
     // match-summary drafts into a carousel card_sets row. Default OFF: dormant
     // like the other social-automation toggles until a tenant opts in.
     autoseedCarousels: boolean("autoseed_carousels").notNull().default(false),
-    sizeSquare: boolean("size_square").notNull().default(true),
+    // Square is an older size (portrait and story sizes plan, D3): off for new
+    // clubs (migration 0082) and for every club (0083). It can be switched off,
+    // never back on (api-server lib/size-switches.ts).
+    sizeSquare: boolean("size_square").notNull().default(false),
     sizePortrait: boolean("size_portrait").notNull().default(true),
     sizeStory: boolean("size_story").notNull().default(true),
     // Landscape 1200×630 for link previews / X / Facebook (KTD11). Opt-in.

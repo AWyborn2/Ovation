@@ -75,7 +75,10 @@ beforeAll(async () => {
     .values({ slug: `media-${STAMP}`, centralClubId: 98403, name: "Media Club", plan: "pro" })
     .returning();
   tenantId = t.id;
-  await db.insert(socialSettingsTable).values({ tenantId, sizePortrait: true, sizeStory: true });
+  // A club from before Stage 6: Square on (new clubs start with it off, migration 0082).
+  await db
+    .insert(socialSettingsTable)
+    .values({ tenantId, sizeSquare: true, sizePortrait: true, sizeStory: true });
   await db.insert(captionTemplatesTable).values({
     tenantId,
     engine: "milestone",

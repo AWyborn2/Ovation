@@ -99,7 +99,7 @@ describe("packColourModes", () => {
   });
 
   it("leaves the modes alone when a PATCH does not mention them", async () => {
-    const res = await patch(0, { sizeLandscape: true });
+    const res = await patch(0, { sizeLandscape: false });
     expect(res.body.packColourModes).toEqual({
       "sunset-v1": "club",
       "neon-night-v1": "pack",

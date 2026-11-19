@@ -60,6 +60,7 @@ import {
   setTeamNameOverride,
 } from "../lib/card-content/names";
 import { checkCrestChoice } from "../lib/card-content/crest-choice";
+import { checkSizeSwitches } from "../lib/size-switches";
 
 // Deliberately loose: the address is only ever a recipient for our own mail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -260,6 +261,14 @@ router.patch(
         return;
       }
     }
+    // Output sizes (portrait and story sizes plan, Stage 6): an older size
+    // (Square, Landscape) never comes back on once off, and the club always
+    // keeps a feed size.
+    const sizes = checkSizeSwitches(current, parsed.data);
+    if ("error" in sizes) {
+      res.status(400).json({ error: sizes.error });
+      return;
+    }
     // Per-pack colour modes merge into the stored map, so toggling one pack's
     // tile never clobbers another's (two admins, two tiles, no lost write).
     let packColourModes: Record<string, "club" | "pack"> | undefined;
@@ -367,6 +376,7 @@ router.patch(
       .update(socialSettingsTable)
       .set({
         ...patch,
+        ...sizes.columns,
         ...syncFamilySettings(current, parsed.data),
         ...(packColourModes ? { packColourModes } : {}),
         ...(roundSchedules ? { roundSchedules } : {}),
