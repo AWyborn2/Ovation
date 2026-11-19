@@ -16,17 +16,24 @@ const junior = { sourceMatchIsJunior: true, cardInput: { kind: "matchDay" } };
 const rule = { approved: new Set([photoKey(lib("stock"))]) };
 
 describe("juniorSafeDesignWith", () => {
-  it("keeps approved junior stock and uploads; drops other library photos and backgrounds", () => {
+  it("keeps approved junior stock; drops other library photos, raster uploads and backgrounds", () => {
     const safe = juniorSafeDesignWith(
       junior,
-      design(image("lib", lib("club")), image("stock", lib("stock")), image("logo", upload)),
+      design(image("lib", lib("club")), image("stock", lib("stock")), image("upload", upload), {
+        id: "vector",
+        kind: "vector",
+        svg: "<svg/>",
+      }),
       rule,
     );
-    expect(ids(safe.design)).toEqual(["p", "stock", "logo"]);
+    // A raster upload might be a photo of a child: the server drops it on save
+    // and post (round 3 retest, #8), and now every web draw does too (retest 6).
+    // A vector upload is markup, not a stored image, and stays.
+    expect(ids(safe.design)).toEqual(["p", "stock", "vector"]);
     expect((safe.design as { pages: { title: object } }).pages.title).not.toHaveProperty(
       "background",
     );
-    expect(safe.removed).toBe(2);
+    expect(safe.removed).toBe(3);
   });
 
   it("fails closed: with no approved list, no library photo is drawn", () => {

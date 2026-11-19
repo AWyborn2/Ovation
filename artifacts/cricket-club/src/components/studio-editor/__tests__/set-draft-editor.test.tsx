@@ -84,12 +84,15 @@ function open({
     stored: true,
   },
   library = [] as unknown[],
+  clubTemplates = [] as unknown[],
 }: {
   newStudio?: boolean;
   draft?: Record<string, unknown>;
   design?: Record<string, unknown>;
   /** Templates the library lists (Change look). */
   library?: unknown[];
+  /** The club's own templates (Add a page → From another template). */
+  clubTemplates?: unknown[];
 } = {}) {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   const requests: Req[] = [];
@@ -109,6 +112,10 @@ function open({
       else if (/social-drafts\/42$/.test(url)) payload = draft;
       else if (/\/api\/template-library\?/.test(url)) payload = { templates: library };
       else if (/\/api\/club-templates\?/.test(url)) payload = { templates: [] };
+      // "Add a page → From another template": the club's own templates, and one of them.
+      else if (/\/api\/club-templates$/.test(url)) payload = { templates: clubTemplates };
+      else if (/\/api\/club-templates\/(\d+)$/.test(url))
+        payload = clubTemplates.find((t) => url.endsWith(`/${(t as { id: number }).id}`));
       else if (/tenant-plan/.test(url))
         payload = { plan: "club", newStudio, entitlements: { socialStudio: true } };
       else if (/social-settings/.test(url))
@@ -448,5 +455,100 @@ describe("changing a set's look (dev retest 3, item 12)", () => {
     expect(body.document.pages.map((p) => p.slot)).toEqual(["cover", "team", "page", "sponsors"]);
     expect(body.document.pages[2]!.name).toBe("Page 1");
     expect(JSON.stringify(body.document.pages[1]!.layers)).toContain("NEW TEAM");
+  });
+});
+
+describe("Add a page → From another template in the set editor (retest 6, item K)", () => {
+  // A club template named like a slide's own layout ("… layout"): the #671 fix
+  // names the added page "Team layout · Card", so it never reads as one.
+  const TEMPLATE = {
+    id: 7,
+    kind: "announcement",
+    name: "Team layout",
+    version: 2,
+    isDefault: false,
+    basedOn: null,
+    edited: true,
+    updateAvailable: null,
+    fitStatus: "pass",
+    fitReport: null,
+    coverage: { sizes: ["square"], pages: ["card"] },
+    updatedAt: null,
+    waitingDrafts: 0,
+    document: {
+      formatVersion: 2,
+      pages: {
+        card: {
+          layers: [
+            { id: "head", kind: "text", content: "THANKS FOR COMING", geometry },
+            { id: "crest", kind: "image", content: "{{clubLogo}}", geometry },
+            {
+              id: "lib",
+              kind: "image",
+              content: "/api/storage/objects/library/7/kid.jpg",
+              geometry,
+            },
+            { id: "pic", kind: "photo", geometry, source: { kind: "player", pick: "captain" } },
+          ],
+        },
+      },
+    },
+  };
+
+  const addFromTemplate = async () => {
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. B Grade/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Add a page" }));
+    fireEvent.click(await screen.findByRole("button", { name: /From another template/ }));
+    const dialog = await screen.findByRole("dialog", { name: /Add a page from another template/ });
+    const select = within(dialog).getByRole("combobox", { name: "Template" });
+    await within(dialog).findByRole("option", { name: /Team layout/ });
+    fireEvent.change(select, { target: { value: "7" } });
+    const add = within(dialog).getByRole("button", { name: "Add page" });
+    await waitFor(() => expect(add).not.toBeDisabled());
+    fireEvent.click(add);
+    expect(
+      await within(strip).findByRole("button", { name: /^4\. Team layout · Card/ }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  };
+  const savedPage = (requests: Req[]) => {
+    const put = requests.find((r) => r.method === "PUT")!;
+    const pages = (put.body as { document: { pages: Array<Record<string, unknown>> } }).document
+      .pages;
+    return pages.find((p) => p.name === "Team layout · Card")!;
+  };
+
+  it("lists the club's templates from GET /api/club-templates and adds the page as a slide", async () => {
+    const requests = open({ clubTemplates: [TEMPLATE] });
+    await addFromTemplate();
+    expect(requests.some((r) => r.method === "GET" && /\/api\/club-templates$/.test(r.url))).toBe(
+      true,
+    );
+    expect(requests.some((r) => /\/api\/club-templates\/7$/.test(r.url))).toBe(true);
+    await waitFor(() => expect(requests.some((r) => r.method === "PUT")).toBe(true));
+    const page = savedPage(requests);
+    // A design page of the template's kind, with its layers, kept as the admin's own.
+    expect(page).toMatchObject({ slot: "page", role: "fixed", kind: "announcement", page: "card" });
+    expect(JSON.stringify(page.layers)).toContain("THANKS FOR COMING");
+    expect(JSON.stringify(page.layers)).toContain("kid.jpg");
+  });
+
+  it("on a junior set, the page comes in with no stored photo and no photo source", async () => {
+    const requests = open({
+      clubTemplates: [TEMPLATE],
+      draft: { ...DRAFT, sourceMatchIsJunior: true },
+    });
+    await addFromTemplate();
+    await waitFor(() => expect(requests.some((r) => r.method === "PUT")).toBe(true));
+    const layers = savedPage(requests).layers as Array<Record<string, unknown>>;
+    // The heading and the crest token stay; the library photo goes.
+    expect(layers.map((l) => [l.kind, l.content ?? null])).toEqual([
+      ["text", "THANKS FOR COMING"],
+      ["image", "{{clubLogo}}"],
+      ["photo", null],
+    ]);
+    expect(JSON.stringify(layers)).not.toContain("/objects/");
+    expect(layers.find((l) => l.kind === "photo")).not.toHaveProperty("source");
   });
 });

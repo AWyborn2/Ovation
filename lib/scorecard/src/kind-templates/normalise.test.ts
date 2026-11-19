@@ -6,7 +6,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TemplateDocumentV2, TemplateLayerV2 } from "./format";
-import { documentPageLayers, documentPages, normaliseDocument, normaliseLayer } from "./normalise";
+import {
+  documentPageLayers,
+  documentPages,
+  normaliseDocument,
+  normaliseLayer,
+  teamListNamesWithInitials,
+} from "./normalise";
 import { primaryPage } from "./pages";
 
 /**
@@ -63,7 +69,14 @@ describe("v1 documents read as v2", () => {
       expect(doc.formatVersion).toBe(2);
       expect(doc.sourceFormat).toBe(1);
       expect(documentPages(doc)).toEqual([primaryPage(kind)]);
-      expectSameLayers(documentPageLayers(doc, primaryPage(kind)), stored.layers);
+      // A Team List's surname-only player rows read with the initial (retest 6, I).
+      const expected =
+        kind === "teamList"
+          ? (stored.layers.map((l) =>
+              teamListNamesWithInitials(l as unknown as TemplateLayerV2),
+            ) as unknown as Array<Record<string, unknown>>)
+          : stored.layers;
+      expectSameLayers(documentPageLayers(doc, primaryPage(kind)), expected);
       // Never rewritten: the stored object is exactly as it was.
       expect(JSON.stringify(stored)).toBe(before);
     }
@@ -204,5 +217,63 @@ describe("page colours", () => {
     expect(read("#FFFFFF")).toEqual({ layers: [], background: "#FFFFFF" });
     expect(read("var(--panel)")).toEqual({ layers: [], background: "var(--panel)" });
     expect(read("tomato")).toEqual({ layers: [] });
+  });
+});
+
+// Retest 6, item I: a club's own Team List saved before #636 printed "FOX"
+// beside the library's "D. FOX". Its surname-only player rows read with the
+// initial; the stored document is never rewritten.
+describe("a Team List's player rows read with the initial (retest 6, I)", () => {
+  const rows = (cells: Array<Record<string, unknown>>, extra: Record<string, unknown> = {}) =>
+    ({
+      id: "players",
+      kind: "rows",
+      geometry: box,
+      rows: { repeat: "players", rowHeight: 6, cells, ...extra },
+    }) as unknown as TemplateLayerV2;
+  const fields = (l: TemplateLayerV2) =>
+    ((l as unknown as { rows: { cells: Array<{ field: string }> } }).rows.cells ?? []).map(
+      (c) => c.field,
+    );
+
+  it("a surname cell with no name-with-initial cell reads as broadcastName; role stays", () => {
+    const before = rows([{ field: "number" }, { field: "surname" }, { field: "role" }], {
+      variants: { captain: { surname: { color: "#FF0000" } } },
+    });
+    const after = teamListNamesWithInitials(before);
+    expect(fields(after)).toEqual(["number", "broadcastName", "role"]);
+    expect(
+      (after as unknown as { rows: { variants: Record<string, unknown> } }).rows.variants,
+    ).toEqual({ captain: { broadcastName: { color: "#FF0000" } } });
+    // The stored layer is untouched.
+    expect(fields(before)).toEqual(["number", "surname", "role"]);
+  });
+
+  it("leaves a row that already prints the initial, and every other repeat", () => {
+    const listed = rows([{ field: "number" }, { field: "listName" }, { field: "surname" }]);
+    expect(teamListNamesWithInitials(listed)).toBe(listed);
+    const other = {
+      ...rows([{ field: "surname" }]),
+      rows: { repeat: "batting", cells: [{ field: "surname" }] },
+    } as unknown as TemplateLayerV2;
+    expect(teamListNamesWithInitials(other)).toBe(other);
+    const text = { id: "t", kind: "text", content: "{{clubName}}", geometry: box };
+    expect(teamListNamesWithInitials(text as TemplateLayerV2)).toBe(text);
+  });
+
+  it("reads inside groups, on v1 and v2 Team List documents only", () => {
+    const old = rows([{ field: "surname" }]);
+    const group = { id: "g", kind: "group", geometry: box, children: [old] };
+    const v2 = { formatVersion: 2, pages: { team: { layers: [group] } } };
+    const read = normaliseDocument(v2, "teamList");
+    const child = (read.pages.team!.layers[0] as unknown as { children: TemplateLayerV2[] })
+      .children[0]!;
+    expect(fields(child)).toEqual(["broadcastName"]);
+    const v1 = normaliseDocument({ layers: [old] }, "teamList");
+    expect(fields(v1.pages.team!.layers[0]!)).toEqual(["broadcastName"]);
+    // Another kind's rows are its own business.
+    const other = normaliseDocument({ layers: [old] }, "teamOfWeek");
+    expect(fields(other.pages[primaryPage("teamOfWeek")]!.layers[0]!)).toEqual(["surname"]);
+    expect(JSON.stringify(v2)).not.toContain("broadcastName");
   });
 });

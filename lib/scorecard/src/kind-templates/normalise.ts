@@ -27,7 +27,7 @@ import {
   type TemplateLayerV2,
   type TemplatePage,
 } from "./format";
-import { primaryPage } from "./pages";
+import { primaryPage, templateKindFor } from "./pages";
 import { isPageBackground } from "./svg";
 
 /** A document read as v2, and the format it was stored in. */
@@ -75,6 +75,67 @@ export function normaliseLayer(layer: TemplateLayerV2): TemplateLayerV2 {
 const readLayers = (layers: unknown): TemplateLayerV2[] =>
   Array.isArray(layers) ? (layers as TemplateLayerV2[]).map(normaliseLayer) : [];
 
+/** The team list row fields that print a player's initial with the surname. */
+const NAME_WITH_INITIAL = new Set(["broadcastName", "listName"]);
+
+/**
+ * A Team List's player rows as they print today: with the initial (retest 6,
+ * item I). Before #636 the template library's Team Lists printed the bare
+ * `surname` cell; a club's own copy saved from one of those versions (edited,
+ * so it never follows the library) kept printing "FOX" where every other card
+ * and look prints "D. FOX". A player row that prints the surname with no cell
+ * that carries the initial reads its surname cells as `broadcastName`
+ * ("D. FOX"); the row's own role cell, if it has one, stays as it is. A row
+ * already printing a name with the initial is left alone, and so is every
+ * other repeat. Returns the layer itself when nothing changes.
+ */
+export function teamListNamesWithInitials(layer: TemplateLayerV2): TemplateLayerV2 {
+  if (!isObject(layer)) return layer;
+  if (layer.kind === "group" && Array.isArray(layer.children)) {
+    const children = layer.children.map(teamListNamesWithInitials);
+    return children.some((c, i) => c !== layer.children[i]) ? { ...layer, children } : layer;
+  }
+  if (layer.kind !== "rows" || !isObject(layer.rows)) return layer;
+  const rows = layer.rows as { repeat?: unknown; cells?: unknown; variants?: unknown };
+  if (rows.repeat !== "players" || !Array.isArray(rows.cells)) return layer;
+  const cells = rows.cells as Array<{ field?: unknown; fallbackFor?: unknown }>;
+  if (cells.some((c) => NAME_WITH_INITIAL.has(String(c?.field)))) return layer;
+  if (!cells.some((c) => c?.field === "surname")) return layer;
+  const rename = (f: unknown) => (f === "surname" ? "broadcastName" : f);
+  const variants = isObject(rows.variants)
+    ? Object.fromEntries(
+        Object.entries(rows.variants).map(([name, styles]) => [
+          name,
+          isObject(styles)
+            ? Object.fromEntries(Object.entries(styles).map(([f, s]) => [rename(f), s]))
+            : styles,
+        ]),
+      )
+    : undefined;
+  return {
+    ...layer,
+    rows: {
+      ...rows,
+      cells: cells.map((c) =>
+        isObject(c)
+          ? {
+              ...c,
+              field: rename(c.field),
+              ...(c.fallbackFor !== undefined ? { fallbackFor: rename(c.fallbackFor) } : {}),
+            }
+          : c,
+      ),
+      ...(variants ? { variants } : {}),
+    },
+  } as TemplateLayerV2;
+}
+
+/** A kind's layers as read: a Team List's player rows print the initial. */
+const readKindLayers = (layers: unknown, kind: string): TemplateLayerV2[] => {
+  const read = readLayers(layers);
+  return templateKindFor(kind) === "teamList" ? read.map(teamListNamesWithInitials) : read;
+};
+
 /**
  * Any stored document (or draft adjustments) for `kind`, read as v2. Anything
  * that isn't a v2 document is read as v1; a missing or malformed document is
@@ -88,7 +149,7 @@ export function normaliseDocument(doc: unknown, kind: string): NormalisedDocumen
       const page = (doc.pages as Record<string, unknown>)[key];
       if (isObject(page))
         pages[key] = {
-          layers: readLayers(page.layers),
+          layers: readKindLayers(page.layers, kind),
           ...(isPageBackground(page.background) ? { background: page.background } : {}),
         };
     }
@@ -101,7 +162,7 @@ export function normaliseDocument(doc: unknown, kind: string): NormalisedDocumen
       sourceFormat: 2,
     };
   }
-  const layers = isObject(doc) ? readLayers(doc.layers) : [];
+  const layers = isObject(doc) ? readKindLayers(doc.layers, kind) : [];
   return {
     formatVersion: FORMAT_VERSION,
     pages: { [primaryPage(kind)]: { layers } },

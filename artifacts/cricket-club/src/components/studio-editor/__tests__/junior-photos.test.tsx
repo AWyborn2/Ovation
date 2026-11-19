@@ -9,7 +9,7 @@ import { renderAt } from "@/test/render";
 import { PhotosPanel } from "../content-panels";
 import { FieldsPanel } from "../fields-panel";
 import { PhotoSourcePicker } from "../photo-source-picker";
-import { PHOTO_RULE_NOTE, photoRuleFor } from "../junior-photos";
+import { PHOTO_RULE_NOTE, juniorSafeAddedLayers, photoRuleFor } from "../junior-photos";
 
 afterEach(() => {
   cleanup();
@@ -137,5 +137,42 @@ describe("FieldsPanel's photo note", () => {
   it("explains the junior rule on any other page", () => {
     panel();
     expect(screen.getByText(PHOTO_RULE_NOTE.senior)).toBeTruthy();
+  });
+});
+
+// Retest 6, item K: a page copied into a junior set from another template.
+describe("juniorSafeAddedLayers", () => {
+  const g = { square: { x: 0, y: 0, w: 10, h: 10 } };
+  it("drops stored and raster images and photo sources, keeps tokens, vectors and text", () => {
+    const svg = "data:image/svg+xml;utf8,<svg/>";
+    const out = juniorSafeAddedLayers([
+      { id: "t", kind: "text", content: "https://club.example.org", geometry: g },
+      { id: "logo", kind: "image", content: "{{clubLogo}}", geometry: g },
+      { id: "vec", kind: "image", content: svg, geometry: g },
+      { id: "up", kind: "image", content: "/api/storage/objects/uploads/2/a.png", geometry: g },
+      { id: "kid", kind: "image", content: "/api/juniors/photos/12", geometry: g },
+      { id: "web", kind: "image", content: "https://cdn.example.org/team.jpg", geometry: g },
+      { id: "raw", kind: "image", content: "data:image/png;base64,AAAA", geometry: g },
+      {
+        id: "grp",
+        kind: "group",
+        geometry: g,
+        children: [
+          { id: "inner", kind: "image", content: "/objects/library/1/x.jpg", geometry: g },
+          { id: "p", kind: "photo", geometry: g, source: { kind: "collection", collectionId: 3 } },
+        ],
+      },
+      {
+        id: "bg",
+        kind: "shape",
+        geometry: g,
+        style: { backgroundImage: "/api/storage/objects/library/1/x.jpg" },
+      },
+    ]);
+    expect(out.map((l) => l.id)).toEqual(["t", "logo", "vec", "grp", "bg"]);
+    const group = out.find((l) => l.id === "grp") as unknown as { children: object[] };
+    expect(group.children).toEqual([{ id: "p", kind: "photo", geometry: g }]);
+    expect(JSON.stringify(out)).not.toContain("/objects/");
+    expect(out[0]).toMatchObject({ content: "https://club.example.org" });
   });
 });
