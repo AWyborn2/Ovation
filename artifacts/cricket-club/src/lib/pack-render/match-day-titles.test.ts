@@ -76,9 +76,7 @@ describe("Single-game Match Day titles: shrink to fit, never '…'", () => {
     expect(isTitleLayer(text("{{grade}}"), "teamList", "team")).toBe(false);
   });
 
-  // Clubhouse's Match Day is being rebuilt on another branch (#676; it was a
-  // Duotone copy): it joins this list with that rebuild.
-  for (const { name, doc } of bundles.filter((b) => b.name !== "clubhouse/matchDay"))
+  for (const { name, doc } of bundles)
     it(`${name}: every title shrinks to fit and never ends in "…"`, () => {
       expect(titleProblems(name, doc)).toEqual([]);
     });

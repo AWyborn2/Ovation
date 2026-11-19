@@ -830,9 +830,6 @@ describe("Team of the Week title clear of the club header and date", () => {
 
 // ── Results day rows: the result label clear of the text beside it ─────────
 
-/** Pages being rebuilt on another branch (#676), held to the rule once that lands. */
-const PENDING_REBUILD = ["clubhouse/matchSummary"];
-
 /** The space kept between a result row's label ("WON", "RESULT") and the text beside it, in px. */
 const RESULT_LABEL_GAP = 10;
 
@@ -896,9 +893,7 @@ describe("Results day rows: the result label clear of the grade and team", () =>
     expect(bundles.length).toBeGreaterThanOrEqual(10);
   });
 
-  // Clubhouse's results day page is being rebuilt on another branch (#676; it
-  // was a Duotone copy): it joins this list with that rebuild.
-  for (const { name, doc } of bundles.filter((b) => !PENDING_REBUILD.includes(b.name)))
+  for (const { name, doc } of bundles)
     it(`${name}: the result label keeps ${RESULT_LABEL_GAP} px from the text beside it, every size`, () => {
       expect(resultLabelCollisions(name, doc)).toEqual([]);
     });
