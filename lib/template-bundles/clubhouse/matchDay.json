@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match day",
-  "version": 12,
+  "version": 13,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1798,7 +1798,12 @@
                 "h": 7.44
               }
             },
-            "link": "title-l24"
+            "link": "title-l24",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -1821,7 +1826,12 @@
                 "h": 6.28
               }
             },
-            "link": "title-l24"
+            "link": "title-l24",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -1844,7 +1854,12 @@
                 "h": 5.43
               }
             },
-            "link": "title-l24"
+            "link": "title-l24",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -1867,7 +1882,12 @@
                 "h": 12.75
               }
             },
-            "link": "title-l24"
+            "link": "title-l24",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "shape",
@@ -4394,7 +4414,12 @@
                 "h": 12.88
               }
             },
-            "link": "sponsors-l6"
+            "link": "sponsors-l6",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -4426,7 +4451,12 @@
                 "h": 10.07
               }
             },
-            "link": "sponsors-l6"
+            "link": "sponsors-l6",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -4458,7 +4488,12 @@
                 "h": 16.04
               }
             },
-            "link": "sponsors-l6"
+            "link": "sponsors-l6",
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "shape",
