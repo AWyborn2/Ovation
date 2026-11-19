@@ -1,6 +1,7 @@
 // Still PNG export: renderShareCard (template path or layer pipeline), the
 // browser download helper and the per-kind base filename.
 import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
+import { noteDownload } from "../download-notice";
 import type { TemplateContext } from "../card-template";
 import { buildBuiltinLayers } from "./compose";
 import { applyLayout } from "./editor-model";
@@ -107,6 +108,8 @@ export const downloadBlob = (blob: Blob, filename: string): void => {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // A second download soon after the first may be held back by the browser.
+  noteDownload();
 };
 
 export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null): string => {
