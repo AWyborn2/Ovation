@@ -149,6 +149,7 @@ import {
   duplicateSetPage,
   editorPageList,
   firstPageId,
+  singleCardPages,
   isOwnDesignPage,
   missingRepeatSlots,
   moveSetPage,
@@ -598,7 +599,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const gestureBase = useRef<EditorTemplateDoc | null>(null);
 
   // The pages: a kind's (Match Day's four), or a set's own in slide order (part 2).
-  const pageList = editorPageList(full, kind);
+  // A single card or draft (not a set, not a template) lists only the page it
+  // draws: a Match Day card never draws its kind's title, day or sponsors page.
+  const allPages = editorPageList(full, kind);
+  const singleCard = !!draftMode && !slidesMode && !full.setDesign;
+  const pageList = singleCard ? singleCardPages(allPages, kind, draftMode.input) : allPages;
   const [pageId, setPageId] = useState(() => firstPageId(opened.doc, kind));
   // A set draft: its real slides, and the one on show (its page is the page edited).
   const setNow = useMemo(

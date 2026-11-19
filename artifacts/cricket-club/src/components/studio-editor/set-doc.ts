@@ -15,6 +15,7 @@ import {
   layoutPageIds,
   withoutStrandedLayouts,
   MAX_SET_PAGES,
+  pageForInput,
   primaryPage,
   repeatSource,
   setPageLabel,
@@ -121,6 +122,26 @@ export function editorPageList(doc: EditorTemplateDoc, kind: string): EditorPage
     label: PAGE_LABEL[p],
     repeat: false,
   }));
+}
+
+/**
+ * The pages a single card or draft draws (not a set, not a template): only the
+ * one its input selects (`pageForInput`), so the editor doesn't list a Match Day
+ * card's title, junior day and sponsors pages, which only a set ever draws.
+ */
+export function singleCardPages(
+  pages: EditorPage[],
+  kind: string,
+  input: Record<string, unknown>,
+): EditorPage[] {
+  const drawn =
+    typeof input.kind === "string"
+      ? pageForInput(input as Parameters<typeof pageForInput>[0])
+      : primaryPage(kind);
+  const own = pages.filter((p) => p.page === drawn);
+  if (own.length) return own;
+  const primary = pages.filter((p) => p.page === primaryPage(kind));
+  return primary.length ? primary : pages;
 }
 
 /** The first page the editor opens on. */

@@ -53,6 +53,32 @@ function fileType(file: File): string {
   return "application/octet-stream";
 }
 
+/**
+ * A failed upload's message, as a junior design should say it. The server's
+ * advice for an SVG it can't use is to upload it as a PNG instead, but a junior
+ * card takes no uploaded images (the junior photo guard strips them), so that
+ * advice would only lead to a file the card can't use.
+ */
+export function juniorUploadError(message: string): string {
+  const advice =
+    "A junior card takes SVG logos and graphics only, so save it again as a plain SVG: shapes and colours, with text turned into outlines and no embedded images.";
+  if (/too detailed/i.test(message))
+    return message.replace(
+      /\s*Simplify it, or upload it as a PNG\.?/i,
+      " Simplify it (fewer points and shapes) and upload it again. A junior card takes SVG logos and graphics only.",
+    );
+  if (/upload it as a PNG/i.test(message))
+    return message.replace(/\s*Upload it as a PNG instead\.?/i, ` ${advice}`);
+  return message;
+}
+
+/** Whether a list cached under `params` would show `upload` (its search words in the name). */
+function listShows(params: unknown, upload: ClubUpload): boolean {
+  const q = (params as { q?: string } | undefined)?.q?.trim().toLowerCase() ?? "";
+  const name = upload.name.toLowerCase();
+  return q.split(/\s+/).every((word) => !word || name.includes(word));
+}
+
 export function UploadsPanel({
   size,
   onAdd,
@@ -156,18 +182,43 @@ export function UploadsPanel({
       }),
     );
     const errors: string[] = [];
+    const added: ClubUpload[] = [];
     if (sent.length > 0) {
       try {
         const res = await ingestClubUploads({ files: sent });
-        for (const r of res.results) if (!r.ok) errors.push(r.error ?? "A file couldn't be added.");
+        for (const r of res.results) {
+          if (!r.ok) errors.push(r.error ?? "A file couldn't be added.");
+          else if (r.upload) added.push(r.upload);
+        }
       } catch {
         errors.push("Those files couldn't be added. Please try again.");
       }
     }
     failed += errors.length;
-    await refresh();
+    // Show the new uploads straight away (the list used to wait for a reload),
+    // then refetch every cached list, on show or not, so each one catches up.
+    if (added.length) {
+      for (const [key, list] of qc.getQueriesData<ClubUpload[]>({
+        queryKey: getListClubUploadsQueryKey(),
+      })) {
+        if (!list) continue;
+        const params = (key as readonly unknown[])[1];
+        const fresh = added.filter((u) => listShows(params, u) && !list.some((x) => x.id === u.id));
+        if (fresh.length) qc.setQueryData<ClubUpload[]>(key, [...fresh, ...list]);
+      }
+    }
+    await qc.invalidateQueries({ queryKey: getListClubUploadsQueryKey(), refetchType: "all" });
     setBusy(false);
-    setStatus(failed ? (errors[0] ?? `${failed} couldn't be added.`) : null);
+    const first = errors[0];
+    setStatus(
+      failed
+        ? first
+          ? vectorOnly
+            ? juniorUploadError(first)
+            : first
+          : `${failed} couldn't be added.`
+        : null,
+    );
   };
 
   return (
