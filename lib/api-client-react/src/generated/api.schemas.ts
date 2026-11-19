@@ -9301,6 +9301,19 @@ export interface PostPack {
   zipUrl: string;
 }
 
+/**
+ * The size the admin is designing the card at (the editor's Format), saved so the draft reopens there. It doesn't change what renders. Square or Landscape is refused unless the draft already has that size, or its design has layers on it.
+ */
+export type UpdateSocialDraftRequestDesignSize = typeof UpdateSocialDraftRequestDesignSize[keyof typeof UpdateSocialDraftRequestDesignSize];
+
+
+export const UpdateSocialDraftRequestDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
 export type CardAdjustmentsFields = {[key: string]: string};
 
 export type CardAdjustmentsPhoto = { [key: string]: unknown };
@@ -9337,12 +9350,27 @@ export interface UpdateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
   /** A Team List card's own player order (build decision 16), stored on the draft's card input as playerOrderOverride; null follows the order the card was made with (the club's default). It never changes the club's default. Team List drafts only. */
   playerOrder?: TeamListPlayerOrder | null;
+  /** The size the admin is designing the card at (the editor's Format), saved so the draft reopens there. It doesn't change what renders. Square or Landscape is refused unless the draft already has that size, or its design has layers on it. */
+  designSize?: UpdateSocialDraftRequestDesignSize;
 }
 
 /**
  * The card's ShareCardInput (validated by shape on the web).
  */
 export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
+
+/**
+ * The size the design is started at (Create's size), so it reopens there. Square or Landscape is refused when the new draft's design has no layers on it.
+ */
+export type CreateSocialDraftRequestDesignSize = typeof CreateSocialDraftRequestDesignSize[keyof typeof CreateSocialDraftRequestDesignSize];
+
+
+export const CreateSocialDraftRequestDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
 
 /**
  * A template a draft or carousel is drawn with (ADR-011): one of the club's templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.
@@ -9375,6 +9403,8 @@ export interface CreateSocialDraftRequest {
      * @nullable
      */
   subjectPlayerId?: number | null;
+  /** The size the design is started at (Create's size), so it reopens there. Square or Landscape is refused when the new draft's design has no layers on it. */
+  designSize?: CreateSocialDraftRequestDesignSize;
 }
 
 export interface SaveDraftTemplateRequest {
@@ -10391,6 +10421,20 @@ export interface LayoutWarning {
 export type SocialDraftLayoutWarnings = {[key: string]: LayoutWarning[]} | null;
 
 /**
+ * The size the admin designs the card at: where the editor opens and what the queue shows. It doesn't change what renders. Null for a draft from before the size was saved (it opens at Square).
+ * @nullable
+ */
+export type SocialDraftDesignSize = typeof SocialDraftDesignSize[keyof typeof SocialDraftDesignSize] | null;
+
+
+export const SocialDraftDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+/**
  * "auto" — placed automatically and may roll; "admin" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).
  * @nullable
  */
@@ -10545,6 +10589,11 @@ export interface SocialDraft {
      * @nullable
      */
   layoutCheckError?: string | null;
+  /**
+     * The size the admin designs the card at: where the editor opens and what the queue shows. It doesn't change what renders. Null for a draft from before the size was saved (it opens at Square).
+     * @nullable
+     */
+  designSize?: SocialDraftDesignSize;
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable
@@ -10702,6 +10751,20 @@ export interface ReschedulePublicationRequest {
   at: string;
 }
 
+/**
+ * The draft's design size when this revision was taken; restored with it.
+ * @nullable
+ */
+export type SocialDraftRevisionDesignSize = typeof SocialDraftRevisionDesignSize[keyof typeof SocialDraftRevisionDesignSize] | null;
+
+
+export const SocialDraftRevisionDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
 export type SocialDraftRevisionReason = typeof SocialDraftRevisionReason[keyof typeof SocialDraftRevisionReason];
 
 
@@ -10723,6 +10786,11 @@ export interface SocialDraftRevision {
   /** @nullable */
   photoSource?: string | null;
   adjustments?: unknown;
+  /**
+     * The draft's design size when this revision was taken; restored with it.
+     * @nullable
+     */
+  designSize?: SocialDraftRevisionDesignSize;
   reason: SocialDraftRevisionReason;
   createdAt: string;
 }

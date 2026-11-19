@@ -7,6 +7,7 @@
  */
 import type { CardAdjustments } from './cardAdjustments';
 import type { TeamListPlayerOrder } from './teamListPlayerOrder';
+import type { UpdateSocialDraftRequestDesignSize } from './updateSocialDraftRequestDesignSize';
 
 export interface UpdateSocialDraftRequest {
   caption?: string;
@@ -24,4 +25,6 @@ export interface UpdateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
   /** A Team List card's own player order (build decision 16), stored on the draft's card input as playerOrderOverride; null follows the order the card was made with (the club's default). It never changes the club's default. Team List drafts only. */
   playerOrder?: TeamListPlayerOrder | null;
+  /** The size the admin is designing the card at (the editor's Format), saved so the draft reopens there. It doesn't change what renders. Square or Landscape is refused unless the draft already has that size, or its design has layers on it. */
+  designSize?: UpdateSocialDraftRequestDesignSize;
 }

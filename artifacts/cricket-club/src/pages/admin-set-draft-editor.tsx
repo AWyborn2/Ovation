@@ -16,6 +16,7 @@ import {
   getListLibraryTemplatesQueryKey,
   getListSocialDraftsQueryKey,
   saveDraftSetDesign,
+  updateSocialDraft,
   useGetDraftSetDesign,
   useGetSocialDraft,
   useListClubTemplates,
@@ -67,6 +68,7 @@ import { SlideLayoutPanel } from "@/components/studio-editor/slide-layout";
 import { EditSlideButton } from "@/components/studio-editor/edit-slide-button";
 import { keepAddedPages, storedSetDocument } from "@/components/studio-editor/set-doc";
 import type { CardSize } from "@/lib/share-card";
+import { editorOpeningSize } from "@/lib/draft-design-size";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
   TemplateEditorV2,
@@ -169,7 +171,9 @@ function SetDraftEditor({
   const pages = design.layout === "pages";
   const content = useDraftContent(draft);
   const brand = pages ? content.data : club;
-  const [size, setSize] = useState<CardSize>((design.size ?? "square") as CardSize);
+  // A queued carousel opens at its own size (saved with the set); a list or a
+  // card made into pages at the size it was last designed at (Stage 2), else square.
+  const [size, setSize] = useState<CardSize>(() => editorOpeningSize("", draft));
   const [current, setCurrent] = useState(draft);
   const [lookOpen, setLookOpen] = useState(false);
   // New Studio (preview): Share → Download beside the editor's own controls.
@@ -206,6 +210,15 @@ function SetDraftEditor({
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
+  };
+  const pickSize = (next: CardSize) => {
+    setSize(next);
+    // Pages and lists save Format as a single card's editor does; a queued
+    // carousel keeps saving its size with the set (weekendCarousel.size).
+    if (design.layout === "carousel") return;
+    updateSocialDraft(draft.id, { designSize: next }).then(refresh, () => {
+      // Not saved: the draft keeps the size it had.
+    });
   };
   const host: EditorHost<EditorTemplate> = {
     club: true,
@@ -270,7 +283,7 @@ function SetDraftEditor({
         slidesMode={{
           slides: (doc) => setDraftSlides(current, doc, brand),
           size,
-          onSize: setSize,
+          onSize: pickSize,
           // A free set of pages has no look's set to switch to.
           actions: pages ? undefined : (
             <button

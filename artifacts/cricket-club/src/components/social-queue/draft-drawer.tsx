@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { CarouselPreview } from "./carousel-preview";
 import { CarouselExportButton } from "./carousel-export-button";
+import { draftEditorHref } from "@/lib/draft-design-size";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useApproveSocialDraft,
@@ -183,7 +184,7 @@ export function DraftDrawer({
             )}
             {status !== "dismissed" && !carousel && !setDraftLayout(current) && (
               <Button asChild variant="outline">
-                <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
+                <Link href={draftEditorHref(current)}>Open in editor</Link>
               </Button>
             )}
             {!carousel && (
@@ -258,7 +259,7 @@ export function DraftDrawer({
                 the design, or mark it ready anyway.
               </p>
               <Link
-                href={`/admin/social/editor/${current.id}`}
+                href={draftEditorHref(current)}
                 className="font-medium text-primary-text underline"
               >
                 Edit design
@@ -289,7 +290,7 @@ export function DraftDrawer({
                 to check it again, or mark it ready anyway.
               </p>
               <Link
-                href={`/admin/social/editor/${current.id}`}
+                href={draftEditorHref(current)}
                 className="font-medium text-primary-text underline"
               >
                 Edit design

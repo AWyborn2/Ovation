@@ -39,6 +39,8 @@ export async function recordDraftRevision(
     // The design base, so restoring this revision restores it too (kind templates).
     packId: draft.packId,
     templateVersion: draft.templateVersion,
+    // The size it was designed at (Stage 2), restored with it.
+    designSize: draft.designSize,
     reason,
   });
   const kept = await tx
@@ -142,6 +144,9 @@ export async function revertDraftToRevision(
           cardInput: rev.cardInput,
         }),
         ...designBase,
+        // The size the restored design was made at; an older revision's null
+        // restores as null, so the draft opens at Square as it did then.
+        designSize: rev.designSize,
         editedAt: new Date(),
         // A manual action: stop any pending auto-promotion (KTD4).
         autoReadyAt: null,
