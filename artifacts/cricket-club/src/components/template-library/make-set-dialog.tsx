@@ -47,7 +47,8 @@ export const MAKE_SET_TYPES: Array<{ type: SetType; detail: string }> = [
   { type: "free", detail: "Your own pages, no data: never posted automatically" },
 ];
 
-const SET_SIZES: CardSize[] = ["square", "portrait", "story"];
+/** A new set's sizes: Portrait (the default) and Story. */
+export const SET_SIZES: CardSize[] = ["portrait", "story"];
 
 /** Where the new set opens: the editor, at the size picked. */
 export const setEditorHref = (id: number, size: CardSize) =>
@@ -67,7 +68,7 @@ export function MakeSetDialog({
   const [, navigate] = useLocation();
   const [type, setType] = useState<SetType>("teamLists");
   const [lookId, setLookId] = useState<number | null>(null);
-  const [size, setSize] = useState<CardSize>("square");
+  const [size, setSize] = useState<CardSize>("portrait");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const preview = useLibraryPreviewData();

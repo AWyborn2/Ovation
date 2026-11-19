@@ -51,8 +51,9 @@ import { saveFile } from "@/lib/save-files";
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
+// Portrait (the default) and Story: Square is retired for new cards (portrait
+// and story sizes plan, D7).
 const SIZE_OPTIONS: { value: CardSize; label: string }[] = [
-  { value: "square", label: "Feed square" },
   { value: "portrait", label: "Feed portrait" },
   { value: "story", label: "Story / TikTok" },
 ];

@@ -35,7 +35,7 @@ export function SetList({ onOpen }: { onOpen: (id: number) => void }) {
     const trimmed = name.trim();
     if (!trimmed) return;
     const set = await create.mutateAsync({
-      data: { name: trimmed, platformSize: "square", slides: [] },
+      data: { name: trimmed, platformSize: "portrait", slides: [] },
     });
     setName("");
     onOpen((set as CardSet).id);

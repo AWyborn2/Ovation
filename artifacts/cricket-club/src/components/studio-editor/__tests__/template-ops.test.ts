@@ -12,6 +12,7 @@ import {
   BLANK_PACK_ID,
 } from "@/lib/pack-render";
 import { buildPackData } from "@/lib/pack-card-data";
+import { TEMPLATE_SIZE_ORDER } from "@workspace/scorecard/kind-templates";
 import type { EditorDoc } from "../document";
 import {
   addToOtherSizes,
@@ -49,9 +50,9 @@ describe("template-mode document ops", () => {
     expect(layersOnSize(doc, "story")).toHaveLength(0);
   });
 
-  it("add to other sizes puts it everywhere, placed per size (KTD16)", () => {
+  it("add to other sizes puts it on every size of a four-size design, placed per size (KTD16)", () => {
     const doc: EditorDoc = { layers: [onlyOnSize(text("a"), "square")] };
-    const next = addToOtherSizes(doc, ["a"], "square");
+    const next = addToOtherSizes(doc, ["a"], "square", TEMPLATE_SIZE_ORDER);
     const a = next.layers![0];
     expect(a.sizes).toBeUndefined();
     expect(Object.keys(a.geometry).sort()).toEqual(["landscape", "portrait", "square", "story"]);
@@ -61,12 +62,26 @@ describe("template-mode document ops", () => {
   });
 
   it("remove from a size keeps the others, and deletes from the last one", () => {
-    const doc = addToOtherSizes({ layers: [onlyOnSize(text("a"), "square")] }, ["a"], "square");
+    const doc = addToOtherSizes(
+      { layers: [onlyOnSize(text("a"), "square")] },
+      ["a"],
+      "square",
+      TEMPLATE_SIZE_ORDER,
+    );
     const off = removeFromSize(doc, ["a"], "story");
     expect(off.layers![0].sizes).toEqual(["square", "portrait", "landscape"]);
     expect(off.layers![0].geometry.story).toBeUndefined();
     const solo: EditorDoc = { layers: [onlyOnSize(text("b"), "square")] };
     expect(removeFromSize(solo, ["b"], "square").layers).toEqual([]);
+  });
+
+  it("add to other sizes on a Portrait and Story design adds Story only, never an older size (Stage 3)", () => {
+    const portrait = text("a", { geometry: { portrait: { x: 10, y: 10, w: 40, h: 20 } } });
+    const doc: EditorDoc = { layers: [onlyOnSize(portrait, "portrait")] };
+    const next = addToOtherSizes(doc, ["a"], "portrait", ["portrait", "story"]);
+    const a = next.layers![0];
+    expect(a.sizes).toEqual(["portrait", "story"]);
+    expect(Object.keys(a.geometry).sort()).toEqual(["portrait", "story"]);
   });
 
   it("a locked element isn't removed", () => {

@@ -34,6 +34,7 @@ import {
   planTemplateSlides,
   primaryPage,
   SET_TYPE_LABELS,
+  sizesToOffer,
   setTypeOfKind,
   TEMPLATE_CARD_KINDS,
   type ContentPreset,
@@ -194,6 +195,7 @@ import { draftInput } from "@/components/social-queue/draft-meta";
 import { kindLabel } from "@/lib/social-studio";
 import { ensureDocumentFonts } from "@/lib/document-fonts";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
+import { olderSizesIn } from "@/lib/offered-sizes";
 
 /** Below this width (a phone) templates aren't edited; tablets and up are (R23). */
 export const TEMPLATE_EDITOR_MIN_WIDTH = 768;
@@ -646,6 +648,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const [preset, setPreset] = useState<ContentPreset>("standard");
   const pageFull = pageDoc(full, cur.id);
   const [format, setFormat] = useState<CardSize>(slidesMode?.size ?? initialFormat ?? "square");
+  // The design's own sizes (Stage 3): Portrait and Story, plus an older size
+  // (Square, Landscape) only where one of its pages already has layers on it.
+  const ownSizes = useMemo(
+    () => sizesToOffer(allPages.map((p) => pageDoc(full, p.id))),
+    [allPages, full],
+  );
   // The level being edited: the page, or a group or list entered by double-click (A2, A3).
   const [scope, setScope] = useState<string | null>(null);
   const doc = scopeDoc(pageFull, scope, format);
@@ -850,7 +858,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           h.present,
           cur.id,
           scope,
-          addToOtherSizes(level, addPrompt.ids, addPrompt.from),
+          addToOtherSizes(level, addPrompt.ids, addPrompt.from, ownSizes),
           format,
         ),
       );
@@ -1091,6 +1099,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           setSelection([]);
           setAddPrompt(null);
         }}
+        olderFormats={olderSizesIn(ownSizes)}
         inheritedFormats={[]}
         formatLabel={(f) => {
           // One size for the whole design: flag a size any page has nothing on.

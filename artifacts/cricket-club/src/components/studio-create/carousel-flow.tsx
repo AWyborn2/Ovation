@@ -34,9 +34,8 @@ import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 
-/** The sizes a carousel set comes in. */
+/** The sizes a new carousel set comes in: Portrait (the default) and Story. */
 export const CAROUSEL_SIZES: { value: CardSize; label: string }[] = [
-  { value: "square", label: "Square" },
   { value: "portrait", label: "Portrait" },
   { value: "story", label: "Story" },
 ];

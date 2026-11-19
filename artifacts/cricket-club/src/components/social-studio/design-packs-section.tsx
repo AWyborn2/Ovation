@@ -20,11 +20,10 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { usePackSelection, type PackSelection } from "@/lib/use-pack-selection";
 import { usePackColourModes, type PackColourModes } from "@/lib/use-pack-colour-modes";
 
+/** A look previews at the sizes new designs come in: Portrait (the default) and Story. */
 export const PACK_PREVIEW_FORMATS: { value: CardSize; label: string }[] = [
-  { value: "square", label: "Square" },
   { value: "portrait", label: "Portrait" },
   { value: "story", label: "Story" },
-  { value: "landscape", label: "Landscape" },
 ];
 
 /**

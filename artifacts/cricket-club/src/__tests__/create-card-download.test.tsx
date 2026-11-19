@@ -55,4 +55,12 @@ describe("Create a card: Download image", () => {
     expect(body.options.size).toBe("portrait");
     expect(screen.getByRole("button", { name: /More export options/ })).toBeTruthy();
   });
+
+  it("offers Portrait and Story only: Square is retired for new cards (D7)", () => {
+    stubApi();
+    renderAt(<AdminSocialCreate />, "/admin/social/create");
+    expect(screen.getByRole("option", { name: "Feed portrait" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Story / TikTok" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Feed square" })).toBeNull();
+  });
 });

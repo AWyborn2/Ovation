@@ -40,6 +40,7 @@ import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { kindLabel } from "@/lib/social-studio";
 import { splitPostedKinds } from "@/lib/studio-home";
 import { SIZES, type CardKind, type CardSize, type ShareCardInput } from "@/lib/share-card";
+import { DEFAULT_NEW_SIZE } from "@/lib/offered-sizes";
 import { cn } from "@/lib/utils";
 import {
   CAROUSEL_SET_OF,
@@ -103,7 +104,7 @@ export function CreateWizard() {
   };
 
   const [filled, setFilled] = useState<Filled | null>(null);
-  const [size, setSize] = useState<CardSize>("square");
+  const [size, setSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
   const design = useStartDesign();
 
   const kind = s.kind && s.kind !== "blank" && s.kind !== "carousel" ? s.kind : null;

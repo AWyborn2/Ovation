@@ -57,7 +57,8 @@ import {
   type WeekendCarouselState,
 } from "./use-weekend-carousel";
 
-const SIZE_KEYS = Object.keys(SIZES) as CardSize[];
+/** A new carousel's sizes: Portrait (the default) and Story (Square, Landscape retired). */
+const SIZE_KEYS: CardSize[] = ["portrait", "story"];
 
 const fmtWhen = (iso: string) =>
   new Intl.DateTimeFormat("en-AU", {

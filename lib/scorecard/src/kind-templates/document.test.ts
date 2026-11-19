@@ -3,6 +3,10 @@ import {
   addLayerToSizes,
   documentRowsCapacity,
   emptySizes,
+  isOlderSize,
+  OFFERED_SIZES,
+  sizesToOffer,
+  TEMPLATE_SIZE_ORDER,
   layerOnSize,
   layersForSize,
   placeBoxOnSize,
@@ -143,5 +147,29 @@ describe("rows capacity", () => {
     const doc = { layers: [rowsLayer(50)] };
     expect(documentRowsCapacity(doc, "square", "rows")).toBe(5);
     expect(documentRowsCapacity(doc, "square", "leaders")).toBeNull();
+  });
+});
+
+describe("offered sizes (portrait and story sizes plan, Stage 3)", () => {
+  it("offers Portrait first, then Story; Square and Landscape are older sizes", () => {
+    expect(OFFERED_SIZES).toEqual(["portrait", "story"]);
+    expect(TEMPLATE_SIZE_ORDER.filter(isOlderSize)).toEqual(["square", "landscape"]);
+    // Every size is still understood, so stored designs keep rendering.
+    expect(TEMPLATE_SIZE_ORDER).toEqual(["square", "portrait", "story", "landscape"]);
+  });
+
+  it("a design offers Portrait and Story plus any older size a page has layers on", () => {
+    expect(sizesToOffer({ layers: [] })).toEqual(["portrait", "story"]);
+    expect(sizesToOffer({ layers: [layer()] })).toEqual([...TEMPLATE_SIZE_ORDER]);
+    expect(sizesToOffer({ layers: [layer({ sizes: ["portrait"] })] })).toEqual([
+      "portrait",
+      "story",
+    ]);
+    expect(
+      sizesToOffer([
+        { layers: [layer({ sizes: ["story"] })] },
+        { layers: [layer({ sizes: ["landscape"] })] },
+      ]),
+    ).toEqual(["portrait", "story", "landscape"]);
   });
 });

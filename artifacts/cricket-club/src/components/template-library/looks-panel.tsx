@@ -88,7 +88,7 @@ export function LooksPanel({ preview }: { preview: Preview }) {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const packs = useDesignPacks(preview.clubName);
-  const [format, setFormat] = useState<CardSize>("square");
+  const [format, setFormat] = useState<CardSize>("portrait");
 
   const adopt = async (look: LibraryLook) => {
     const changes = defaultsAdoptionChanges(look, clubQ.data?.templates ?? []);

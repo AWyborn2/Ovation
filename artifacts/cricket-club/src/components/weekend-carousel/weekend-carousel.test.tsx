@@ -446,12 +446,16 @@ describe("WeekendCarousel", () => {
       const caption = screen.getByTestId("input-weekend-caption") as HTMLTextAreaElement;
       expect(caption.value).toContain(type === "teamList" ? "SMITH (C/WK)" : "Won by 40 runs");
       fireEvent.change(caption, { target: { value: `Edited ${type} caption` } });
-      fireEvent.click(screen.getByTestId("button-size-landscape"));
+      // Portrait and Story only for a new carousel (Stage 3).
+      expect(screen.queryByTestId("button-size-landscape")).toBeNull();
+      expect(screen.queryByTestId("button-size-square")).toBeNull();
+      expect(screen.getByTestId("button-size-portrait")).toHaveAttribute("aria-checked", "true");
+      fireEvent.click(screen.getByTestId("button-size-story"));
       fireEvent.click(screen.getByTestId("button-queue-weekend"));
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
       const request = queuedRequest().data;
       expect(request.caption).toBe(`Edited ${type} caption`);
-      expect(request.cardInput.weekendCarousel).toMatchObject({ setType: type, size: "landscape" });
+      expect(request.cardInput.weekendCarousel).toMatchObject({ setType: type, size: "story" });
       expect(request.cardInput.weekendCarousel.slides[0]).toMatchObject({
         content: { page: "title", roundLabel: "ROUND 5" },
       });

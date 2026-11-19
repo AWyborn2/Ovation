@@ -26,15 +26,32 @@ export type StarterDocument = {
   sponsorLock?: boolean;
 };
 
-const box = (y: number, h: number): Partial<Record<TemplateSize, LayerBox>> =>
-  Object.fromEntries(TEMPLATE_SIZE_ORDER.map((size) => [size, { x: 6, y, w: 88, h }]));
+const box = (
+  sizes: readonly TemplateSize[],
+  y: number,
+  h: number,
+): Partial<Record<TemplateSize, LayerBox>> =>
+  Object.fromEntries(sizes.map((size) => [size, { x: 6, y, w: 88, h }]));
 
-/** A plain layout for a kind: its first few live fields stacked as text, at every size. */
-export function placeholderDocument(kind: string): StarterDocument {
+/**
+ * A plain layout for a kind: its first few live fields stacked as text.
+ *
+ * With no `sizes` it is on every size, as every stored template from it is
+ * (the byte-identical fixture and the four-size template rules depend on
+ * that). Given `sizes` (a new design: `OFFERED_SIZES`, Portrait and Story),
+ * each layer carries boxes and a `sizes` list for those only, so it doesn't
+ * fall back to every size.
+ */
+export function placeholderDocument(
+  kind: string,
+  sizes?: readonly TemplateSize[],
+): StarterDocument {
   const fields = (kindFields(kind)?.fields ?? [])
     .filter((f) => !/^sponsor|Hashtag$/i.test(f.key))
     .slice(0, 5);
   const step = 80 / Math.max(fields.length, 1);
+  const on = sizes ? TEMPLATE_SIZE_ORDER.filter((s) => sizes.includes(s)) : TEMPLATE_SIZE_ORDER;
+  const every = on.length === TEMPLATE_SIZE_ORDER.length;
   return {
     layers: fields.map((f, i) => ({
       id: `placeholder-${f.key}`,
@@ -42,7 +59,8 @@ export function placeholderDocument(kind: string): StarterDocument {
       name: f.label,
       content: `{{${f.key}}}`,
       style: { fontSize: i === 0 ? 7 : 5, fontWeight: i === 0 ? 800 : 600 },
-      geometry: box(10 + i * step, step * 0.8),
+      ...(every ? {} : { sizes: [...on] }),
+      geometry: box(on, 10 + i * step, step * 0.8),
     })),
   };
 }
