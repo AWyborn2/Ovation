@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse new signing",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -497,21 +497,21 @@
             },
             "geometry": {
               "square": {
-                "x": 6,
+                "x": 13.41,
                 "y": 91.6,
-                "w": 51.04,
+                "w": 43.63,
                 "h": 4.4
               },
               "portrait": {
-                "x": 6,
+                "x": 13.41,
                 "y": 93.28,
-                "w": 51.04,
+                "w": 43.63,
                 "h": 3.52
               },
               "story": {
-                "x": 6,
+                "x": 13.4,
                 "y": 95.28,
-                "w": 51.04,
+                "w": 43.64,
                 "h": 2.47
               }
             },
@@ -534,9 +534,9 @@
             },
             "geometry": {
               "landscape": {
-                "x": 3.15,
+                "x": 7.65,
                 "y": 91.6,
-                "w": 54.35,
+                "w": 49.85,
                 "h": 4.4
               }
             },
@@ -607,7 +607,7 @@
             "id": "eyebrow-1",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "WELCOME TO THE CLUB \u00b7 {{season}}",
+            "content": "WELCOME TO THE CLUB · {{season}}",
             "style": {
               "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.8,
@@ -644,7 +644,7 @@
             "id": "eyebrow-2",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "WELCOME TO THE CLUB \u00b7 {{season}}",
+            "content": "WELCOME TO THE CLUB · {{season}}",
             "style": {
               "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 0.94,

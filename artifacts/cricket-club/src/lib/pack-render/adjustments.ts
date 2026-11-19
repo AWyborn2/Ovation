@@ -430,18 +430,28 @@ function repeatsLine(text: string, key: string, values: Record<string, string>):
 }
 
 /**
- * A text layer's line with its tokens filled. A token that only repeats
- * another on the line (`SAID_BY`) is left out with one separator beside it:
- * "{{gradeRound}} · {{competitionLine}}" is "B GRADE — ROUND 7", never
- * "B GRADE — ROUND 7 · B GRADE" or "B GRADE — ROUND 7 · ". Only the
- * template's own separators are touched, never the card's values, and a line
- * without such a repeat comes out exactly as `substituteTokens` makes it.
+ * A text layer's line with its tokens filled. A token with no value, or one
+ * that only repeats another on the line (`SAID_BY`), is left out with one
+ * separator beside it: a junior fixture with no round prints
+ * "{{grade}} · {{roundLabel}}" as "YEAR 9", never "YEAR 9 ·" (Ash, retest 7),
+ * and "{{gradeRound}} · {{competitionLine}}" is "B GRADE — ROUND 7", never
+ * "B GRADE — ROUND 7 · B GRADE". Only the template's own separators are
+ * touched, never the card's values, and a line with every token filled and
+ * no repeat comes out exactly as `substituteTokens` makes it.
+ *
+ * `dropEmpty` false keeps an empty token's separators, as a format v1
+ * document has always drawn them (its output is pinned, T1.6).
  */
-export function substituteTextTokens(text: string, values: Record<string, string>): string {
+export function substituteTextTokens(
+  text: string,
+  values: Record<string, string>,
+  dropEmpty = true,
+): string {
   const filled: string[] = [];
   let line = text.replace(TOKEN, (_all, key: string) => {
     const value = values[key] ?? "";
-    if (!value) return "";
+    if (!value) return dropEmpty ? EMPTY : "";
+    if (dropEmpty && !value.trim()) return EMPTY;
     if (repeatsLine(text, key, values)) return EMPTY;
     filled.push(value);
     return `\uE001${filled.length - 1}\uE001`;
@@ -818,7 +828,7 @@ function layerInner(
       const text = layer.bind
         ? (values[layer.bind] ?? "")
         : tokens
-          ? substituteTextTokens(layer.content ?? "", values)
+          ? substituteTextTokens(layer.content ?? "", values, ctx.formatVersion === 2)
           : (layer.content ?? "");
       // A box made only of live fields that are all empty isn't drawn (KTD15).
       if (tokens && text.trim() === "") return null;

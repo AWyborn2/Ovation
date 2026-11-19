@@ -168,11 +168,18 @@ describe("a starter as an explicit v2 document", () => {
   // stress (long names, empty optional lines) and junior data. L4-B's starter
   // bundles (T4.11) rely on this. The one difference is by design: a v2
   // list-row cell is marked to end in "…" after a whole word past the fit floor,
-  // and a v2 list's photo cell with no photo draws the club's crest (retest 6).
+  // and a v2 list's photo cell with no photo draws the club's crest (retest 6),
+  // and a v2 line leaves out the separator beside an empty field ("Round 5 ·
+  // vs X — " is "Round 5 · vs X", retest 7), which v1 keeps.
   const NO_PHOTO_CELL = new RegExp(
     `<div data-row-cell="[^"]*" ${NO_PHOTO_ATTR}="1"[^>]*><img [^>]*/></div>`,
     "g",
   );
+  const withoutEmptySeparators = (html: string) =>
+    html
+      .replace(/\s+[·•|—–]\s*(<\/(?:div|span)>)/g, "$1")
+      .replace(/(>)\s*[·•|—–]\s+/g, "$1")
+      .replace(/(\s*[·•|—–]\s*)\s*[·•|—–]\s*/g, "$1");
   it.each(STARTER_IDS)("%s renders as it does in v1, every kind, size and variant", (starter) => {
     for (const kind of TEMPLATE_CARD_KINDS) {
       const stored = starterDocument(starter, kind as TemplateCardKind);
@@ -185,7 +192,9 @@ describe("a starter as an explicit v2 document", () => {
         [sample, true],
       ] as const) {
         for (const size of TEMPLATE_SIZE_ORDER) {
-          const v1 = render(input, stored as CardAdjustments, { size, junior });
+          const v1 = withoutEmptySeparators(
+            render(input, stored as CardAdjustments, { size, junior }),
+          );
           const v2 = render(input, asV2(stored as { layers: unknown[] }, kind), {
             size,
             junior,
