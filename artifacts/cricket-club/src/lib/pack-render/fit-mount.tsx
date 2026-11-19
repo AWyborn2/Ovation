@@ -17,6 +17,7 @@ import {
   type PackCardData,
 } from "@/lib/pack-render";
 import { prepareTeamNames } from "./team-name-fit";
+import { fitLogoPlates } from "./logo-plate-fit";
 import type { FitMount } from "./template-fit";
 import { nextPaint, waitForImages } from "./wait-images";
 
@@ -75,6 +76,7 @@ export function createFitMount(): FitMountHandle {
     }
     await nextPaint();
     await waitForImages(container);
+    fitLogoPlates(container);
     await prepareTeamNames(container);
     await nextPaint();
     return { root: container, fontFailures };

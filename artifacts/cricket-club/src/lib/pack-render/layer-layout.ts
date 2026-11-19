@@ -162,7 +162,20 @@ export function sponsorLogoPlates(
   filled: (token: string, slot: TemplateLayerV2) => boolean,
   tokensOf: (layer: TemplateLayerV2) => readonly string[],
 ): Set<TemplateLayerV2> {
-  const plates = new Set<TemplateLayerV2>();
+  return new Set(sponsorLogoPlateSlots(siblings, boxOf, filled, tokensOf).keys());
+}
+
+/**
+ * `sponsorLogoPlates`, with the one sponsor logo slot each plate is under, so
+ * the plate can hug that logo as drawn (`huggedPlateBox`).
+ */
+export function sponsorLogoPlateSlots(
+  siblings: readonly TemplateLayerV2[],
+  boxOf: (layer: TemplateLayerV2) => LayerBox | null,
+  filled: (token: string, slot: TemplateLayerV2) => boolean,
+  tokensOf: (layer: TemplateLayerV2) => readonly string[],
+): Map<TemplateLayerV2, TemplateLayerV2> {
+  const plates = new Map<TemplateLayerV2, TemplateLayerV2>();
   const slots = siblings
     .map((layer) => ({ layer, token: imageSlotToken(layer), box: boxOf(layer) }))
     .filter(
@@ -179,9 +192,97 @@ export function sponsorLogoPlates(
     const held = slots.filter((s) => holds(box, s.box));
     if (held.length !== 1) continue;
     const slot = held[0]!;
-    if (SPONSOR_LOGO_TOKEN.test(slot.token) && filled(slot.token, slot.layer)) plates.add(layer);
+    if (SPONSOR_LOGO_TOKEN.test(slot.token) && filled(slot.token, slot.layer))
+      plates.set(layer, slot.layer);
   }
   return plates;
+}
+
+/** An image's natural (intrinsic) size in pixels. */
+export interface NaturalSize {
+  w: number;
+  h: number;
+}
+
+/**
+ * The part of an image that is drawn (its non-transparent pixels), as
+ * fractions of its natural size: `{ x: 0, y: 0, w: 1, h: 1 }` is all of it.
+ */
+export interface DrawnBounds {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Where a sponsor logo's light plate goes (Ash's decision, retest 7: the plate
+ * hugs the logo). A logo is fitted (contained) and centred in its slot and
+ * keeps its shape, so a wide or tall logo leaves part of the slot bare, and a
+ * plate as big as the slot showed a light band beside it. The plate takes the
+ * logo's drawn box instead, plus the padding the design gave it round the slot
+ * (how far each plate edge sits outside the slot's), and never grows past the
+ * design's plate.
+ *
+ * `plate` and `slot` are boxes in percent of an artboard `art` pixels in size.
+ * `natural` is the logo's natural size; without one (not loaded, not
+ * decoded) the plate keeps its box, as before. `drawn`, when known, is the
+ * part of the image that isn't transparent, so a logo with clear margins of
+ * its own is hugged at its ink.
+ */
+export function huggedPlateBox(
+  plate: LayerBox,
+  slot: LayerBox,
+  art: NaturalSize,
+  natural: NaturalSize | null | undefined,
+  drawn?: DrawnBounds | null,
+): LayerBox {
+  const nw = num(natural?.w);
+  const nh = num(natural?.h);
+  const sw = (num(slot.w) / 100) * num(art.w);
+  const sh = (num(slot.h) / 100) * num(art.h);
+  if (!(nw > 0 && nh > 0 && sw > 0 && sh > 0 && num(art.w) > 0 && num(art.h) > 0)) return plate;
+  // The logo fitted and centred in its slot, in pixels from the slot's corner.
+  const scale = Math.min(sw / nw, sh / nh);
+  const fw = nw * scale;
+  const fh = nh * scale;
+  let left = (sw - fw) / 2;
+  let top = (sh - fh) / 2;
+  let width = fw;
+  let height = fh;
+  const t = drawn ? clampBounds(drawn) : null;
+  if (t) {
+    left += t.x * fw;
+    top += t.y * fh;
+    width = t.w * fw;
+    height = t.h * fh;
+  }
+  // Back to percent of the artboard.
+  const lx = num(slot.x) + (left / num(art.w)) * 100;
+  const ly = num(slot.y) + (top / num(art.h)) * 100;
+  const lw = (width / num(art.w)) * 100;
+  const lh = (height / num(art.h)) * 100;
+  // The design's padding round the slot, side by side (none where the plate sits inside it).
+  const [px, py, pw, ph] = [num(plate.x), num(plate.y), num(plate.w), num(plate.h)];
+  const padL = Math.max(0, num(slot.x) - px);
+  const padT = Math.max(0, num(slot.y) - py);
+  const padR = Math.max(0, px + pw - (num(slot.x) + num(slot.w)));
+  const padB = Math.max(0, py + ph - (num(slot.y) + num(slot.h)));
+  const x0 = Math.max(px, lx - padL);
+  const y0 = Math.max(py, ly - padT);
+  const x1 = Math.min(px + pw, lx + lw + padR);
+  const y1 = Math.min(py + ph, ly + lh + padB);
+  if (!(x1 - x0 > 0 && y1 - y0 > 0)) return plate;
+  return { ...plate, x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/** Drawn bounds inside the image, or null when they aren't a usable box. */
+function clampBounds(b: DrawnBounds): DrawnBounds | null {
+  const x = Math.min(1, Math.max(0, num(b.x)));
+  const y = Math.min(1, Math.max(0, num(b.y)));
+  const w = Math.min(1 - x, Math.max(0, num(b.w)));
+  const h = Math.min(1 - y, Math.max(0, num(b.h)));
+  return w > 0 && h > 0 ? { x, y, w, h } : null;
 }
 
 export interface EmptySlotOptions {
