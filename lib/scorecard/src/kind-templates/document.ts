@@ -28,6 +28,31 @@ export const TEMPLATE_SIZE_ORDER: readonly TemplateSize[] = [
   "landscape",
 ];
 
+/**
+ * The sizes offered for a new design (plan 2026-11-19-portrait-story-sizes):
+ * Portrait for the feed and Story. Square and Landscape are retired for new
+ * designs but stay in `TEMPLATE_SIZE_ORDER`, so every stored design keeps
+ * rendering at the sizes it has. Portrait comes first: it is the default.
+ */
+export const OFFERED_SIZES: readonly TemplateSize[] = ["portrait", "story"];
+
+/** Whether `size` is retired for new designs (an "older size"): Square or Landscape. */
+export function isOlderSize(size: TemplateSize): boolean {
+  return !OFFERED_SIZES.includes(size);
+}
+
+/**
+ * A design's own sizes: Portrait and Story, plus any older size one of its
+ * documents (pages) has layers on, in standard order. A layer with no `sizes`
+ * is on every size, so a design from before the change keeps all four.
+ */
+export function sizesToOffer(docs: LayerDocument | readonly LayerDocument[]): TemplateSize[] {
+  const list: readonly LayerDocument[] = Array.isArray(docs) ? docs : [docs as LayerDocument];
+  const covered = new Set<TemplateSize>(OFFERED_SIZES);
+  for (const doc of list) for (const size of sizesWithLayers(doc)) covered.add(size);
+  return TEMPLATE_SIZE_ORDER.filter((size) => covered.has(size));
+}
+
 /** A layer's box, in percent of the artboard; rotation in degrees. */
 export type LayerBox = { x: number; y: number; w: number; h: number; rotate?: number };
 

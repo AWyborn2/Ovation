@@ -218,7 +218,8 @@ export function useWeekendCarousel(
   const [title, setTitle] = useState(CAROUSEL_LABELS[initialType]);
   const [captionEdit, setCaptionEdit] = useState<string | null>(null);
   const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
-  const [size, setSize] = useState<CardSize>("square");
+  // A new carousel starts at Portrait (portrait and story sizes plan, Stage 3).
+  const [size, setSize] = useState<CardSize>("portrait");
   // The template the set is drawn with (ADR-011 T5.17): the picker preselects the
   // club's default for the set's kind, and a new kind starts from its default again.
   const { templateKind, picked, setPicked, dayRowsCapacity } = useCarouselTemplate(setType, size);

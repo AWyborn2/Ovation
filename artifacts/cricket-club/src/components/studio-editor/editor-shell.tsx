@@ -16,12 +16,38 @@ import {
 import type { CardSize } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 
-export const FORMATS: { value: CardSize; label: string; dims: string }[] = [
-  { value: "square", label: "Square", dims: "1080 × 1080" },
+type FormatOption = { value: CardSize; label: string; dims: string };
+
+/**
+ * The Format menu's sizes for a new design (portrait and story sizes plan,
+ * Stage 3): Portrait first, the default, then Story.
+ */
+export const FORMATS: FormatOption[] = [
   { value: "portrait", label: "Portrait", dims: "1080 × 1350" },
   { value: "story", label: "Story", dims: "1080 × 1920" },
+];
+
+/**
+ * The older sizes, retired for new designs. The Format menu lists one only
+ * for a design that has layers on it (or is open at it), as "(older size)".
+ */
+export const OLDER_FORMATS: FormatOption[] = [
+  { value: "square", label: "Square", dims: "1080 × 1080" },
   { value: "landscape", label: "Landscape", dims: "1200 × 630" },
 ];
+
+/** The Format menu: Portrait and Story, then the older sizes given (and the one on show). */
+export function formatOptions(
+  olderFormats: readonly CardSize[],
+  current?: CardSize,
+): (FormatOption & { older: boolean })[] {
+  const older = new Set<CardSize>(olderFormats);
+  if (current) older.add(current);
+  return [
+    ...FORMATS.map((f) => ({ ...f, older: false })),
+    ...OLDER_FORMATS.filter((f) => older.has(f.value)).map((f) => ({ ...f, older: true })),
+  ];
+}
 
 const iconBtn =
   "grid h-8 w-8 place-items-center rounded-lg text-[var(--ed-ink2)] transition-colors hover:bg-[var(--ed-card)] hover:text-[var(--ed-ink)] disabled:pointer-events-none disabled:opacity-35";
@@ -32,6 +58,7 @@ export function EditorTopBar({
   status,
   format,
   onFormat,
+  olderFormats = [],
   inheritedFormats,
   canUndo,
   canRedo,
@@ -48,6 +75,11 @@ export function EditorTopBar({
   status: ReactNode;
   format: CardSize;
   onFormat: (f: CardSize) => void;
+  /**
+   * The older sizes (Square, Landscape) the design has layers on: listed after
+   * Portrait and Story as "(older size)". A new design has none.
+   */
+  olderFormats?: readonly CardSize[];
   /** Formats still using another format's layout (flagged for review). */
   inheritedFormats: CardSize[];
   canUndo: boolean;
@@ -82,9 +114,10 @@ export function EditorTopBar({
           onChange={(e) => onFormat(e.target.value as CardSize)}
           className="h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm font-semibold"
         >
-          {FORMATS.map((f) => (
+          {formatOptions(olderFormats, format).map((f) => (
             <option key={f.value} value={f.value}>
               {f.label}
+              {f.older ? " (older size)" : ""}
               {formatLabel
                 ? formatLabel(f.value)
                 : inheritedFormats.includes(f.value)

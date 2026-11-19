@@ -53,7 +53,11 @@ describe("EditorStarters", () => {
     const { requests } = mount();
     fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
     await waitFor(() => expect(posted(requests)).toHaveLength(1));
-    expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "broadcast-dark" });
+    expect(posted(requests)[0].body).toEqual({
+      cardInput: century,
+      packId: "broadcast-dark",
+      designSize: "portrait",
+    });
   });
 
   it("Open in editor makes the draft from a picked template instead of the pack (ADR-011)", async () => {
@@ -71,6 +75,7 @@ describe("EditorStarters", () => {
     expect(posted(requests)[0].body).toEqual({
       cardInput: century,
       templateRef: { libraryTemplateId: 7, version: 2 },
+      designSize: "portrait",
     });
   });
 
@@ -78,7 +83,11 @@ describe("EditorStarters", () => {
     const { requests } = mount();
     fireEvent.click(screen.getByRole("button", { name: /blank canvas/i }));
     await waitFor(() => expect(posted(requests)).toHaveLength(1));
-    expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "blank" });
+    expect(posted(requests)[0].body).toEqual({
+      cardInput: century,
+      packId: "blank",
+      designSize: "portrait",
+    });
   });
 
   it("starts on the Club Kit background: a blank canvas carrying the background element", async () => {
@@ -87,13 +96,26 @@ describe("EditorStarters", () => {
     await waitFor(() => expect(posted(requests)).toHaveLength(1));
     const body = posted(requests)[0].body as {
       packId: string;
-      adjustments: { layers: { kind: string; element: { id: string } }[] };
+      designSize: string;
+      adjustments: {
+        layers: {
+          kind: string;
+          element: { id: string };
+          sizes: string[];
+          geometry: Record<string, unknown>;
+        }[];
+      };
     };
     expect(body.packId).toBe("blank");
+    expect(body.designSize).toBe("portrait");
     expect(body.adjustments.layers[0]).toMatchObject({
       kind: "element",
       element: { id: "ck.background" },
     });
+    // Portrait and Story only (Stage 3), with `sizes` set so it doesn't fall
+    // back to every size.
+    expect(body.adjustments.layers[0].sizes).toEqual(["portrait", "story"]);
+    expect(Object.keys(body.adjustments.layers[0].geometry).sort()).toEqual(["portrait", "story"]);
   });
 
   it("saves the card's player with the draft (player sponsors)", async () => {
@@ -107,6 +129,7 @@ describe("EditorStarters", () => {
     expect(posted(requests)[0].body).toEqual({
       cardInput: century,
       packId: "blank",
+      designSize: "portrait",
       subjectPlayerId: 42,
     });
   });
@@ -130,7 +153,11 @@ describe("OpenInEditorButton", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
     await waitFor(() => expect(onOpened).toHaveBeenCalledOnce());
-    expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "broadcast-dark" });
+    expect(posted(requests)[0].body).toEqual({
+      cardInput: century,
+      packId: "broadcast-dark",
+      designSize: "portrait",
+    });
   });
 });
 

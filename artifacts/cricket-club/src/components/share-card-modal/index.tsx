@@ -26,6 +26,7 @@ import { packSupportsKind, type PackCardData } from "@/lib/pack-render";
 import { photoBoxSize } from "@/lib/pack-render/adjustments";
 import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
 import { OpenInEditorButton } from "@/components/studio-editor/open-in-editor";
+import { clubSizesFor, DEFAULT_NEW_SIZE } from "@/lib/offered-sizes";
 import type { Props } from "./constants";
 import { usePhotoControls } from "./use-photo-controls";
 import { PhotoControls } from "./photo-controls";
@@ -73,6 +74,7 @@ export function ShareCardModal({
   layerPhotos,
   packId: packIdProp,
   templateDoc,
+  olderSizes,
   onApprove,
   approveLabel = "Approve & download",
 }: Props) {
@@ -120,18 +122,16 @@ export function ShareCardModal({
   const motionAudio = useMotionAudio({ open, input, selectedTemplate });
   const { motion, durationMs, speed, audioSpec, previewSoundOn } = motionAudio;
 
-  const enabledSizes: CardSize[] = useMemo(() => {
-    const s = bundle?.settings;
-    const out: CardSize[] = [];
-    if (!s || s.sizeSquare) out.push("square");
-    if (!s || s.sizePortrait) out.push("portrait");
-    if (!s || s.sizeStory) out.push("story");
-    // Landscape is opt-in: only when the club switched it on.
-    if (s?.sizeLandscape) out.push("landscape");
-    return out.length ? out : ["square"];
-  }, [bundle]);
+  // Portrait and Story where the club has them on (D7): Square and Landscape
+  // only for a stored item whose design has them, so an older square card
+  // still opens and downloads at Square while a new card can't.
+  const olderKey = (olderSizes ?? []).join(",");
+  const enabledSizes: CardSize[] = useMemo(
+    () => clubSizesFor(bundle?.settings, olderKey ? (olderKey.split(",") as CardSize[]) : []),
+    [bundle, olderKey],
+  );
 
-  const [activeSize, setActiveSize] = useState<CardSize>("square");
+  const [activeSize, setActiveSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
 
   // A "pack" (standard / built-in) card is one with no BYO template selected
   // whose kind the Broadcast Dark pack renders. These export as PNG through the

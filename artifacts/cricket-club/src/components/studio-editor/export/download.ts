@@ -24,10 +24,12 @@ export const DOWNLOAD_FORMATS: { value: DownloadFormat; label: string; hint: str
 
 /** Where each format fits best (shown under the size). */
 export const PLATFORM_HINT: Record<CardSize, string> = {
-  square: "Instagram and Facebook feed",
+  // Square and Landscape are retired for new designs: an older card still
+  // downloads at its own size (portrait and story sizes plan, Stage 3).
+  square: "Older size",
   portrait: "Instagram feed (takes the most space)",
   story: "Stories, Reels and TikTok",
-  landscape: "Facebook links, X and LinkedIn",
+  landscape: "Older size",
 };
 
 export const isClip = (f: DownloadFormat): f is "mp4" | "gif" => f === "mp4" || f === "gif";

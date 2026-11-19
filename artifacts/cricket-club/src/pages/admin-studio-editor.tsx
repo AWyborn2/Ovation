@@ -110,6 +110,7 @@ import {
   packTextFields,
   photoFor,
   resolveCardTokens,
+  BLANK_PACK_ID,
   slideAdjustments,
   withSlideAdjustments,
   type CardAdjustments,
@@ -128,6 +129,7 @@ import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { renderablePackId } from "@/lib/pack-templates/registry";
+import { designOwnSizes, olderSizesIn, packDraftOlderSizes } from "@/lib/offered-sizes";
 import { useBrand } from "@/lib/brand-context";
 import {
   withGroundPhoto,
@@ -545,6 +547,13 @@ function EditorApp({ draftId }: { draftId: number }) {
           setFormat(f);
           setSelection([]);
         }}
+        // Older sizes (Stage 3): a pack design keeps all four; a templated set
+        // or the blank base only those it already has layers on.
+        olderFormats={
+          templated
+            ? olderSizesIn(designOwnSizes(rootDoc))
+            : packDraftOlderSizes(rootDoc, packId === BLANK_PACK_ID)
+        }
         inheritedFormats={inheritedFormats(doc, ["square", "portrait", "story", "landscape"])}
         canUndo={history.past.length > 0}
         canRedo={history.future.length > 0}

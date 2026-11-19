@@ -1,6 +1,6 @@
 import type { LayerDocument } from "@workspace/scorecard/kind-templates";
 import type { PackCardData } from "@/lib/pack-render";
-import type { MotionPreset, ShareCardInput } from "@/lib/share-card";
+import type { CardSize, MotionPreset, ShareCardInput } from "@/lib/share-card";
 import type { Platform } from "@/lib/captions";
 
 export type EngineKey = "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary";
@@ -52,6 +52,13 @@ export type Props = {
    * document on every slide; without it the preview and downloads are blank.
    */
   templateDoc?: LayerDocument | null;
+  /**
+   * The older sizes (Square, Landscape) a stored item's design has (a queued
+   * draft's). They stay on offer where the club has them on, so an older
+   * square card still opens and downloads at Square. A new card has none:
+   * Portrait and Story only (portrait and story sizes plan, D7).
+   */
+  olderSizes?: readonly CardSize[];
   /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useCreateSocialDraft } from "@workspace/api-client-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { draftEditorHref } from "@/lib/draft-design-size";
+import { DEFAULT_NEW_SIZE } from "@/lib/offered-sizes";
 import type { ShareCardInput } from "@/lib/share-card";
 import { PLAYER_SPONSOR_KINDS } from "@/lib/share-card/sponsor-limit";
 
@@ -46,6 +47,8 @@ export function OpenInEditorButton({
               data: {
                 cardInput: input as unknown as Record<string, unknown>,
                 packId,
+                // A new design starts at Portrait (Stage 3) and reopens there.
+                designSize: DEFAULT_NEW_SIZE,
                 ...(subjectPlayerId != null &&
                 PLAYER_SPONSOR_KINDS.has(input.kind) &&
                 (input as { junior?: boolean }).junior !== true

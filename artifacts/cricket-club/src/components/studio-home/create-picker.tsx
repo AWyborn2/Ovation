@@ -39,11 +39,14 @@ import {
   type LibraryPreview,
 } from "@/components/template-library/previews";
 
+/**
+ * The sizes a new design is started at (portrait and story sizes plan, Stage
+ * 3): Portrait for the feed, first as the default, and Story. Square and
+ * Landscape are retired for new designs; older ones keep theirs.
+ */
 export const CREATE_SIZES: { value: CardSize; label: string }[] = [
-  { value: "square", label: "Square" },
   { value: "portrait", label: "Portrait" },
   { value: "story", label: "Story" },
-  { value: "landscape", label: "Landscape" },
 ];
 
 /** A blank design's card: an Announcement, the most open-ended kind. */

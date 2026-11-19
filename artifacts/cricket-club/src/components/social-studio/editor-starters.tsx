@@ -7,12 +7,20 @@ import { useCreateSocialDraft, type TemplateRef } from "@workspace/api-client-re
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { draftEditorHref } from "@/lib/draft-design-size";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
+import { DEFAULT_NEW_SIZE, OFFERED_SIZES } from "@/lib/offered-sizes";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { getElement } from "@/lib/studio-elements/registry";
 
-const STARTER_SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
+/**
+ * A new design's sizes: Portrait and Story only (plan 2026-11-19). Square and
+ * Landscape are retired for new designs.
+ */
+const STARTER_SIZES: readonly CardSize[] = OFFERED_SIZES;
 
-/** A blank canvas already carrying the Club Kit background in every format. */
+/**
+ * A blank canvas already carrying the Club Kit background on Portrait and
+ * Story. The layer lists its `sizes`, so it doesn't fall back to every size.
+ */
 export function clubKitBackgroundAdjustments(): { layers: Record<string, unknown>[] } {
   const def = getElement("ck.background")!;
   return {
@@ -23,6 +31,7 @@ export function clubKitBackgroundAdjustments(): { layers: Record<string, unknown
         name: def.label,
         locked: true,
         element: { id: def.id },
+        sizes: [...STARTER_SIZES],
         geometry: Object.fromEntries(STARTER_SIZES.map((s) => [s, def.defaultBox(s)])),
       },
     ],
@@ -64,9 +73,12 @@ export function EditorStarters({
 
   const start = (body: Parameters<typeof create.mutate>[0]["data"]) => {
     setError(null);
+    // A new design starts at Portrait (Stage 3), saved on the draft so it
+    // opens and reopens there. The card's player carries over, so the draft
+    // shows their sponsors.
+    const data = { ...body, designSize: DEFAULT_NEW_SIZE };
     create.mutate(
-      // The card's player carries over, so the draft shows their sponsors.
-      { data: subjectPlayerId != null ? { ...body, subjectPlayerId } : body },
+      { data: subjectPlayerId != null ? { ...data, subjectPlayerId } : data },
       {
         onSuccess: (draft) => navigate(draftEditorHref(draft)),
         onError: (e) => setError(handleAdminMutationError(e)),

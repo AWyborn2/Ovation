@@ -90,9 +90,10 @@ describe("a single card's pages", () => {
     // One page: no page strip, so no "Title page · empty" and the like.
     expect(screen.queryByRole("navigation", { name: "Pages" })).toBeNull();
     expect(screen.queryByText(/Title page|Junior day|Sponsors page/)).toBeNull();
-    // The format menu counts only that page: the square has layers, so it says nothing.
+    // The format menu counts only that page: the square has layers, so it says nothing (but
+    // that it is an older size, Stage 3).
     const options = formatOptions();
-    expect(options.find((o) => o.startsWith("Square"))).toBe("Square");
+    expect(options.find((o) => o.startsWith("Square"))).toBe("Square (older size)");
     expect(options.some((o) => /pages? empty/.test(o))).toBe(false);
   });
 
@@ -101,7 +102,9 @@ describe("a single card's pages", () => {
     const strip = await screen.findByRole("navigation", { name: "Pages" });
     expect(strip.textContent).toMatch(/Title page/);
     expect(strip.textContent).toMatch(/Sponsors page/);
-    expect(formatOptions().find((o) => o.startsWith("Square"))).toBe("Square · 3 pages empty");
+    expect(formatOptions().find((o) => o.startsWith("Square"))).toBe(
+      "Square (older size) · 3 pages empty",
+    );
   });
 
   it("picks the page the card's input draws", () => {

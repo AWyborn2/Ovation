@@ -3,7 +3,7 @@
  * in a draft opened straight in the editor.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithHistory } from "@/test/render";
 import { teamListName } from "@/lib/pack-render/bind";
 import type { TeamListPlayer } from "@/lib/share-card";
@@ -192,9 +192,20 @@ describe("Create wizard", () => {
 
     fireEvent.click(a);
     await waitFor(() => expect(url()).toBe("/admin/social/create?kind=teamList&step=4"));
+    // Portrait and Story only (Stage 3), Portrait picked first.
+    const sizes = screen.getByRole("radiogroup", { name: "Size" });
+    expect(
+      within(sizes)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["Portrait", "Story"]);
+    expect(within(sizes).getByRole("radio", { name: "Portrait" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     fireEvent.click(await screen.findByRole("button", { name: "Use Club Kit Team List" }));
 
-    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=square"));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=portrait"));
     const post = calls.find((c) => c.method === "POST" && c.url.includes("/social-drafts"))!;
     expect(post.body).toMatchObject({
       cardInput: { kind: "teamList", grade: "A Grade", opponent: "Mandurah" },
@@ -240,7 +251,7 @@ describe("Create wizard", () => {
 
     await waitFor(() => expect(url()).toBe("/admin/social/create?kind=teamList&step=4"));
     fireEvent.click(await screen.findByRole("button", { name: "Use Club Kit Team List" }));
-    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=square"));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=portrait"));
     const post = calls.find((c) => c.method === "POST" && c.url.includes("/social-drafts"))!;
     const input = (post.body as { cardInput: { players: TeamListPlayer[] } }).cardInput;
     // The empty rows are dropped; the names typed are the only ones.
@@ -321,7 +332,7 @@ describe("Create wizard", () => {
       expect(url()).toBe("/admin/social/create?team=junior&kind=teamList&step=4"),
     );
     fireEvent.click(await screen.findByRole("button", { name: "Use Club Kit Team List" }));
-    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=square"));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=portrait"));
     const post = calls.find((c) => c.method === "POST" && c.url.includes("/social-drafts"))!;
     expect(post.body).toMatchObject({
       cardInput: { kind: "teamList", junior: true, juniorFixtureId: 31 },

@@ -65,6 +65,7 @@ import {
   type Family,
 } from "@/components/social-queue/draft-meta";
 import type { ShareCardInput } from "@/lib/share-card";
+import { draftOlderSizes } from "@/lib/offered-sizes";
 import { cn } from "@/lib/utils";
 import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 
@@ -601,6 +602,8 @@ export default function AdminSocialQueue() {
             ? ((preview.adjustments ?? null) as LayerDocument | null)
             : null
         }
+        // A stored draft keeps the older sizes its design has (D7).
+        olderSizes={preview ? draftOlderSizes(preview) : []}
         playerId={playerIdFromAppPath(preview?.appPath)}
         sponsorPlayerId={preview?.subjectPlayerId ?? null}
         onApprove={

@@ -48,13 +48,21 @@ export function onlyOnSize(layer: FreeLayer, size: CardSize): FreeLayer {
   };
 }
 
-/** Put layers on every other size (KTD16), placed from `from`; one document change. */
-export function addToOtherSizes(doc: EditorDoc, ids: string[], from: CardSize): EditorDoc {
+/**
+ * Put layers on the design's other sizes (KTD16), placed from `from`; one
+ * document change. `sizes` is the design's own sizes (`designOwnSizes`):
+ * Portrait and Story, plus an older size (Square, Landscape) only when the
+ * design already has layers on it, so a new design never grows into one.
+ */
+export function addToOtherSizes(
+  doc: EditorDoc,
+  ids: string[],
+  from: CardSize,
+  sizes: readonly CardSize[],
+): EditorDoc {
   return {
     ...doc,
-    layers: layersOf(doc).map((l) =>
-      ids.includes(l.id) ? addLayerToSizes(l, from, TEMPLATE_SIZE_ORDER) : l,
-    ),
+    layers: layersOf(doc).map((l) => (ids.includes(l.id) ? addLayerToSizes(l, from, sizes) : l)),
   };
 }
 

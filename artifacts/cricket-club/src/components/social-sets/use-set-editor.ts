@@ -26,6 +26,7 @@ import {
   type RenderOptions,
 } from "@/lib/share-card";
 import { renderShareCardVideo, canExportVideo } from "@/lib/share-card-animation";
+import { clubSizesFor, DEFAULT_NEW_SIZE } from "@/lib/offered-sizes";
 import { saveFiles, toFile } from "@/lib/save-files";
 import { type PackCardData } from "@/lib/pack-render";
 import {
@@ -74,7 +75,9 @@ export function useSetEditor(id: number) {
   });
 
   const [name, setName] = useState("");
-  const [platformSize, setPlatformSize] = useState<CardSize>("square");
+  const [platformSize, setPlatformSize] = useState<CardSize>(DEFAULT_NEW_SIZE);
+  // The size the set was saved at: an older set (Square, Landscape) keeps it.
+  const [savedSize, setSavedSize] = useState<CardSize | null>(null);
   const [slides, setSlides] = useState<WorkingSlide[]>([]);
   const [published, setPublished] = useState(false);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
@@ -85,24 +88,21 @@ export function useSetEditor(id: number) {
   useEffect(() => {
     if (!set || loadedFor.current === set.id) return;
     setName(set.name);
-    setPlatformSize(
-      (set.platformSize as CardSize) in SIZES ? (set.platformSize as CardSize) : "square",
-    );
+    const saved =
+      (set.platformSize as CardSize) in SIZES ? (set.platformSize as CardSize) : "square";
+    setPlatformSize(saved);
+    setSavedSize(saved);
     setSlides(set.slides.map(toWorking));
     setPublished(set.isPublished);
     loadedFor.current = set.id;
   }, [set]);
 
-  const enabledSizes: CardSize[] = useMemo(() => {
-    const s = bundle?.settings;
-    const out: CardSize[] = [];
-    if (!s || s.sizeSquare) out.push("square");
-    if (!s || s.sizePortrait) out.push("portrait");
-    if (!s || s.sizeStory) out.push("story");
-    // Landscape is opt-in: only when the club switched it on.
-    if (s?.sizeLandscape) out.push("landscape");
-    return out.length ? out : ["square"];
-  }, [bundle]);
+  // Portrait and Story where the club has them on (D7); an older set keeps
+  // the older size it was saved at, so it still opens and downloads there.
+  const enabledSizes: CardSize[] = useMemo(
+    () => clubSizesFor(bundle?.settings, [], savedSize ?? undefined),
+    [bundle, savedSize],
+  );
 
   // A brand-less tenant gets no clubUrl/hashtag rather than another club's.
   const clubUrl = bundle?.settings.clubUrl ?? "";

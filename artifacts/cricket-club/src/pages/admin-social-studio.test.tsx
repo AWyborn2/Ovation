@@ -184,9 +184,21 @@ describe("Studio home", () => {
     const { writes, url } = open();
     fireEvent.click(screen.getByRole("button", { name: "Blank design" }));
     const dialog = await screen.findByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("radio", { name: "Landscape" }));
-    await waitFor(() => expect(url()).toBe("/admin/social/editor/99?format=landscape"));
-    expect(writes[0]!.body).toMatchObject({ packId: "blank", designSize: "landscape" });
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Story" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/99?format=story"));
+    expect(writes[0]!.body).toMatchObject({ packId: "blank", designSize: "story" });
+  });
+
+  it("offers Portrait and Story only, Portrait first, for a new design (Stage 3)", async () => {
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Blank design" }));
+    const dialog = await screen.findByRole("dialog");
+    const sizes = within(dialog).getByRole("radiogroup", { name: "Size" });
+    expect(
+      within(sizes)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["Portrait", "Story"]);
   });
 
   it("lists recent work newest first, each opening where it's edited", async () => {
