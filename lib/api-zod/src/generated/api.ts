@@ -11776,6 +11776,7 @@ export const ListSocialDraftsResponseItem = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -11827,7 +11828,8 @@ export const CreateSocialDraftBody = zod.object({
   "libraryTemplateId": zod.number().optional(),
   "version": zod.number()
 }).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),
-  "subjectPlayerId": zod.number().nullish().describe('The player a hand-made player card is about (player sponsors): their sponsors replace the club strip. Only on milestone, century, five-for, debut, player and new signing cards, never a junior card; must be one of the club\'s senior players.')
+  "subjectPlayerId": zod.number().nullish().describe('The player a hand-made player card is about (player sponsors): their sponsors replace the club strip. Only on milestone, century, five-for, debut, player and new signing cards, never a junior card; must be one of the club\'s senior players.'),
+  "designSize": zod.enum(['square', 'portrait', 'story', 'landscape']).optional().describe('The size the design is started at (Create\'s size), so it reopens there. Square or Landscape is refused when the new draft\'s design has no layers on it.')
 })
 
 
@@ -13913,6 +13915,7 @@ export const ApproveSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14047,6 +14050,7 @@ export const SaveDraftSetDesignResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14147,6 +14151,7 @@ export const GetSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14191,7 +14196,8 @@ export const UpdateSocialDraftBody = zod.object({
   "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
   "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 }).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional().describe('Editor overlay (see CardAdjustments); null clears every edit.'),
-  "playerOrder": zod.union([zod.enum(['selected', 'shirt', 'alpha']).describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.'),zod.null()]).optional().describe('A Team List card\'s own player order (build decision 16), stored on the draft\'s card input as playerOrderOverride; null follows the order the card was made with (the club\'s default). It never changes the club\'s default. Team List drafts only.')
+  "playerOrder": zod.union([zod.enum(['selected', 'shirt', 'alpha']).describe('How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.'),zod.null()]).optional().describe('A Team List card\'s own player order (build decision 16), stored on the draft\'s card input as playerOrderOverride; null follows the order the card was made with (the club\'s default). It never changes the club\'s default. Team List drafts only.'),
+  "designSize": zod.enum(['square', 'portrait', 'story', 'landscape']).optional().describe('The size the admin is designing the card at (the editor\'s Format), saved so the draft reopens there. It doesn\'t change what renders. Square or Landscape is refused unless the draft already has that size, or its design has layers on it.')
 })
 
 export const UpdateSocialDraftResponse = zod.object({
@@ -14262,6 +14268,7 @@ export const UpdateSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14496,6 +14503,7 @@ export const GetSocialCalendarResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14592,6 +14600,7 @@ export const GetSocialCalendarResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14710,6 +14719,7 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14820,6 +14830,7 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -14924,6 +14935,7 @@ export const SendBackSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -15024,6 +15036,7 @@ export const ReopenSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -15064,6 +15077,7 @@ export const ListSocialDraftRevisionsResponseItem = zod.object({
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The draft\'s design size when this revision was taken; restored with it.'),
   "reason": zod.enum(['refresh', 'edit', 'revert', 'template']),
   "createdAt": zod.coerce.date()
 })
@@ -15146,6 +15160,7 @@ export const RevertSocialDraftResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -15246,6 +15261,7 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -15355,6 +15371,7 @@ export const GenerateRecapsResponseItem = zod.object({
   "layoutCheckLastTriedAt": zod.coerce.date().nullish().describe('When the sweep last tried this draft\'s layout check; null until it has.'),
   "layoutCheckFailed": zod.boolean().optional().describe('True once the layout check has failed three times in a row: the sweep stops trying, the draft stays pending (automation still leaves it alone) and needs a look. An edit, template apply or data refresh clears it.'),
   "layoutCheckError": zod.string().nullish().describe('Why the last layout check try failed; null when it hasn\'t failed.'),
+  "designSize": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullish().describe('The size the admin designs the card at: where the editor opens and what the queue shows. It doesn\'t change what renders. Null for a draft from before the size was saved (it opens at Square).'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),

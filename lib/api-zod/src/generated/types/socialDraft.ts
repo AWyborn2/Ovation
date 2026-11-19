@@ -7,6 +7,7 @@
  */
 import type { LayerPhotos } from './layerPhotos';
 import type { PhotoFocus } from './photoFocus';
+import type { SocialDraftDesignSize } from './socialDraftDesignSize';
 import type { SocialDraftLayoutWarnings } from './socialDraftLayoutWarnings';
 import type { SocialDraftPlannedBy } from './socialDraftPlannedBy';
 import type { SocialDraftStatus } from './socialDraftStatus';
@@ -95,6 +96,11 @@ export interface SocialDraft {
      * @nullable
      */
   layoutCheckError?: string | null;
+  /**
+     * The size the admin designs the card at: where the editor opens and what the queue shows. It doesn't change what renders. Null for a draft from before the size was saved (it opens at Square).
+     * @nullable
+     */
+  designSize?: SocialDraftDesignSize;
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable

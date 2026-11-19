@@ -30,7 +30,8 @@ import {
 import { useBrand } from "@/lib/brand-context";
 import { draftEditorDocument } from "@/lib/draft-design";
 import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
-import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
+import { cardBaseFilename, type CardSize } from "@/lib/share-card";
+import { editorOpeningSize } from "@/lib/draft-design-size";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
   TemplateEditorV2,
@@ -71,12 +72,25 @@ export function DraftDesignEditor({
   const viewport = useViewport();
   const { input, data, bundle, theme, refresh, panels } = useDraftContent(draft);
 
-  // The size the design was started at (Studio home's Create picker), else square.
+  // Where it opens (Stage 2): the link's size, else the size it was last
+  // designed at, else a carousel's size, else square (an older draft, as before).
   const search = useSearch();
-  const initialFormat = useMemo<CardSize>(() => {
-    const asked = new URLSearchParams(search).get("format");
-    return asked && asked in SIZES ? (asked as CardSize) : "square";
-  }, [search]);
+  const [location] = useLocation();
+  const initialFormat = useMemo<CardSize>(
+    () => editorOpeningSize(search, draft),
+    // Read once per draft: the editor keeps its own Format from here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draft.id],
+  );
+  // Changing Format saves it on the draft, and the address follows, so a
+  // reload or the queue opens it at that size.
+  const saveFormat = (size: CardSize) => {
+    navigate(`${location}?format=${size}`, { replace: true });
+    updateSocialDraft(draft.id, { designSize: size }).then(refresh, () => {
+      // Not saved (the connection dropped, or an older size the design
+      // lacks): the draft keeps the size it had, and the editor stays here.
+    });
+  };
 
   const template: EditorTemplate = useMemo(
     () => ({
@@ -135,6 +149,7 @@ export function DraftDesignEditor({
     data,
     blank: isBlankDesignDraft(draft),
     panels,
+    onFormat: saveFormat,
     actions: ({ document, size, input: shown, data: shownData }) => (
       <>
         <button

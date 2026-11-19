@@ -57,7 +57,8 @@ export function useStartDesign() {
   const start = (body: CreateSocialDraftRequest, size: CardSize) => {
     setError(null);
     create.mutate(
-      { data: body },
+      // The size is saved on the draft (Stage 2), so it reopens there from the queue.
+      { data: { ...body, designSize: size } },
       {
         onSuccess: (draft) => navigate(`/admin/social/editor/${draft.id}?format=${size}`),
         onError: (e) => setError(handleAdminMutationError(e) ?? "Couldn't start the design."),

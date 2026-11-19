@@ -552,3 +552,32 @@ describe("Add a page → From another template in the set editor (retest 6, item
     expect(layers.find((l) => l.kind === "photo")).not.toHaveProperty("source");
   });
 });
+
+describe("a set's size (portrait and story sizes plan, Stage 2)", () => {
+  const format = async () =>
+    ((await screen.findByRole("combobox", { name: "Format" })) as HTMLSelectElement).value;
+
+  it("a list or page set opens at the size it was last designed at", async () => {
+    open({ draft: { ...DRAFT, designSize: "story" } });
+    expect(await format()).toBe("story");
+  });
+
+  it("an older set with no saved size opens at Square, as before", async () => {
+    open();
+    expect(await format()).toBe("square");
+  });
+
+  it("changing Format saves the size on the draft, as a single card's editor does", async () => {
+    const requests = open({ draft: { ...DRAFT, designSize: "portrait" } });
+    expect(await format()).toBe("portrait");
+    fireEvent.change(screen.getByRole("combobox", { name: "Format" }), {
+      target: { value: "story" },
+    });
+    await waitFor(() => expect(requests.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = requests.find((r) => r.method === "PATCH")!;
+    expect(patch.url).toMatch(/social-drafts\/42$/);
+    expect(patch.body).toEqual({ designSize: "story" });
+    // Not a set design save: the slides and design still save with Save, as before.
+    expect(requests.some((r) => r.method === "PUT")).toBe(false);
+  });
+});

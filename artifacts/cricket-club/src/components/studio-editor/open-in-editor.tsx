@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateSocialDraft } from "@workspace/api-client-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { draftEditorHref } from "@/lib/draft-design-size";
 import type { ShareCardInput } from "@/lib/share-card";
 import { PLAYER_SPONSOR_KINDS } from "@/lib/share-card/sponsor-limit";
 
@@ -55,7 +56,7 @@ export function OpenInEditorButton({
             {
               onSuccess: (draft) => {
                 onOpened?.();
-                navigate(`/admin/social/editor/${draft.id}`);
+                navigate(draftEditorHref(draft));
               },
               onError: (e) => setError(handleAdminMutationError(e)),
             },

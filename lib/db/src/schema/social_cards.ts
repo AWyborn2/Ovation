@@ -866,6 +866,11 @@ export const socialDraftsTable = pgTable(
     dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
     overdueNotifiedAt: timestamp("overdue_notified_at", { withTimezone: true }),
     expiredAt: timestamp("expired_at", { withTimezone: true }),
+    // The size the admin designs the card at (portrait and story sizes plan,
+    // Stage 2, migration 0081): where the editor opens and what the queue
+    // shows. It doesn't change what renders. Null = a draft from before it was
+    // saved; it opens at Square, as before (no backfill, D5).
+    designSize: text("design_size").$type<DraftDesignSize>(),
   },
   (t) => ({
     plannedIdx: index("social_drafts_planned_idx")
@@ -876,6 +881,10 @@ export const socialDraftsTable = pgTable(
       sql`"planned_by" IS NULL OR "planned_by" IN ('auto', 'admin')`,
     ),
     chkRollCount: check("social_drafts_roll_count_check", sql`"roll_count" >= 0`),
+    chkDesignSize: check(
+      "social_drafts_design_size_check",
+      sql`"design_size" IS NULL OR "design_size" IN ('square', 'portrait', 'story', 'landscape')`,
+    ),
     // Partial unique index for match summary dedupe. Only enforced when
     // sourceKind = 'matchSummary' AND the draft hasn't been dismissed, so a
     // dismissed draft can be re-created for the same match.
@@ -891,6 +900,9 @@ export const socialDraftsTable = pgTable(
     ),
   }),
 );
+
+/** A draft's saved design size (migration 0081): one of the four card sizes. */
+export type DraftDesignSize = "square" | "portrait" | "story" | "landscape";
 
 export type SocialDraftRow = typeof socialDraftsTable.$inferSelect;
 
@@ -913,6 +925,9 @@ export const socialDraftRevisionsTable = pgTable(
     // revision restores the pack and template version with its adjustments.
     packId: text("pack_id"),
     templateVersion: integer("template_version"),
+    // The draft's design size when the snapshot was taken (migration 0081),
+    // restored with it. Null = none was saved (an older draft or revision).
+    designSize: text("design_size").$type<DraftDesignSize>(),
     reason: text("reason").notNull(), // "refresh" | "edit" | "revert" | "template"
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

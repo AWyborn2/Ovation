@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { SocialDraftRevisionDesignSize } from './socialDraftRevisionDesignSize';
 import type { SocialDraftRevisionReason } from './socialDraftRevisionReason';
 
 export interface SocialDraftRevision {
@@ -18,6 +19,11 @@ export interface SocialDraftRevision {
   /** @nullable */
   photoSource?: string | null;
   adjustments?: unknown;
+  /**
+     * The draft's design size when this revision was taken; restored with it.
+     * @nullable
+     */
+  designSize?: SocialDraftRevisionDesignSize;
   reason: SocialDraftRevisionReason;
   createdAt: Date;
 }

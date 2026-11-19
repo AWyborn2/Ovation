@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateSocialDraft, type TemplateRef } from "@workspace/api-client-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { draftEditorHref } from "@/lib/draft-design-size";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { getElement } from "@/lib/studio-elements/registry";
@@ -67,7 +68,7 @@ export function EditorStarters({
       // The card's player carries over, so the draft shows their sponsors.
       { data: subjectPlayerId != null ? { ...body, subjectPlayerId } : body },
       {
-        onSuccess: (draft) => navigate(`/admin/social/editor/${draft.id}`),
+        onSuccess: (draft) => navigate(draftEditorHref(draft)),
         onError: (e) => setError(handleAdminMutationError(e)),
       },
     );
