@@ -5811,6 +5811,12 @@ paths:
             schema: { type: string },
             description: "Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.",
           }
+        - {
+            name: ids,
+            in: query,
+            schema: { type: string, pattern: '^-?\d+(,-?\d+)*$' },
+            description: "Only these games, comma-separated carousel game ids (the `gameIds` of the rounds picked from getCarouselRounds or getJuniorCarouselRounds). Games outside the date range are still left out. Absent: every game in the range.",
+          }
       responses:
         "200":
           description: Sources, with cancelled fixtures and ineligible photos excluded
@@ -5825,6 +5831,78 @@ paths:
           description: Social Studio entitlement required
         "503":
           description: Fixture status could not be verified
+  /weekend-carousel/rounds:
+    get:
+      operationId: getCarouselRounds
+      tags: [social]
+      summary: The club's seasons and rounds to fill a senior carousel set from
+      description: >-
+        Senior games only. Team List and Match Day sets list the club's fixtures
+        for the current and upcoming seasons, by each fixture's round label.
+        Results and Match Summary sets list every completed senior game the
+        club has, from central for a central-read club (filtered to its club,
+        senior grades only, before-boundary seasons left out), every season.
+        Games with no round label are in their season's "Other games".
+        `gameIds` are the ids getWeekendCarouselSources gives the same games,
+        so a pick passes them as `ids`.
+      parameters:
+        - {
+            name: setType,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [matchDay, teamList, results, matchSummary],
+                default: matchDay,
+              },
+          }
+      responses:
+        "200":
+          description: Seasons newest first, each with its rounds in date order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CarouselRounds" }
+        "400":
+          description: Unknown set type
+        "401":
+          description: Admin sign-in required
+        "402":
+          description: Social Studio entitlement required
+  /juniors/carousel-rounds:
+    get:
+      operationId: getJuniorCarouselRounds
+      tags: [juniors]
+      summary: The club's junior seasons and rounds to fill a junior carousel set from
+      description: >-
+        Junior tables only, never senior or central data (juniors isolation).
+        Team List and Match Day sets list junior fixtures for the current and
+        upcoming seasons; Results and Match Summary sets list completed junior
+        games, every season. Junior fixtures carry no round label, so they are
+        in their season's "Other games". Fixtures are empty while the club's
+        junior sync is switched off.
+      parameters:
+        - {
+            name: setType,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [matchDay, teamList, results, matchSummary],
+                default: matchDay,
+              },
+          }
+      responses:
+        "200":
+          description: Seasons newest first, each with its rounds in date order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CarouselRounds" }
+        "400":
+          description: Unknown set type
+        "401":
+          description: Admin sign-in required
+        "402":
+          description: Social Studio entitlement required
   /fixtures:
     get:
       operationId: listFixtures
@@ -27014,6 +27092,58 @@ components:
         lastClickedAt: { type: ["string", "null"], format: date-time }
         createdAt: { type: string, format: date-time }
 
+    CarouselRound:
+      type: object
+      required: [key, label, from, to, other, gameIds]
+      properties:
+        key:
+          type: string
+          description: Unique within its season ("other" for Other games)
+        label:
+          type: string
+          description: The round as the club names it ("Round 5", "Semi Final", "Other games")
+        from:
+          type: string
+          description: The round's first game day, YYYY-MM-DD, club time
+        to:
+          type: string
+          description: The round's last game day, YYYY-MM-DD, club time
+        other:
+          type: boolean
+          description: Games with no round label
+        gameIds:
+          type: array
+          items: { type: integer }
+          description: The round's games, as getWeekendCarouselSources ids them
+    CarouselRoundSeason:
+      type: object
+      required: [season, label, rounds]
+      properties:
+        season:
+          type: integer
+          description: Season start year (2025 = 2025/26)
+        label:
+          type: string
+          description: The season's name, "2025/26"
+        rounds:
+          type: array
+          items: { $ref: "#/components/schemas/CarouselRound" }
+    CarouselRounds:
+      type: object
+      required: [seasons, defaultSeason, defaultRounds]
+      properties:
+        seasons:
+          type: array
+          items: { $ref: "#/components/schemas/CarouselRoundSeason" }
+        defaultSeason:
+          type: ["integer", "null"]
+          description: The season the picker opens on; null when no game has a round label
+        defaultRounds:
+          type: array
+          items: { type: string }
+          description: >-
+            Round keys the picker opens on: the next round (Team List, Match
+            Day) or the most recent completed round (Results, Match Summary).
     WeekendCarouselSources:
       type: object
       required: [timeZone, fixtures, photos, coverPhotos, warnings]

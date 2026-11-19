@@ -117,6 +117,11 @@ export function useWeekendCarousel(
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
   const rangeValid = !!from && !!to && from <= to;
+  // A rounds pick (Create's Season and Round picker): only these games, within the
+  // dates. Null loads every game in the dates; empty (no round ticked) loads none.
+  const [onlyIds, setOnlyIds] = useState<number[] | null>(null);
+  const idsParam = onlyIds?.length ? [...onlyIds].sort((a, b) => a - b).join(",") : undefined;
+  const noneWanted = onlyIds !== null && onlyIds.length === 0;
 
   const settingsQ = useGetSocialSettings({
     query: { queryKey: getGetSocialSettingsQueryKey() },
@@ -175,9 +180,19 @@ export function useWeekendCarousel(
       : "";
   // Server scopes tenant/grade/categories, live cancellation status and the
   // date range (including already-started games) — no client re-filtering.
-  const params = { from, to, setType, audience, ...(dataFields ? { fields: dataFields } : {}) };
+  const params = {
+    from,
+    to,
+    setType,
+    audience,
+    ...(dataFields ? { fields: dataFields } : {}),
+    ...(idsParam ? { ids: idsParam } : {}),
+  };
   const sourcesQ = useGetWeekendCarouselSources(params, {
-    query: { queryKey: getGetWeekendCarouselSourcesQueryKey(params), enabled: rangeValid },
+    query: {
+      queryKey: getGetWeekendCarouselSourcesQueryKey(params),
+      enabled: rangeValid && !noneWanted,
+    },
   });
   const sources = sourcesQ.data as WeekendCarouselSources | undefined;
   // Match Day content (ADR-010) and other kinds' card inputs, per fixture id.
@@ -258,13 +273,13 @@ export function useWeekendCarousel(
   // Whether the admin chose the cover photo; until then a Match Day set shows the auto pick.
   const [coverSwapped, setCoverSwapped] = useState(false);
 
-  const inRange = rangeValid ? fixtures : [];
+  const inRange = rangeValid && !noneWanted ? fixtures : [];
   const inRangeSig = `${setType}:` + inRange.map((f) => f.id).join(",");
 
   // New ranges/types select all; a source refresh preserves valid user picks.
   const [picks, setPicks] = useState<Pick[]>([]);
   const pickScope = useRef("");
-  const scope = JSON.stringify([setType, from, to, audience]);
+  const scope = JSON.stringify([setType, from, to, audience, idsParam ?? null]);
   useEffect(() => {
     const reset = pickScope.current !== scope;
     pickScope.current = scope;
@@ -617,6 +632,7 @@ export function useWeekendCarousel(
         type === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(type);
       setFrom(range.from);
       setTo(range.to);
+      setOnlyIds(null);
       setTitle(CAROUSEL_LABELS[type]);
       setCaptionEdit(null);
       // A carousel's content override belongs to the Match Day set it was made on.
@@ -676,8 +692,18 @@ export function useWeekendCarousel(
         setType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(setType);
       setFrom(range.from);
       setTo(range.to);
+      setOnlyIds(null);
     },
     rangeValid,
+    /** The games a rounds pick allows (null: every game in the dates). */
+    onlyIds,
+    /** Set the dates and the games a rounds pick allows in one go (null ids: all). */
+    applyRange: (range: { from: string; to: string; ids: number[] | null }) => {
+      if (busy) return;
+      setFrom(range.from);
+      setTo(range.to);
+      setOnlyIds(range.ids);
+    },
     title,
     setTitle: (v: string) => !busy && setTitle(v),
     size,

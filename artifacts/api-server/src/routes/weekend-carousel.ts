@@ -37,6 +37,8 @@ router.get(
       return;
     }
     const { from, to, setType = "matchDay", audience = "all" } = parsed.data;
+    // A rounds pick (getCarouselRounds): only these games, still within the dates.
+    const only = parsed.data.ids ? new Set(parsed.data.ids.split(",").map(Number)) : undefined;
     // The visible optional data fields (ADR-010 P5): only these are loaded.
     const dataFields = new Set<MatchDayDataField>(
       (parsed.data.fields ?? "")
@@ -70,7 +72,8 @@ router.get(
                 lt(fixturesTable.startAt, end),
               ),
             )
-            .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
+            .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id))
+            .then((all) => (only ? all.filter((f) => only.has(f.id)) : all));
     const ids =
       setType === "results" || setType === "matchSummary"
         ? []
@@ -98,7 +101,16 @@ router.get(
     );
     let sources;
     try {
-      sources = await carouselContent(req, tenantId, setType, eligibleFixtures, from, to, audience);
+      sources = await carouselContent(
+        req,
+        tenantId,
+        setType,
+        eligibleFixtures,
+        from,
+        to,
+        audience,
+        only,
+      );
     } catch (error) {
       req.log.warn({ err: error, tenantId }, "Carousel source lookup failed");
       res

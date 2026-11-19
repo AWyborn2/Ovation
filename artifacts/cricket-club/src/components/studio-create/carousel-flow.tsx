@@ -2,7 +2,7 @@
  * Create → a carousel (studio-create-consolidation S4): steps 3 and 4 for "Whole round"
  * or "Carousel set". It drives the Weekend Carousel's own state, unchanged: the same
  * sources (senior or junior, never both), photo picks, content and assembly. Step 3
- * picks the dates and games; step 4 the look and size. "Open in editor" builds the set,
+ * picks a season and rounds (or dates) and the games; step 4 the look and size. "Open in editor" builds the set,
  * sends it to review (it never posts on its own) and opens it in the set editor, where
  * slides are reordered, added and removed.
  */
@@ -13,6 +13,7 @@ import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { BLANK_DESIGN_KIND } from "@/components/studio-home/create-picker";
 import { blankCarouselDocument } from "./model";
+import { RoundPicker, useRoundPick } from "./round-picker";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,6 +65,7 @@ export function CarouselFlow({
 }) {
   const [, navigate] = useLocation();
   const s = useWeekendCarousel(setType, audience);
+  const pick = useRoundPick(s, setType, audience);
   const [phase, setPhase] = useState<Phase>("idle");
   const [problem, setProblem] = useState<string | null>(null);
   // Set once generate() has run, so the effect below acts on its result.
@@ -113,14 +115,14 @@ export function CarouselFlow({
       <QueryError title="Couldn't load carousel sources, photos or settings" onRetry={s.retry} />
     );
   }
-  if (s.loading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    );
-  }
+  const skeleton = (
+    <div className="space-y-3">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-24 w-full" />
+    </div>
+  );
+  // Step 3 keeps the round picker on screen while a pick's games load.
+  if (s.loading && step !== 3) return skeleton;
 
   if (step === 3) {
     return (
@@ -134,7 +136,12 @@ export function CarouselFlow({
             never show a child&rsquo;s photo, only approved club stock images.
           </p>
         )}
-        <RangeAndFixtures s={s} />
+        <RoundPicker pick={pick} setType={setType} disabled={s.busy} />
+        {s.loading || pick.loading ? (
+          skeleton
+        ) : (
+          <RangeAndFixtures s={s} byRound={pick.mode === "rounds"} />
+        )}
         {s.selected.length > MAX_CAROUSEL_GAMES && (
           <p role="alert" className="text-sm text-destructive">
             {tooMany(setType, s.selected.length)}
@@ -262,7 +269,7 @@ export function CarouselFlow({
  * editor to add, duplicate, reorder and design pages. It waits for review like any
  * draft and is never posted automatically.
  */
-function BlankCarouselButton({ junior }: { junior: boolean }) {
+export function BlankCarouselButton({ junior }: { junior: boolean }) {
   const [, navigate] = useLocation();
   const create = useCreateSocialDraft();
   const [error, setError] = useState<string | null>(null);
