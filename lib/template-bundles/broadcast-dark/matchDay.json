@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark matchDay",
-  "version": 9,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -385,9 +385,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l9",
             "sizes": ["square", "portrait", "story"],
@@ -428,9 +428,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l10",
             "sizes": ["landscape"],
@@ -727,9 +727,9 @@
               "lineHeight": 1.05
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l20",
             "sizes": ["square"],
@@ -757,9 +757,9 @@
               "lineHeight": 1.05
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l21",
             "sizes": ["portrait", "story"],
@@ -1164,9 +1164,9 @@
                       "lineHeight": 1
                     },
                     "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
+                      "minScale": 0.5,
+                      "maxLines": 2,
+                      "ellipsis": false
                     },
                     "id": "fixture-l34",
                     "sizes": ["square"],
@@ -1194,9 +1194,9 @@
                       "lineHeight": 1
                     },
                     "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
+                      "minScale": 0.5,
+                      "maxLines": 2,
+                      "ellipsis": false
                     },
                     "id": "fixture-l35",
                     "sizes": ["portrait", "story"],
@@ -1230,9 +1230,9 @@
                       "lineHeight": 1
                     },
                     "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
+                      "minScale": 0.5,
+                      "maxLines": 2,
+                      "ellipsis": false
                     },
                     "id": "fixture-l36",
                     "sizes": ["landscape"],
@@ -1765,9 +1765,9 @@
                       "lineHeight": 1
                     },
                     "fit": {
-                      "minScale": 1,
+                      "minScale": 0.5,
                       "maxLines": 1,
-                      "ellipsis": true
+                      "ellipsis": false
                     },
                     "id": "fixture-l53",
                     "sizes": ["square"],
@@ -1795,9 +1795,9 @@
                       "lineHeight": 1
                     },
                     "fit": {
-                      "minScale": 1,
+                      "minScale": 0.5,
                       "maxLines": 1,
-                      "ellipsis": true
+                      "ellipsis": false
                     },
                     "id": "fixture-l54",
                     "sizes": ["portrait", "story"],
@@ -1831,9 +1831,9 @@
                       "lineHeight": 1
                     },
                     "fit": {
-                      "minScale": 1,
+                      "minScale": 0.5,
                       "maxLines": 1,
-                      "ellipsis": true
+                      "ellipsis": false
                     },
                     "id": "fixture-l55",
                     "sizes": ["landscape"],

@@ -1,6 +1,6 @@
 {
   "name": "Neon Night matchDay",
-  "version": 8,
+  "version": 9,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -428,9 +428,9 @@
               ]
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l11",
             "link": "fixture-l11",
@@ -479,9 +479,9 @@
               ]
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l12",
             "link": "fixture-l11",
@@ -845,9 +845,9 @@
               "lineHeight": 1.3
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 0.5,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l22",
             "link": "fixture-l22",
@@ -856,7 +856,7 @@
               "square": {
                 "x": 6,
                 "y": 48.32,
-                "w": 12.26,
+                "w": 81.85,
                 "h": 2.22
               }
             },
@@ -876,9 +876,9 @@
               "lineHeight": 1.3
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 0.5,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l23",
             "link": "fixture-l22",
@@ -887,13 +887,13 @@
               "portrait": {
                 "x": 6,
                 "y": 46.49,
-                "w": 16.01,
+                "w": 88,
                 "h": 2.37
               },
               "story": {
                 "x": 6,
                 "y": 47.53,
-                "w": 16.01,
+                "w": 88,
                 "h": 1.67
               }
             },
@@ -913,9 +913,9 @@
               "lineHeight": 1.3
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 0.5,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l24",
             "link": "fixture-l22",
@@ -924,7 +924,7 @@
               "landscape": {
                 "x": 3.15,
                 "y": 60.98,
-                "w": 6.91,
+                "w": 28.77,
                 "h": 2.22
               }
             },
@@ -1129,9 +1129,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l31",
             "link": "fixture-l31",
@@ -1159,9 +1159,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l32",
             "link": "fixture-l31",
@@ -1195,9 +1195,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
-              "ellipsis": true
+              "minScale": 0.5,
+              "maxLines": 2,
+              "ellipsis": false
             },
             "id": "fixture-l33",
             "link": "fixture-l31",
@@ -1534,9 +1534,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 1,
+              "minScale": 0.5,
               "maxLines": 1,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l44",
             "link": "fixture-l44",
@@ -1564,9 +1564,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 1,
+              "minScale": 0.5,
               "maxLines": 1,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l45",
             "link": "fixture-l44",
@@ -1600,9 +1600,9 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 1,
+              "minScale": 0.5,
               "maxLines": 1,
-              "ellipsis": true
+              "ellipsis": false
             },
             "id": "fixture-l46",
             "link": "fixture-l44",

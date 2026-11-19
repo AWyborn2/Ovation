@@ -1,6 +1,6 @@
 {
   "name": "Sunset matchSummary",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3723,7 +3723,7 @@
                 {
                   "field": "word",
                   "x": 1.8,
-                  "w": 5.05,
+                  "w": 6.37,
                   "y": 11.73,
                   "h": 26.86,
                   "show": "backdrop",
@@ -3735,7 +3735,7 @@
                 {
                   "field": "word",
                   "x": 1.8,
-                  "w": 6.21,
+                  "w": 6.37,
                   "y": 11.73,
                   "h": 26.86,
                   "style": {
@@ -3743,13 +3743,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 8.01,
-                  "w": 57.86,
+                  "x": 9.87,
+                  "w": 56.0,
                   "y": 17.27,
                   "h": 19.42,
                   "style": {
@@ -3921,7 +3921,7 @@
                 {
                   "field": "word",
                   "x": 1.95,
-                  "w": 5.5,
+                  "w": 7.53,
                   "y": 11.65,
                   "h": 26.9,
                   "show": "backdrop",
@@ -3933,7 +3933,7 @@
                 {
                   "field": "word",
                   "x": 1.95,
-                  "w": 6.76,
+                  "w": 7.53,
                   "y": 11.65,
                   "h": 26.9,
                   "style": {
@@ -3941,13 +3941,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 8.71,
-                  "w": 54.83,
+                  "x": 11.18,
+                  "w": 52.36,
                   "y": 16.98,
                   "h": 19.43,
                   "style": {
@@ -4119,9 +4119,9 @@
                 {
                   "field": "word",
                   "x": 1.54,
-                  "w": 4.28,
-                  "y": 11.88,
-                  "h": 26.73,
+                  "w": 7.53,
+                  "y": 5,
+                  "h": 22,
                   "show": "backdrop",
                   "style": {
                     "background": "var(--gold)",
@@ -4131,22 +4131,22 @@
                 {
                   "field": "word",
                   "x": 1.54,
-                  "w": 5.27,
-                  "y": 8.15,
-                  "h": 34.19,
+                  "w": 7.53,
+                  "y": 5,
+                  "h": 22,
                   "style": {
                     "fontSize": 1.83,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 6.81,
-                  "w": 56.65,
-                  "y": 16.77,
+                  "x": 10.77,
+                  "w": 52.69,
+                  "y": 3.77,
                   "h": 24.47,
                   "style": {
                     "fontSize": 1.31,
@@ -4317,7 +4317,7 @@
                 {
                   "field": "word",
                   "x": 2.1,
-                  "w": 5.71,
+                  "w": 7.6,
                   "y": 12.15,
                   "h": 26.57,
                   "show": "backdrop",
@@ -4329,7 +4329,7 @@
                 {
                   "field": "word",
                   "x": 2.1,
-                  "w": 7.02,
+                  "w": 7.6,
                   "y": 12.15,
                   "h": 26.57,
                   "style": {
@@ -4337,13 +4337,13 @@
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
-                    "align": "left"
+                    "align": "center"
                   }
                 },
                 {
                   "field": "grade",
-                  "x": 9.12,
-                  "w": 52.98,
+                  "x": 12.45,
+                  "w": 49.65,
                   "y": 18.71,
                   "h": 19.18,
                   "style": {

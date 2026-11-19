@@ -53,6 +53,7 @@ import {
 } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { resolveGeometry } from "./adjustments";
+import { SIZES } from "../share-card/types";
 
 /**
  * The logo a layer is a slot for: an image bound to one logo, crest or
@@ -186,6 +187,71 @@ const boxOn = (l: TemplateLayerV2, size: CardSize): LayerBox | null =>
     : (resolveGeometry(l.geometry as Partial<Record<CardSize, LayerBox>>, l.editedAt, size)
         ?.value ?? null);
 
+/**
+ * The box a logo is drawn in: the placeholder logo is square and fitted
+ * (`object-fit: contain`) in its layer's box, so it is the largest centred
+ * square in that box, in percent of the card.
+ */
+function fittedLogo(b: LayerBox, size: CardSize): LayerBox {
+  const { w: W, h: H } = SIZES[size];
+  const [wp, hp] = [(n(b.w) * W) / 100, (n(b.h) * H) / 100];
+  const side = Math.min(wp, hp);
+  return {
+    x: n(b.x) + ((wp - side) / 2 / W) * 100,
+    y: n(b.y) + ((hp - side) / 2 / H) * 100,
+    w: (side / W) * 100,
+    h: (side / H) * 100,
+  } as LayerBox;
+}
+
+/**
+ * Whether a plate hugs the fitted logo: its edges lie round the logo as drawn
+ * with the same margin on every side (to 1.2% of the card's width, ~13 px). A
+ * crest tile with even padding frames its crest; a plate as wide as a box
+ * the logo is fitted in shows a bar on each side of it.
+ */
+function hugs(p: LayerBox, f: LayerBox, size: CardSize, tol = 1.2): boolean {
+  const { w: W, h: H } = SIZES[size];
+  const margins = [
+    ((n(f.x) - n(p.x)) * W) / 100,
+    ((n(p.x) + n(p.w) - n(f.x) - n(f.w)) * W) / 100,
+    ((n(f.y) - n(p.y)) * H) / 100,
+    ((n(p.y) + n(p.h) - n(f.y) - n(f.h)) * H) / 100,
+  ];
+  return Math.max(...margins) - Math.min(...margins) <= (tol * W) / 100;
+}
+
+/** The fill a shape layer was drawn with: its box's background. */
+function drawnFill(html: string, id: string): string | null {
+  const at = html.indexOf(`data-layer-id="${id}"`);
+  if (at < 0) return null;
+  return /^[^>]*><div style="[^"]*?background:([^;"]+)/.exec(html.slice(at))?.[1] ?? null;
+}
+
+/**
+ * A light plate fill: a literal colour as light as a logo's own white
+ * ground (a club colour or ink token can be dark for some club, so it isn't).
+ */
+function lightFill(fill: unknown): boolean {
+  if (typeof fill !== "string") return false;
+  const f = fill.trim().toLowerCase();
+  if (f === "white") return true;
+  let rgb: number[] | null = null;
+  const hex = /^#([0-9a-f]{3,8})$/.exec(f)?.[1];
+  if (hex && (hex.length === 3 || hex.length === 4))
+    rgb = [0, 1, 2].map((i) => parseInt(hex[i]! + hex[i]!, 16));
+  else if (hex && (hex.length === 6 || hex.length === 8))
+    rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const fn = /^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(f);
+  if (fn) rgb = [fn[1], fn[2], fn[3]].map(Number);
+  if (!rgb) return false;
+  const lin = rgb.map((c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * lin[0]! + 0.7152 * lin[1]! + 0.0722 * lin[2]! >= 0.7;
+}
+
 /** Each sibling list of a page: its own layers, then each group's children. */
 function siblingLists(layers: readonly TemplateLayerV2[]): TemplateLayerV2[][] {
   const lists = [layers as TemplateLayerV2[]];
@@ -255,6 +321,23 @@ function emptyPlates(doc: TemplateDocumentV2, v: Variant, html: string): string[
           !encloses(plate.box, s.box),
       );
       if (peeks) out.push(`${plate.layer.id} (plate edge shows beside ${peeks.layer.id})`);
+      // A dark plate round a logo drawn fitted (contained) in its box: the
+      // logo keeps its shape, so a plate wider or taller than the fitted
+      // logo shows as a dark bar on both sides of it (card 978, retest 6).
+      // A plate under one logo hugs the logo as drawn, or is light.
+      const bars = on.find(
+        (s) =>
+          slotOf(s.layer) &&
+          drawn.has(s.layer.id) &&
+          n((s.layer.style as Style | undefined)?.opacity ?? 1) > 0.3 &&
+          a <= 4 * area(s.box) &&
+          area(s.box) <= 4 * a &&
+          overlap(plate.box, s.box) >= 0.6 * Math.min(a, area(s.box)) &&
+          !lightFill(drawnFill(html, plate.layer.id)) &&
+          !hugs(plate.box, fittedLogo(s.box, v.size), v.size),
+      );
+      if (bars)
+        out.push(`${plate.layer.id} (dark plate edge beside the fitted logo ${bars.layer.id})`);
       // Anything drawn that sits in the plate (its label, a logo, a stand-in).
       const holdsContent = on.some(
         (o) =>
@@ -449,6 +532,26 @@ describe("An empty slot draws nothing", () => {
       ),
     ];
     expect(folded).toEqual([]);
+  }, 600_000);
+
+  it("a single sponsor's plate hugs its fitted logo or is light, every look, kind and size (card 978)", () => {
+    // Retest 6: a lone sponsor tile showed a dark edge on both sides. The logo
+    // is fitted (contained) in its box, so a dark plate as wide as the box
+    // shows beside a squarish logo. Checked against the logo as drawn.
+    const { failures } = sweepEmptySlots(all);
+    const single = failures.filter((f) => / sponsors-1: .*fitted logo/.test(f));
+    expect(single).toEqual([]);
+    expect(lightFill("#FFFFFFEB")).toBe(true);
+    expect(lightFill("var(--accent-ink)")).toBe(false);
+    expect(lightFill("#111111")).toBe(false);
+    // Bold Type's Team List tile on main: a 194 x 86 px plate round an 86 px square logo.
+    const tile = { x: 21.44, y: 87.84, w: 18, h: 7.92 };
+    expect(hugs(tile, fittedLogo(tile, "square"), "square")).toBe(false);
+    // Club Kit's crest tile: 6 px of plate round its crest on every side.
+    const crest = { x: 9, y: 41.38, w: 7.8, h: 7.8 };
+    expect(hugs({ x: 8.4, y: 40.78, w: 9, h: 9 }, fittedLogo(crest, "square"), "square")).toBe(
+      true,
+    );
   }, 600_000);
 
   it("Duotone's day pages are swept with 0, 1 and 3 sponsors and draw no empty slot (retest 6)", () => {

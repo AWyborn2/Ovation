@@ -1,6 +1,6 @@
 {
   "name": "Club Kit teamOfWeek",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -691,6 +691,246 @@
             },
             "sig": "photo:1vf10xz086a8lg",
             "link": "card-l20"
+          },
+          {
+            "kind": "shape",
+            "id": "card-l20-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              },
+              "landscape": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [24, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "card-l20-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 62.74,
+                "y": 35.74,
+                "w": 28.52,
+                "h": 28.52
+              },
+              "landscape": {
+                "x": 62.74,
+                "y": 24.65,
+                "w": 28.52,
+                "h": 50.7
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "card-l21-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 24
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 63.33],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "card-l21-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 78,
+                "y": 11,
+                "w": 16,
+                "h": 12.8
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "card-l22-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 46
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 86.55],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "card-l22-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 30,
+                "y": 11,
+                "w": 40,
+                "h": 22.5
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",

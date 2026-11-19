@@ -1,6 +1,6 @@
 {
   "name": "Club Kit match day",
-  "version": 9,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1496,7 +1496,7 @@
               "square": {
                 "x": 6,
                 "y": 27.86,
-                "w": 44,
+                "w": 52,
                 "h": 29.68
               },
               "story": {
@@ -1508,9 +1508,9 @@
             },
             "sizes": ["square", "story"],
             "fit": {
-              "minScale": 0.45,
+              "minScale": 0.3,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:0o9p7g91dz3zw2"
           },
@@ -1539,7 +1539,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:0tdrmp301x8jhk"
           },
@@ -1568,7 +1568,7 @@
             "fit": {
               "minScale": 0.45,
               "maxLines": 2,
-              "ellipsis": true
+              "ellipsis": false
             },
             "sig": "text:0qbpe2p1998hti"
           },

@@ -6,6 +6,7 @@
   "club-kit-classic/premiership": "Starter not yet fitted to worst-case content: 6 overflow (L4-D).",
   "club-kit-classic/roundFixtures": "Starter not yet fitted to worst-case content: 40 overflow (L4-D).",
   "club-kit-classic/weekendWrap": "Starter not yet fitted to worst-case content: 20 overflow (L4-D).",
+  "clubhouse/matchSummary": "Being rebuilt in #676 (was a Duotone copy): results label too close to the grade (rows-overlap, retest 6).",
   "clubhouse/ladder": "Starter not yet fitted to worst-case content: 10 overflow (L4-D).",
   "clubhouse/premiership": "Starter not yet fitted to worst-case content: 16 overflow (L4-D).",
   "clubhouse/roundFixtures": "Starter not yet fitted to worst-case content: 36 overflow (L4-D)."

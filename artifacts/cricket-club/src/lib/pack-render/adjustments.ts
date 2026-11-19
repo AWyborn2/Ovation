@@ -49,6 +49,7 @@ import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-f
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import {
   emptySlotFrames,
+  sponsorLogoPlates,
   groupDepthAllowed,
   layerShows,
   renderGroup,
@@ -620,8 +621,16 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
         // A photo the row carries (e.g. a player's); a junior card shows one only
         // behind the server's positive marker (ADR-007).
         const src = ctx.junior && !ctx.juniorPhotoAllowed ? "" : (row[cell.field] ?? "").trim();
-        if (!src) return "";
         const radius = style.radius != null ? `;border-radius:${num(style.radius)}px` : "";
+        if (!src) {
+          // No photo (none, or withheld on a junior card): a v2 list draws the
+          // look's no-photo design in the photo's place, the club's crest,
+          // faint, as a card's photo frame does (#664; dev retest 6, Team of
+          // the Week's empty ovals). A crest cell drawn as an image is a logo.
+          const crest = (ctx.brand?.logoUrl ?? "").trim();
+          if (ctx.formatVersion !== 2 || !crest || LOGO_ROW_FIELDS.includes(cell.field)) return "";
+          return `<div data-row-cell="${escapeHtml(cell.field)}" ${NO_PHOTO_ATTR}="1" style="${place.join(";")}${radius};display:flex;align-items:center;justify-content:center"><img src="${escapeHtml(crest)}" alt="" style="width:${NO_PHOTO_CREST * 100}%;height:${NO_PHOTO_CREST * 100}%;object-fit:contain;display:block;opacity:${NO_PHOTO_OPACITY}" /></div>`;
+        }
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`;
       }
       // Cells stay on one line so an overflow shows as width, which the fit
@@ -660,6 +669,12 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
   const marked = squeeze < 1 ? ` ${ROWS_SQUEEZE_ATTR}="${squeeze.toFixed(4)}"` : "";
   return `<div${marked} style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
 }
+
+/** Set on a list row's photo cell that draws the no-photo crest in place of a photo. */
+export const NO_PHOTO_ATTR = "data-no-photo";
+/** The no-photo crest's size in its photo cell, and how faint it is. */
+const NO_PHOTO_CREST = 0.6;
+const NO_PHOTO_OPACITY = 0.55;
 
 /** Set on a list drawn smaller to fit every row: the scale, below 1. */
 export const ROWS_SQUEEZE_ATTR = "data-rows-squeeze";
@@ -970,7 +985,15 @@ export function renderFreeLayers(
   const ownLayers = (siblings: readonly TemplateLayerV2[], styled = v2): TemplateLayerV2[] => {
     if (!styled) return [...siblings];
     const frames = emptySlotFrames(siblings, boxOn, slotFilled, layerTokens, { drawn: shown });
-    return frames.size ? siblings.filter((layer) => !frames.has(layer)) : [...siblings];
+    const own = frames.size ? siblings.filter((layer) => !frames.has(layer)) : [...siblings];
+    // A drawn sponsor logo's dark plate is drawn light (dev retest 6, card 978).
+    const plates = sponsorLogoPlates(own, boxOn, slotFilled, layerTokens);
+    if (plates.size === 0) return own;
+    return own.map((layer) =>
+      plates.has(layer)
+        ? ({ ...layer, style: { ...layer.style, fill: SPONSOR_LOGO_PLATE } } as TemplateLayerV2)
+        : layer,
+    );
   };
 
   /**

@@ -1,6 +1,6 @@
 {
   "name": "Broadcast team of week",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -656,6 +656,18 @@
                   "w": 60,
                   "y": 0,
                   "h": 46,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "rgba(255,255,255,.08)",
+                    "radius": 9999
+                  }
+                },
+                {
+                  "field": "photo",
+                  "x": 20,
+                  "w": 60,
+                  "y": 0,
+                  "h": 46,
                   "show": "image",
                   "style": {
                     "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
@@ -735,6 +747,18 @@
               "rowHeight": 27.6,
               "gap": 1.68,
               "cells": [
+                {
+                  "field": "photo",
+                  "x": 20,
+                  "w": 60,
+                  "y": 0,
+                  "h": 46,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "rgba(255,255,255,.08)",
+                    "radius": 9999
+                  }
+                },
                 {
                   "field": "photo",
                   "x": 20,
@@ -826,6 +850,18 @@
                   "w": 60,
                   "y": 0,
                   "h": 46,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "rgba(255,255,255,.08)",
+                    "radius": 9999
+                  }
+                },
+                {
+                  "field": "photo",
+                  "x": 20,
+                  "w": 60,
+                  "y": 0,
+                  "h": 46,
                   "show": "image",
                   "style": {
                     "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
@@ -905,6 +941,18 @@
               "rowHeight": 17.64,
               "gap": 1.03,
               "cells": [
+                {
+                  "field": "photo",
+                  "x": 20,
+                  "w": 60,
+                  "y": 0,
+                  "h": 46,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "rgba(255,255,255,.08)",
+                    "radius": 9999
+                  }
+                },
                 {
                   "field": "photo",
                   "x": 20,

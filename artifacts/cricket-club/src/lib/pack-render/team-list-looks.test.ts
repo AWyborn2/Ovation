@@ -827,3 +827,99 @@ describe("Team of the Week title clear of the club header and date", () => {
     );
   });
 });
+
+// ── Results day rows: the result label clear of the text beside it ─────────
+
+/** Pages being rebuilt on another branch (#676), held to the rule once that lands. */
+const PENDING_REBUILD = ["clubhouse/matchSummary"];
+
+/** The space kept between a result row's label ("WON", "RESULT") and the text beside it, in px. */
+const RESULT_LABEL_GAP = 10;
+
+type Cell = RowsLayerV2["rows"]["cells"][number];
+const isText = (c: Cell) => c.show === undefined || c.show === "text";
+/** Two cells on the same line of the row (their bands overlap by more than a sliver). */
+const sameLine = (a: Cell, b: Cell) =>
+  Math.min((a.y ?? 0) + (a.h ?? 100), (b.y ?? 0) + (b.h ?? 100)) - Math.max(a.y ?? 0, b.y ?? 0) >
+  0.5;
+
+/**
+ * Each results day row whose result label runs into the text beside it (Ash,
+ * dev retest 6, set 992: Duotone's "RESULT" ran into "Year 8"): the label's
+ * cell must sit on its pill (where it has one) and end at least
+ * {@link RESULT_LABEL_GAP} px before any text cell on its line to its right,
+ * on every size the list draws.
+ */
+function resultLabelCollisions(name: string, doc: TemplateDocumentV2): string[] {
+  const out: string[] = [];
+  for (const layer of flattenLayers(doc.pages.day?.layers ?? [])) {
+    if (layer.kind !== "rows") continue;
+    const spec = (layer as RowsLayerV2).rows;
+    const cells = spec.cells;
+    // A row is one column's width: a landscape day draws two side by side.
+    const columns = rowsColumns(spec);
+    const colW = (100 - (spec.columnGap ?? 0) * (columns - 1)) / columns;
+    for (const size of SIZE_KEYS) {
+      if (layer.sizes && !layer.sizes.includes(size)) continue;
+      const box = (layer.geometry as Partial<Record<CardSize, Box>> | undefined)?.[size];
+      if (!box) continue;
+      const rowPx = (((box.w / 100) * SIZES[size].w) / 100) * colW;
+      for (const word of cells.filter((c) => c.field === "word" && isText(c))) {
+        const pill = cells.find(
+          (c) => c.field === "word" && c.show === "backdrop" && c.w >= 2 && sameLine(c, word),
+        );
+        if (pill && (word.x < pill.x - 0.01 || word.x + word.w > pill.x + pill.w + 0.01))
+          out.push(`${name} day ${size}: ${layer.id} result label runs off its pill`);
+        const right = word.x + word.w;
+        for (const other of cells) {
+          if (other === word || !isText(other) || !sameLine(word, other)) continue;
+          if (other.x < right - 0.01) continue; // starts under the label: another line's text
+          const gap = ((other.x - right) / 100) * rowPx;
+          if (gap < RESULT_LABEL_GAP)
+            out.push(
+              `${name} day ${size}: ${layer.id} result label ${Math.round(gap)} px from ${other.field}`,
+            );
+        }
+      }
+    }
+  }
+  return out;
+}
+
+describe("Results day rows: the result label clear of the grade and team", () => {
+  const bundles = bundlesMatching(/^matchSummary\.json$/).filter(
+    (b) => b.listed && !!b.doc.pages.day,
+  );
+
+  it("reads every look's results day page", () => {
+    expect(bundles.map((b) => b.name)).toContain("duotone/matchSummary");
+    expect(bundles.length).toBeGreaterThanOrEqual(10);
+  });
+
+  // Clubhouse's results day page is being rebuilt on another branch (#676; it
+  // was a Duotone copy): it joins this list with that rebuild.
+  for (const { name, doc } of bundles.filter((b) => !PENDING_REBUILD.includes(b.name)))
+    it(`${name}: the result label keeps ${RESULT_LABEL_GAP} px from the text beside it, every size`, () => {
+      expect(resultLabelCollisions(name, doc)).toEqual([]);
+    });
+
+  it("would catch Duotone's rows as they were (set 992: RESULT into Year 8)", () => {
+    const duotone = bundles.find((b) => b.name === "duotone/matchSummary")!;
+    const was = structuredClone(duotone.doc);
+    for (const l of flattenLayers(was.pages.day!.layers))
+      if (l.id === "day-l20" && l.kind === "rows") {
+        const cells = (l as RowsLayerV2).rows.cells;
+        const word = cells.find((c) => c.field === "word" && isText(c))!;
+        const grade = cells.find((c) => c.field === "grade" && isText(c))!;
+        word.w = 9.26;
+        word.style = { ...word.style, align: "left" };
+        grade.x = 9.26;
+      }
+    expect(resultLabelCollisions("duotone/matchSummary", was)).toEqual(
+      expect.arrayContaining([
+        "duotone/matchSummary day square: day-l20 result label runs off its pill",
+        "duotone/matchSummary day square: day-l20 result label 0 px from grade",
+      ]),
+    );
+  });
+});
