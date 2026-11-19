@@ -910,6 +910,10 @@ describe("Results day rows: the result label clear of the grade and team", () =>
         const cells = (l as RowsLayerV2).rows.cells;
         const word = cells.find((c) => c.field === "word" && isText(c))!;
         const grade = cells.find((c) => c.field === "grade" && isText(c))!;
+        const pill = cells.find((c) => c.field === "word" && c.show === "backdrop")!;
+        // As set 992 drew it: an 8.17-wide pill, the label from its left edge.
+        pill.w = 8.17;
+        word.x = 0;
         word.w = 9.26;
         word.style = { ...word.style, align: "left" };
         grade.x = 9.26;
@@ -918,6 +922,100 @@ describe("Results day rows: the result label clear of the grade and team", () =>
       expect.arrayContaining([
         "duotone/matchSummary day square: day-l20 result label runs off its pill",
         "duotone/matchSummary day square: day-l20 result label 0 px from grade",
+      ]),
+    );
+  });
+});
+
+// ── Results day rows: Duotone's result pill (retest 7) ────────────────────
+
+/** The padding Duotone's result pill keeps each side of its label, in px. */
+const RESULT_PILL_PADDING = 8;
+
+/**
+ * Each Duotone results day row whose result pill is drawn wrong (Ash, retest
+ * 7): the label ("RESULT") must keep {@link RESULT_PILL_PADDING} px of the
+ * pill each side, and no square-cornered backdrop may sit on the rounded
+ * pill's edge (the pill's old frame, four square strips, showed as notches at
+ * its corners).
+ */
+function resultPillFaults(name: string, doc: TemplateDocumentV2): string[] {
+  const out: string[] = [];
+  for (const layer of flattenLayers(doc.pages.day?.layers ?? [])) {
+    if (layer.kind !== "rows") continue;
+    const spec = (layer as RowsLayerV2).rows;
+    const cells = spec.cells;
+    const columns = rowsColumns(spec);
+    const colW = (100 - (spec.columnGap ?? 0) * (columns - 1)) / columns;
+    const pill = cells.find(
+      (c) => c.field === "word" && c.show === "backdrop" && (c.style?.radius ?? 0) > 0,
+    );
+    const word = cells.find((c) => c.field === "word" && isText(c));
+    if (!pill || !word) continue;
+    const onEdge = cells.filter(
+      (c) =>
+        c !== pill &&
+        c.show === "backdrop" &&
+        !(c.style?.radius ?? 0) &&
+        c.x < pill.x + pill.w &&
+        c.x + c.w > pill.x &&
+        (c.y ?? 0) < (pill.y ?? 0) + (pill.h ?? 100) &&
+        (c.y ?? 0) + (c.h ?? 100) > (pill.y ?? 0) &&
+        // Within the pill's box, not a full-row rule the pill sits on.
+        c.w < 100,
+    );
+    if (onEdge.length)
+      out.push(
+        `${name} day: ${layer.id} square backdrop on the pill (${onEdge.map((c) => c.field).join(", ")})`,
+      );
+    for (const size of SIZE_KEYS) {
+      if (layer.sizes && !layer.sizes.includes(size)) continue;
+      const box = (layer.geometry as Partial<Record<CardSize, Box>> | undefined)?.[size];
+      if (!box) continue;
+      const rowPx = (((box.w / 100) * SIZES[size].w) / 100) * colW;
+      const left = ((word.x - pill.x) / 100) * rowPx;
+      const right = ((pill.x + pill.w - (word.x + word.w)) / 100) * rowPx;
+      if (Math.min(left, right) < RESULT_PILL_PADDING)
+        out.push(
+          `${name} day ${size}: ${layer.id} result label ${Math.round(Math.min(left, right))} px from the pill's edge`,
+        );
+    }
+  }
+  return out;
+}
+
+describe("Results day rows: Duotone's result pill is padded and has no notches", () => {
+  const duotone = bundlesMatching(/^matchSummary\.json$/).find(
+    (b) => b.name === "duotone/matchSummary",
+  )!;
+
+  it("keeps the label off the pill's edges and draws the pill whole", () => {
+    expect(resultPillFaults(duotone.name, duotone.doc)).toEqual([]);
+  });
+
+  it("would catch the pill as it was (label edge to edge, framed by square strips)", () => {
+    const was = structuredClone(duotone.doc);
+    for (const l of flattenLayers(was.pages.day!.layers))
+      if (l.id === "day-l20" && l.kind === "rows") {
+        const cells = (l as RowsLayerV2).rows.cells;
+        const pill = cells.find((c) => c.field === "word" && c.show === "backdrop")!;
+        const word = cells.find((c) => c.field === "word" && isText(c))!;
+        word.x = pill.x;
+        word.w = pill.w;
+        cells.push({
+          field: "grade",
+          x: pill.x,
+          w: 0.22,
+          y: pill.y,
+          h: pill.h,
+          show: "backdrop",
+          style: { background: "var(--gold)" },
+        } as Cell);
+      }
+    expect(resultPillFaults(duotone.name, was)).toEqual(
+      expect.arrayContaining([
+        "duotone/matchSummary day: day-l20 square backdrop on the pill (grade)",
+        "duotone/matchSummary day square: day-l20 result label 0 px from the pill's edge",
       ]),
     );
   });

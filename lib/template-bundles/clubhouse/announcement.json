@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse announcement",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -395,21 +395,21 @@
             },
             "geometry": {
               "square": {
-                "x": 6,
+                "x": 13.41,
                 "y": 91.6,
-                "w": 51.04,
+                "w": 43.63,
                 "h": 4.4
               },
               "portrait": {
-                "x": 6,
+                "x": 13.41,
                 "y": 93.28,
-                "w": 51.04,
+                "w": 43.63,
                 "h": 3.52
               },
               "story": {
-                "x": 6,
+                "x": 13.4,
                 "y": 95.28,
-                "w": 51.04,
+                "w": 43.64,
                 "h": 2.47
               }
             },
@@ -432,9 +432,9 @@
             },
             "geometry": {
               "landscape": {
-                "x": 3.15,
+                "x": 7.65,
                 "y": 91.6,
-                "w": 54.35,
+                "w": 49.85,
                 "h": 4.4
               }
             },
@@ -924,7 +924,7 @@
             "id": "bubble-sparkle-1-1",
             "kind": "text",
             "name": "Sparkle",
-            "content": "\u2726",
+            "content": "✦",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 4.5,
@@ -959,7 +959,7 @@
             "id": "bubble-sparkle-1-2",
             "kind": "text",
             "name": "Sparkle",
-            "content": "\u2726",
+            "content": "✦",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 2.36,
@@ -982,7 +982,7 @@
             "id": "bubble-sparkle-2-1",
             "kind": "text",
             "name": "Sparkle",
-            "content": "\u2726",
+            "content": "✦",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 3.6,
@@ -1017,7 +1017,7 @@
             "id": "bubble-sparkle-2-2",
             "kind": "text",
             "name": "Sparkle",
-            "content": "\u2726",
+            "content": "✦",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 1.89,
@@ -1040,7 +1040,7 @@
             "id": "bubble-sparkle-3-1",
             "kind": "text",
             "name": "Sparkle",
-            "content": "\u2726",
+            "content": "✦",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 2.7,
@@ -1075,7 +1075,7 @@
             "id": "bubble-sparkle-3-2",
             "kind": "text",
             "name": "Sparkle",
-            "content": "\u2726",
+            "content": "✦",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 1.42,
