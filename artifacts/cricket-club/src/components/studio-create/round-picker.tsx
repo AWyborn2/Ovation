@@ -9,7 +9,7 @@
  * theirs, which can still be ticked or unticked. Switching to dates keeps those
  * dates; switching back keeps the rounds picked.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getGetCarouselRoundsQueryKey,
   getGetJuniorCarouselRoundsQueryKey,
@@ -83,12 +83,19 @@ export function useRoundPick(s: Target, setType: CarouselSetType, audience: "sen
   );
 
   // Carry the pick to the carousel: the rounds' dates and games, or (dates) every
-  // game between whatever dates are showing.
+  // game between whatever dates are showing. Each game keeps the tick the admin
+  // gave it across the switch, both ways; the extra games the dates bring in come
+  // in unticked, so the switch never ticks more than the admin did.
+  // Opening on dates (no labelled round) ticks every game, as before.
   const sig = JSON.stringify([ready, mode, season, keys, !!seasonRow]);
+  const lastMode = useRef<PickMode | null>(null);
   useEffect(() => {
     if (!ready) return;
     const span = spanOf(picked);
-    if (mode === "dates") s.applyRange({ from: s.from, to: s.to, ids: null });
+    const switched = lastMode.current === "rounds";
+    lastMode.current = mode;
+    if (mode === "dates")
+      s.applyRange({ from: s.from, to: s.to, ids: null }, switched ? "unticked" : "ticked");
     else if (span) s.applyRange(span);
     else s.applyRange({ from: s.from, to: s.to, ids: [] });
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -278,7 +278,15 @@ describe("matchDayFixtureContent", () => {
 describe("bookends", () => {
   it("round labels combine like the carousel title always has", () => {
     expect(combinedRoundLabel(["5", "R5", "Round 5"])).toBe("ROUND 5");
-    expect(combinedRoundLabel(["5", "6"])).toBe("MIXED ROUNDS");
+    // Numbered rounds: their run, in number order, en dash as card dates use it.
+    expect(combinedRoundLabel(["5", "4", "Round 5"])).toBe("ROUNDS 4–5");
+    expect(combinedRoundLabel(["6", "4", "5"])).toBe("ROUNDS 4–6");
+    expect(combinedRoundLabel(["4", "6"])).toBe("ROUNDS 4 & 6");
+    expect(combinedRoundLabel(["1", "2", "3", "5"])).toBe("ROUNDS 1–3 & 5");
+    // Too many to list on a cover, a final among them, or an unknown round: mixed.
+    expect(combinedRoundLabel(["1", "3", "5", "7", "9", "11"])).toBe("MIXED ROUNDS");
+    expect(combinedRoundLabel(["5", "Semi Final"])).toBe("MIXED ROUNDS");
+    expect(combinedRoundLabel(["5", "6", ""])).toBe("MIXED ROUNDS");
     expect(combinedRoundLabel(["5", ""])).toBe("");
     expect(combinedRoundLabel([])).toBe("");
     expect(combinedRoundLabel(["Semi Final"])).toBe("SEMI FINAL");
@@ -293,6 +301,10 @@ describe("bookends", () => {
       fixtureCount: 3,
     };
     expect(dateRangeLabel("2024-10-11", "2024-10-13")).toBe("FRI 11 OCT – SUN 13 OCT");
+    // One day prints once (round 9 retest, set 1021).
+    expect(dateRangeLabel("2026-11-14", "2026-11-14")).toBe("SAT 14 NOV");
+    expect(dateRangeLabel("2026-11-14", "")).toBe("SAT 14 NOV");
+    expect(matchDayTitleContent({ ...opts, to: opts.from }).dateRange).toBe("FRI 11 OCT");
     expect(matchDayTitleContent(opts)).toEqual({
       kind: "matchDay",
       page: "title",

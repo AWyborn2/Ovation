@@ -384,3 +384,92 @@ describe("rounds and sources agree", () => {
     expect(wide.body.fixtures.map((f: { id: number }) => f.id).sort()).toEqual(allIds(body).sort());
   });
 });
+
+describe("round 9 retest: next round and finals order", () => {
+  // A fixed "today" (Thu 19 Nov 2026, club time); only Date is faked, so the
+  // database and HTTP timers run as normal.
+  const TODAY = new Date("2026-11-19T02:00:00Z");
+  const CLUB_C = 96_000 + (STAMP % 1000);
+  let tenantC = 0;
+  let cookieC = "";
+  const asC = (r: request.Test) => r.set("x-tenant-id", String(tenantC)).set("Cookie", cookieC);
+  const at = (day: string) => new Date(`${day}T05:30:00Z`);
+
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: TODAY });
+    const [t] = await db
+      .insert(tenantsTable)
+      .values({
+        slug: `rounds-c-${STAMP}`,
+        name: "Rounds c",
+        plan: "pro",
+        centralClubId: CLUB_C,
+        readsFromCentral: true,
+      })
+      .returning();
+    tenantC = t.id;
+    const [admin] = await db
+      .insert(adminsTable)
+      .values({
+        tenantId: t.id,
+        username: `rounds-c-${STAMP}`,
+        displayName: "c",
+        passwordHash: "x",
+      })
+      .returning();
+    cookieC = `${SESSION_COOKIE}=${encodeSession({ adminId: admin.id, issuedAt: Date.now() })}`;
+    const f = { tenantId: tenantC, opponentName: "Visitors", isHome: true, source: "manual" };
+    await db.insert(fixturesTable).values([
+      // Round 1 was in October, but Female A Grade plays its Round 1 on 28 Nov.
+      { ...f, grade: "A Grade", roundLabel: "Round 1", startAt: at("2026-10-10") },
+      { ...f, grade: "B Grade", roundLabel: "Round 1", startAt: at("2026-10-10") },
+      { ...f, grade: "Female A Grade", roundLabel: "Round 1", startAt: at("2026-11-28") },
+      { ...f, grade: "A Grade", roundLabel: "Round 6", startAt: at("2026-11-14") },
+      { ...f, grade: "A Grade", roundLabel: "Round 7", startAt: at("2026-11-21") },
+      { ...f, grade: "B Grade", roundLabel: "Round 7", startAt: at("2026-11-22") },
+      { ...f, grade: "A Grade", roundLabel: "Round 8", startAt: at("2026-11-28") },
+    ]);
+    central.byClub.set(CLUB_C, [
+      cm(9_300_001, "A Grade", 2025, 17, "2026-02-14"),
+      cm(9_300_002, "A Grade", 2025, null, "2026-02-21", { stage: "Semi Final" }),
+      cm(9_300_003, "B Grade", 2025, 18, "2026-02-28"),
+      cm(9_300_004, "A Grade", 2025, null, "2026-03-07", { stage: "Grand Final" }),
+      cm(9_300_005, "B Grade", 2025, null, "2026-02-21", { stage: "Qualifying Final" }),
+    ]);
+  });
+
+  afterAll(async () => {
+    vi.useRealTimers();
+    if (!tenantC) return;
+    await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, tenantC));
+    await db.delete(adminsTable).where(eq(adminsTable.tenantId, tenantC));
+    await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantC));
+  });
+
+  it("opens Team List and Match Day on the next round, not one a late game stretches", async () => {
+    for (const setType of ["teamList", "matchDay"]) {
+      const body = await rounds(asC, setType);
+      expect(body.defaultSeason).toBe(2026);
+      expect(body.defaultRounds).toEqual(["r:round 7"]);
+      const r1 = body.seasons[0].rounds.find((r) => r.label === "Round 1")!;
+      expect([r1.from, r1.to, r1.gameIds.length]).toEqual(["2026-10-10", "2026-11-28", 3]);
+    }
+  });
+
+  it("keeps Results opening on the most recent completed round", async () => {
+    const body = await rounds(asC, "results");
+    expect(body.defaultSeason).toBe(2025);
+    expect(body.defaultRounds).toEqual(["r:grand final"]);
+  });
+
+  it("sorts finals after every numbered round, in finals order", async () => {
+    const body = await rounds(asC, "matchSummary");
+    expect(body.seasons[0].rounds.map((r) => r.label)).toEqual([
+      "Round 17",
+      "Round 18",
+      "Qualifying Final",
+      "Semi Final",
+      "Grand Final",
+    ]);
+  });
+});

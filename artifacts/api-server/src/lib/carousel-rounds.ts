@@ -76,10 +76,46 @@ export function roundLabelOf(round: string | number | null | undefined): string 
 }
 
 /**
- * Group games into seasons (newest first) and rounds (date order, "Other games"
- * last), and pick the round the picker opens on: the next round for an upcoming
- * set (else the latest), the most recent completed round for a results set. The
- * default never picks "Other games"; with no labelled round it is empty.
+ * Where a finals label sorts among the finals, in the order a finals series is
+ * played; null for any other label. A label that names a final some other way
+ * ("Final", "Finals Week 2") sorts after the preliminary final.
+ */
+export function finalsRank(label: string): number | null {
+  const t = label
+    .toLowerCase()
+    .replace(/[\s-]+/g, " ")
+    .trim();
+  const short = /^(qf|ef|sf|pf|gf)\s?\d*$/.exec(t)?.[1];
+  if (short) return { qf: 3, ef: 2, sf: 4, pf: 5, gf: 7 }[short]!;
+  if (!/\bfinals?\b|\bsemis?\b/.test(t)) return null;
+  if (/\bqualifying\b/.test(t)) return 1;
+  if (/\belimination\b/.test(t)) return 2;
+  if (/\bquarter\b/.test(t)) return 3;
+  if (/\bsemis?\b/.test(t)) return 4;
+  if (/\bpreliminary\b|\bprelim\b/.test(t)) return 5;
+  if (/\bgrand\b/.test(t)) return 7;
+  return 6;
+}
+
+/** The days a "next round" may have started before today and still be the round on now. */
+const CURRENT_ROUND_DAYS = 6;
+
+const daysBefore = (day: string, n: number) =>
+  new Date(Date.parse(`${day}T00:00:00Z`) - n * 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * Group games into seasons (newest first) and rounds ("Other games" last), and
+ * pick the round the picker opens on. Rounds run in date order, and finals
+ * (qualifying, elimination, semi, preliminary, grand) after every other round,
+ * in finals order.
+ *
+ * An upcoming set opens on the next round: of the rounds with games still to
+ * play (today on), the one whose next game is soonest, counting only rounds that
+ * start today or later or started within the last week, so a round label
+ * another grade plays weeks later (a late Round 1) does not hold the picker on
+ * an old round. Failing that, any round with a game to play; failing that, the
+ * latest. A results set opens on the most recent completed round. The default
+ * never picks "Other games"; with no labelled round it is empty.
  */
 export function groupCarouselRounds(
   games: readonly RoundGame[],
@@ -87,27 +123,32 @@ export function groupCarouselRounds(
   today: string,
 ): CarouselRounds {
   const bySeason = new Map<number, Map<string, CarouselRound>>();
+  const days = new Map<CarouselRound, string[]>();
   for (const g of games) {
     const label = roundLabelOf(g.round);
     const key = label ? `r:${label.toLowerCase()}` : "other";
     let rounds = bySeason.get(g.season);
     if (!rounds) bySeason.set(g.season, (rounds = new Map()));
-    const r = rounds.get(key);
-    if (!r)
-      rounds.set(key, {
+    let r = rounds.get(key);
+    if (!r) {
+      r = {
         key,
         label: label ?? OTHER_GAMES,
         from: g.day,
         to: g.day,
         other: !label,
         gameIds: [g.id],
-      });
-    else {
+      };
+      rounds.set(key, r);
+      days.set(r, [g.day]);
+    } else if (!r.gameIds.includes(g.id)) {
       if (g.day < r.from) r.from = g.day;
       if (g.day > r.to) r.to = g.day;
-      if (!r.gameIds.includes(g.id)) r.gameIds.push(g.id);
+      r.gameIds.push(g.id);
+      days.get(r)!.push(g.day);
     }
   }
+  const finals = (r: CarouselRound) => (r.other ? null : finalsRank(r.label));
   const seasons = [...bySeason.entries()]
     .sort(([a], [b]) => b - a)
     .map(([season, rounds]) => ({
@@ -116,6 +157,7 @@ export function groupCarouselRounds(
       rounds: [...rounds.values()].sort(
         (a, b) =>
           Number(a.other) - Number(b.other) ||
+          (finals(a) ?? 0) - (finals(b) ?? 0) ||
           a.from.localeCompare(b.from) ||
           a.to.localeCompare(b.to) ||
           a.label.localeCompare(b.label, "en-AU", { numeric: true }),
@@ -124,18 +166,33 @@ export function groupCarouselRounds(
   const labelled = seasons.flatMap((s) =>
     s.rounds.filter((r) => !r.other).map((r) => ({ season: s.season, r })),
   );
-  const latest = (xs: typeof labelled) =>
-    xs.reduce<(typeof labelled)[number] | null>(
+  type Entry = (typeof labelled)[number];
+  const latest = (xs: readonly Entry[]) =>
+    xs.reduce<Entry | null>(
       (best, x) =>
         !best || x.r.to > best.r.to || (x.r.to === best.r.to && x.r.from > best.r.from) ? x : best,
       null,
     );
-  const next = labelled
-    .filter((x) => x.r.to >= today)
-    .reduce<(typeof labelled)[number] | null>(
-      (best, x) => (!best || x.r.from < best.r.from ? x : best),
+  // Each round's soonest game still to play (today counts: a game today is on).
+  const toPlay = labelled
+    .map((x) => ({
+      ...x,
+      nextDay: days
+        .get(x.r)!
+        .filter((d) => d >= today)
+        .sort()[0],
+    }))
+    .filter((x): x is Entry & { nextDay: string } => x.nextDay !== undefined);
+  const soonest = (xs: typeof toPlay) =>
+    xs.reduce<(typeof toPlay)[number] | null>(
+      (best, x) =>
+        !best || x.nextDay < best.nextDay || (x.nextDay === best.nextDay && x.r.from > best.r.from)
+          ? x
+          : best,
       null,
     );
+  const recent = daysBefore(today, CURRENT_ROUND_DAYS);
+  const next = soonest(toPlay.filter((x) => x.r.from >= recent)) ?? soonest(toPlay);
   const pick = upcoming ? (next ?? latest(labelled)) : latest(labelled);
   return {
     seasons,

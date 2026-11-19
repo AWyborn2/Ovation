@@ -155,6 +155,7 @@ describe("carousel templates across packs", () => {
       for (const size of SIZES) {
         for (const roundLabel of [
           "MIXED ROUNDS",
+          "ROUNDS 4–5",
           "GRAND FINAL",
           "ROUND 12",
           "PRELIMINARY FINAL — WESTERN DISTRICT CHAMPIONSHIP",

@@ -65,6 +65,50 @@ export const WEEKEND_PACK_ID = "club-kit-v1";
 export const MAX_CAROUSEL_GAMES = 18;
 
 type Pick = { id: number; included: boolean };
+
+/**
+ * How a rounds pick (Create's Season and Round picker) treats the games when its
+ * dates or games change: each game the admin has already seen keeps its tick, and
+ * a game seen for the first time comes in ticked (a round just picked) or unticked
+ * (the extra games "Use dates instead" brings into view). Null: a new range or set
+ * type, which ticks every game.
+ */
+export type KeepPicks = "ticked" | "unticked" | null;
+
+/**
+ * The picks for the games now in range (round 9 retest, A5).
+ *  - `keep` set (a rounds pick): games in `remembered` keep their tick, in the
+ *    order last shown; others come in as `keep` says, but an automatic tick
+ *    never goes past MAX_CAROUSEL_GAMES (the admin's own ticks count first).
+ *  - a new scope (or no picks yet): every game ticked, as the Weekend Carousel
+ *    page always has (it shows the limit rather than drop any).
+ *  - the same scope refreshed: picks kept, new games unticked.
+ */
+export function nextPicks(
+  previous: readonly Pick[],
+  ids: readonly number[],
+  o: {
+    reset: boolean;
+    keep: KeepPicks;
+    remembered: ReadonlyMap<number, boolean>;
+    order: readonly number[];
+  },
+): Pick[] {
+  const inRange = new Set(ids);
+  if (o.keep) {
+    const ordered = [...new Set([...o.order.filter((id) => inRange.has(id)), ...ids])];
+    let ticked = ordered.filter((id) => o.remembered.get(id) === true).length;
+    const auto = () => o.keep === "ticked" && ticked < MAX_CAROUSEL_GAMES && ++ticked > 0;
+    return ordered.map((id) => ({ id, included: o.remembered.get(id) ?? auto() }));
+  }
+  if (o.reset || !previous.length) return ids.map((id) => ({ id, included: true }));
+  return [
+    ...previous.filter((p) => inRange.has(p.id)),
+    ...ids
+      .filter((id) => !previous.some((p) => p.id === id))
+      .map((id) => ({ id, included: false })),
+  ];
+}
 type Generated = {
   key: string;
   from: string;
@@ -277,25 +321,35 @@ export function useWeekendCarousel(
   const inRange = rangeValid && !noneWanted ? fixtures : [];
   const inRangeSig = `${setType}:` + inRange.map((f) => f.id).join(",");
 
-  // New ranges/types select all; a source refresh preserves valid user picks.
+  // New ranges/types select all; a source refresh preserves valid user picks; a
+  // rounds pick keeps every tick the admin made, up to the maximum (nextPicks).
   const [picks, setPicks] = useState<Pick[]>([]);
+  const [keepPicks, setKeepPicks] = useState<KeepPicks>(null);
   const pickScope = useRef("");
+  // Each game's last tick and the order last shown, kept while sources reload.
+  const remembered = useRef(new Map<number, boolean>());
+  const lastOrder = useRef<number[]>([]);
   const scope = JSON.stringify([setType, from, to, audience, idsParam ?? null]);
   useEffect(() => {
     const reset = pickScope.current !== scope;
     pickScope.current = scope;
-    setPicks((previous) => {
-      if (reset || !previous.length) return inRange.map((f) => ({ id: f.id, included: true }));
-      const ids = new Set(inRange.map((f) => f.id));
-      return [
-        ...previous.filter((p) => ids.has(p.id)),
-        ...inRange
-          .filter((f) => !previous.some((p) => p.id === f.id))
-          .map((f) => ({ id: f.id, included: false })),
-      ];
-    });
+    const ids = inRange.map((f) => f.id);
+    setPicks((previous) =>
+      nextPicks(previous, ids, {
+        reset,
+        keep: keepPicks,
+        remembered: remembered.current,
+        order: lastOrder.current,
+      }),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inRangeSig, scope]);
+  useEffect(() => {
+    // Outside a rounds pick only the picks on screen are remembered.
+    if (!keepPicks) remembered.current.clear();
+    for (const p of picks) remembered.current.set(p.id, p.included);
+    if (picks.length) lastOrder.current = picks.map((p) => p.id);
+  }, [picks, keepPicks]);
 
   const byId = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
   const orderedPicks = picks
@@ -634,6 +688,7 @@ export function useWeekendCarousel(
       setFrom(range.from);
       setTo(range.to);
       setOnlyIds(null);
+      setKeepPicks(null);
       setTitle(CAROUSEL_LABELS[type]);
       setCaptionEdit(null);
       // A carousel's content override belongs to the Match Day set it was made on.
@@ -685,8 +740,18 @@ export function useWeekendCarousel(
     timeZone,
     from,
     to,
-    setFrom: (v: string) => !busy && setFrom(v),
-    setTo: (v: string) => !busy && setTo(v),
+    // New dates tick every game (up to the maximum). Under a rounds pick the
+    // admin's ticks stay, and only the games the new dates bring in are ticked.
+    setFrom: (v: string) => {
+      if (busy) return;
+      setFrom(v);
+      setKeepPicks((k) => k && "ticked");
+    },
+    setTo: (v: string) => {
+      if (busy) return;
+      setTo(v);
+      setKeepPicks((k) => k && "ticked");
+    },
     resetRange: () => {
       if (busy) return;
       const range =
@@ -694,16 +759,25 @@ export function useWeekendCarousel(
       setFrom(range.from);
       setTo(range.to);
       setOnlyIds(null);
+      setKeepPicks(null);
     },
     rangeValid,
     /** The games a rounds pick allows (null: every game in the dates). */
     onlyIds,
-    /** Set the dates and the games a rounds pick allows in one go (null ids: all). */
-    applyRange: (range: { from: string; to: string; ids: number[] | null }) => {
+    /**
+     * Set the dates and the games a rounds pick allows in one go (null ids: all).
+     * Every tick the admin made is kept; a game not seen before comes in ticked,
+     * or unticked with `newGames: "unticked"` (switching to dates).
+     */
+    applyRange: (
+      range: { from: string; to: string; ids: number[] | null },
+      newGames: Exclude<KeepPicks, null> = "ticked",
+    ) => {
       if (busy) return;
       setFrom(range.from);
       setTo(range.to);
       setOnlyIds(range.ids);
+      setKeepPicks(newGames);
     },
     title,
     setTitle: (v: string) => !busy && setTitle(v),

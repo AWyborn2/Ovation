@@ -338,7 +338,10 @@ describe("carousel cover round labels", () => {
     expect(carouselRoundLabel(teams("Grand Final", " grand   final "))).toBe("GRAND FINAL");
   });
   it("never invents one round for mixed or incomplete selections", () => {
-    expect(carouselRoundLabel(teams("5", "6"))).toBe("MIXED ROUNDS");
+    // Numbered rounds read as their run (round 9 retest, set 1020).
+    expect(carouselRoundLabel(teams("5", "6"))).toBe("ROUNDS 5–6");
+    expect(carouselRoundLabel(teams("Round 4", "5", "R4"))).toBe("ROUNDS 4–5");
+    expect(carouselRoundLabel(teams("5", "6", ""))).toBe("MIXED ROUNDS");
     expect(carouselRoundLabel(teams("5", "Grand Final"))).toBe("MIXED ROUNDS");
     expect(carouselRoundLabel(teams("5", ""))).toBe("");
     expect(carouselRoundLabel(teams(null, undefined, " "))).toBe("");
@@ -402,6 +405,19 @@ describe("carousel cover round labels", () => {
     // Each fixture slide prints its round from the content builder, normalised.
     expect(slides[1].input).toMatchObject({ roundLabel: "ROUND 5" });
     expect(slides[2].input).toMatchObject({ roundLabel: "ROUND 5" });
+  });
+  it("covers a run of rounds and a single day plainly (round 9 retest, sets 1020 and 1021)", () => {
+    const run = buildWeekendSlides(
+      teams("4", "5"),
+      [],
+      bundle,
+      "Match day",
+      "2026-11-07",
+      "2026-11-08",
+    );
+    expect(run[0].input).toMatchObject({ roundLabel: "ROUNDS 4–5", date: "SAT 7 NOV – SUN 8 NOV" });
+    const day = buildWeekendSlides(teams("6"), [], bundle, "Match day", "2026-11-14", "2026-11-14");
+    expect(day[0].input).toMatchObject({ roundLabel: "ROUND 6", date: "SAT 14 NOV" });
   });
   it("prefers source metadata over reformatted or conflicting display titles", () => {
     const decider = [fixture(1, { roundLabel: "14" }), fixture(2, { roundLabel: "14" })];
