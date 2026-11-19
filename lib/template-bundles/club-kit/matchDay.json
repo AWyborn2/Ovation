@@ -1,6 +1,6 @@
 {
   "name": "Club Kit matchDay",
-  "version": 11,
+  "version": 12,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1129,6 +1129,98 @@
             },
             "sig": "shape:091hdrk1xn05lz",
             "link": "fixture-l26"
+          },
+          {
+            "kind": "shape",
+            "id": "fixture-text-scrim-portrait",
+            "name": "Date and Game Day scrim",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 12,
+                "w": 70,
+                "h": 12
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 20,
+                  "y": 50
+                },
+                "stops": [
+                  {
+                    "color": "var(--ck-base)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--ck-base-70)",
+                    "at": 35
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 70
+                  }
+                ]
+              },
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 48.5],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "link": "fixture-text-scrim"
+          },
+          {
+            "kind": "shape",
+            "id": "fixture-text-scrim-story",
+            "name": "Date and Game Day scrim",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 23,
+                "w": 70,
+                "h": 12
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 20,
+                  "y": 50
+                },
+                "stops": [
+                  {
+                    "color": "var(--ck-base)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--ck-base-70)",
+                    "at": 35
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 70
+                  }
+                ]
+              },
+              "opacity": 0.85
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "link": "fixture-text-scrim"
           },
           {
             "kind": "text",

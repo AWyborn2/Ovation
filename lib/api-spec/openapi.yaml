@@ -6531,6 +6531,14 @@ paths:
           in: query
           required: false
           schema: { $ref: "#/components/schemas/SocialDraftStatus" }
+        - name: open
+          in: query
+          required: false
+          description: >-
+            true leaves out posted and dismissed drafts, so a screen that only
+            shows the queue's open work (Studio home's Your designs) doesn't
+            load the club's whole posting history.
+          schema: { type: boolean }
         - name: family
           in: query
           required: false

@@ -11762,6 +11762,7 @@ export const UpsertCaptionTemplateResponse = zod.object({
  */
 export const ListSocialDraftsQueryParams = zod.object({
   "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']).optional(),
+  "open": zod.coerce.boolean().optional().describe('true leaves out posted and dismissed drafts, so a screen that only shows the queue\'s open work (Studio home\'s Your designs) doesn\'t load the club\'s whole posting history.'),
   "family": zod.coerce.string().optional(),
   "grade": zod.coerce.string().optional()
 })

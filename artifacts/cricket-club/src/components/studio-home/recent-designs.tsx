@@ -4,9 +4,9 @@
  * where it is edited. Each tile can be dismissed (a draft, which can be
  * reopened from the queue) or deleted (a template or carousel set).
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layers, Trash2 } from "lucide-react";
 import {
   deleteCardSet,
@@ -16,10 +16,10 @@ import {
   getListCardSetsQueryKey,
   getListClubTemplatesQueryKey,
   getListSocialDraftsQueryKey,
+  listCardSets,
+  listClubTemplates,
+  listSocialDrafts,
   useGetClubTemplate,
-  useListCardSets,
-  useListClubTemplates,
-  useListSocialDrafts,
   type CardSet,
   type SocialDraft,
 } from "@workspace/api-client-react";
@@ -28,6 +28,7 @@ import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { Button } from "@/components/ui/button";
 import {
   SetPageThumb,
   TemplateThumb,
@@ -45,16 +46,63 @@ import { draftSetDocument, setDraftLayout, setDraftSlides, slideDocument } from 
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { editedAgo, recentDesigns, type RecentDesign } from "@/lib/studio-home";
 
+/**
+ * Only the queue's open drafts: Your designs leaves posted and dismissed ones
+ * out, so it asks the API not to send them (a club's whole posting history,
+ * which kept the page loading for over a minute on a cold start, retest 9).
+ */
+export const OPEN_DRAFTS = { open: true } as const;
+
+/**
+ * How long a list may load before the page offers a retry. Each request also
+ * gives up on its own after this long, so a stalled one fails and shows an
+ * error instead of a spinner that never ends.
+ */
+export const DESIGNS_TIMEOUT_MS = 20_000;
+
+/** Abort a list request that takes longer than `DESIGNS_TIMEOUT_MS`. */
+export function timed(
+  signal: AbortSignal | undefined,
+  ms: number = DESIGNS_TIMEOUT_MS,
+): AbortSignal {
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(new DOMException("The request timed out.", "TimeoutError")),
+    ms,
+  );
+  const stop = () => clearTimeout(timer);
+  controller.signal.addEventListener("abort", stop, { once: true });
+  if (signal) {
+    if (signal.aborted) controller.abort(signal.reason);
+    else signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
+  }
+  return controller.signal;
+}
+
+const listQuery = { retry: 1, retryDelay: 1_000 } as const;
+
+/** The queue's open drafts (awaiting review or ready), as Studio home reads them. */
+export function useOpenDrafts() {
+  return useQuery({
+    ...listQuery,
+    queryKey: getListSocialDraftsQueryKey(OPEN_DRAFTS),
+    queryFn: ({ signal }) => listSocialDrafts(OPEN_DRAFTS, { signal: timed(signal) }),
+  });
+}
+
 /** The club's recent work, merged from its drafts, templates and sets. */
 export function useRecentDesigns(limit?: number) {
-  const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
+  const draftsQ = useOpenDrafts();
+  const templatesQ = useQuery({
+    ...listQuery,
+    queryKey: getListClubTemplatesQueryKey({ includeSets: true }),
+    queryFn: ({ signal }) => listClubTemplates({ includeSets: true }, { signal: timed(signal) }),
   });
-  const templatesQ = useListClubTemplates(
-    { includeSets: true },
-    { query: { queryKey: getListClubTemplatesQueryKey({ includeSets: true }) } },
-  );
-  const setsQ = useListCardSets({ query: { queryKey: getListCardSetsQueryKey() } });
+  const setsQ = useQuery({
+    ...listQuery,
+    queryKey: getListCardSetsQueryKey(),
+    queryFn: ({ signal }) => listCardSets({ signal: timed(signal) }),
+  });
   const items = useMemo(
     () =>
       recentDesigns(
@@ -71,9 +119,44 @@ export function useRecentDesigns(limit?: number) {
   return {
     items,
     isLoading: queries.some((q) => q.isLoading),
-    isError: queries.every((q) => q.isError),
-    refetch: () => queries.forEach((q) => q.refetch()),
+    // Any list that failed: showing the rest as if complete would hide a
+    // club's work, so the page says so and offers a retry.
+    isError: queries.some((q) => q.isError && q.data === undefined),
+    refetch: () => {
+      for (const q of queries) if (q.isError || q.isLoading) void q.refetch();
+    },
   };
+}
+
+/**
+ * The loading state, with a retry once loading has taken longer than it
+ * should (a request the browser is still waiting on).
+ */
+function DesignsLoading({ onRetry }: { onRetry: () => void }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (slow) return;
+    const t = setTimeout(() => setSlow(true), DESIGNS_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [slow]);
+  if (!slow) return <LoadingState label="Loading your designs…" />;
+  return (
+    <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
+      <LoadingState label="Still loading your designs…" className="py-0" />
+      <p>This is taking longer than usual.</p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setSlow(false);
+          onRetry();
+        }}
+      >
+        Try again
+      </Button>
+    </div>
+  );
 }
 
 const typeLabel = (d: RecentDesign) =>
@@ -146,7 +229,19 @@ function DraftThumb({ draft: saved, preview }: { draft: SocialDraft; preview: Li
   );
 }
 
-function ClubTemplateThumb({
+/**
+ * A club template's tile: its design is fetched only once the tile is near the
+ * screen, so a long Your designs list doesn't ask for every template at once.
+ */
+function ClubTemplateThumb(props: { id: number; kind: string; preview: LibraryPreview }) {
+  return (
+    <WhenVisible aspect={`${SIZES.square.w} / ${SIZES.square.h}`}>
+      <ClubTemplateDesign {...props} />
+    </WhenVisible>
+  );
+}
+
+function ClubTemplateDesign({
   id,
   kind,
   preview,
@@ -159,7 +254,7 @@ function ClubTemplateThumb({
     query: { queryKey: getGetClubTemplateQueryKey(id), staleTime: 60_000 },
   });
   const input = usePreviewInput(kind, preview.clubName);
-  if (!q.data) return <div className="aspect-square rounded-md bg-muted" />;
+  if (!q.data) return <div className="h-full w-full bg-muted" />;
   // A carousel set design: its first page.
   if (isSetDocument(q.data.document) && q.data.document.pages[0])
     return <SetPageThumb set={q.data.document} page={q.data.document.pages[0]} preview={preview} />;
@@ -327,7 +422,7 @@ export function ContinueDesigning({ preview }: { preview: LibraryPreview }) {
       {recent.isError ? (
         <QueryError onRetry={recent.refetch} />
       ) : recent.isLoading ? (
-        <LoadingState label="Loading your designs…" />
+        <DesignsLoading onRetry={recent.refetch} />
       ) : recent.items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nothing yet. Pick something to create above, and it shows here to pick up again.
@@ -416,7 +511,7 @@ export function YourDesigns({
       {recent.isError ? (
         <QueryError onRetry={recent.refetch} />
       ) : recent.isLoading ? (
-        <LoadingState label="Loading your designs…" />
+        <DesignsLoading onRetry={recent.refetch} />
       ) : shown.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           No designs match.
