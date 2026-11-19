@@ -191,10 +191,33 @@ describe("substituteTextTokens", () => {
   const sub = substituteTextTokens;
   const values = { gradeRound: "B GRADE — ROUND 7", competitionLine: "B Grade" };
 
-  it("fills a line as substituteTokens does when nothing repeats", () => {
+  it("fills a line as substituteTokens does when every token has a value and nothing repeats", () => {
     expect(sub("{{a}} · {{b}}", { a: "A", b: "B" })).toBe("A · B");
-    expect(sub("{{a}} · {{b}}", { a: "A" })).toBe("A · ");
     expect(sub("RD {{round}}", { round: "3" })).toBe("RD 3");
+  });
+
+  it("drops the separator beside an empty token (retest 7: 'YEAR 9 ·')", () => {
+    expect(sub("{{grade}} · {{roundLabel}}", { grade: "Year 9", roundLabel: "" })).toBe("Year 9");
+    expect(sub("{{grade}} · {{roundLabel}}", { grade: "Year 9" })).toBe("Year 9");
+    expect(sub("{{a}} · {{b}}", { a: "A", b: "  " })).toBe("A");
+    expect(sub("{{date}} · {{roundLabel}}", { roundLabel: "Round 3" })).toBe("Round 3");
+    expect(sub("{{a}} · {{b}} · {{c}}", { a: "A", c: "C" })).toBe("A · C");
+    expect(sub("{{a}} — {{b}}", { a: "A" })).toBe("A");
+    expect(sub("{{a}} · {{b}}", {})).toBe("");
+  });
+
+  it("keeps an empty token's separators for a format v1 document (pinned output)", () => {
+    expect(sub("{{a}} · {{b}}", { a: "A" }, false)).toBe("A · ");
+    expect(sub("{{gradeRound}} · {{competitionLine}}", values, false)).toBe("B GRADE — ROUND 7");
+  });
+
+  it("keeps the template's own words beside an empty token", () => {
+    expect(
+      sub("Round {{round}} · vs {{opponent}} — {{tribute}}", { round: "3", opponent: "X" }),
+    ).toBe("Round 3 · vs X");
+    expect(sub("FIRST GRADE DEBUT · {{grade}}", { grade: "A Grade" })).toBe(
+      "FIRST GRADE DEBUT · A Grade",
+    );
   });
 
   it("drops a competition line that repeats the grade line beside it, with its separator", () => {
