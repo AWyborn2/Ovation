@@ -123,6 +123,23 @@ describe("template-mode document ops", () => {
     expect(saveBlockers({ layers: [text("a")] })).toEqual([]);
   });
 
+  it("a Portrait and Story template saves; a four-size one can't lose an older size (sizes plan, Stage 4)", () => {
+    const ps = { layers: [text("a", { sizes: ["portrait", "story"] })] };
+    expect(saveBlockers(ps)).toEqual([]);
+    expect(saveBlockers(ps, ps)).toEqual([]);
+    const fourSize = { layers: [text("a")] };
+    expect(saveBlockers(ps, fourSize)).toEqual([
+      "Square has no elements. Add at least one before saving.",
+      "Landscape has no elements. Add at least one before saving.",
+    ]);
+    expect(
+      saveBlockers(
+        { layers: [text("a", { sizes: ["portrait", "story", "landscape"] })] },
+        fourSize,
+      ),
+    ).toEqual(["Square has no elements. Add at least one before saving."]);
+  });
+
   it("the club logo resolves from the club's brand, never a fixed URL", () => {
     const layer = logoLayer("square");
     expect(layer.content).toBe(CLUB_LOGO_TOKEN);

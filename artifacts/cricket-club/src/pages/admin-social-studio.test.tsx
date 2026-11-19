@@ -80,7 +80,11 @@ const SETS = [
 
 type Write = { url: string; method: string; body: Record<string, unknown> | null };
 
-function open(path = "/admin/social", drafts: Array<Record<string, unknown>> = DRAFTS) {
+function open(
+  path = "/admin/social",
+  drafts: Array<Record<string, unknown>> = DRAFTS,
+  clubTemplates: Array<Record<string, unknown>> = [],
+) {
   installApiMock({
     "/social-settings": BUNDLE,
     "/social-drafts": drafts,
@@ -107,7 +111,7 @@ function open(path = "/admin/social", drafts: Array<Record<string, unknown>> = D
       nextCursor: null,
     },
     "/template-library": { templates: [LIB_TEMPLATE], nextCursor: null },
-    "/club-templates": { templates: [] },
+    "/club-templates": { templates: clubTemplates },
     "/card-themes": [],
   });
   const base = globalThis.fetch as unknown as (
@@ -199,6 +203,39 @@ describe("Studio home", () => {
         .getAllByRole("radio")
         .map((r) => r.textContent),
     ).toEqual(["Portrait", "Story"]);
+  });
+
+  it("still lists four-size templates under Portrait and Story; older-only ones only at their size (Stage 4)", async () => {
+    const clubTemplate = (id: number, name: string, sizes: string[]) => ({
+      id,
+      kind: "milestone",
+      name,
+      version: 1,
+      isDefault: false,
+      basedOn: null,
+      edited: false,
+      updateAvailable: null,
+      fitStatus: "pass",
+      fitReport: null,
+      coverage: { pages: ["card"], sizes },
+      updatedAt: null,
+      waitingDrafts: 0,
+      document: placeholderDocument("milestone"),
+    });
+    open("/admin/social", DRAFTS, [
+      clubTemplate(201, "Four-size milestone", ["square", "portrait", "story", "landscape"]),
+      clubTemplate(202, "New milestone", ["portrait", "story"]),
+      clubTemplate(203, "Square milestone", ["square"]),
+    ]);
+    fireEvent.click(await screen.findByRole("button", { name: "Milestone" }));
+    const dialog = await screen.findByRole("dialog");
+    for (const size of ["Portrait", "Story"]) {
+      fireEvent.click(within(dialog).getByRole("radio", { name: size }));
+      const mine = await within(dialog).findByRole("region", { name: "Your templates" });
+      expect(within(mine).getByRole("button", { name: "Use Four-size milestone" })).toBeTruthy();
+      expect(within(mine).getByRole("button", { name: "Use New milestone" })).toBeTruthy();
+      expect(within(mine).queryByRole("button", { name: "Use Square milestone" })).toBeNull();
+    }
   });
 
   it("lists recent work newest first, each opening where it's edited", async () => {

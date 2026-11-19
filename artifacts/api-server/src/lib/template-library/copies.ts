@@ -31,6 +31,7 @@ import {
 import {
   applyTemplateToDrafts,
   isTemplateKind,
+  KindTemplateError,
   KIND_SOURCE,
   updatedByName,
   validateDocument,
@@ -387,9 +388,21 @@ const pendingDefault = () =>
     error: "This template's layout check is still running. Try again when it has finished.",
   });
 
-/** Check a document a club saves: the v1 rules as today, or the format's own rules for v2. */
-function validateCopyDocument(document: unknown, kind: string): unknown {
-  if (!isDocumentV2(document) && !setTypeOfKind(kind)) return validateDocument(document, kind);
+/**
+ * Check a document a club saves: the v1 rules (KTD15: Portrait, Story and any
+ * older size `previous`, the version it replaces, had layers on), or the
+ * format's own rules for v2. A new copy has no previous version.
+ */
+function validateCopyDocument(document: unknown, kind: string, previous?: unknown): unknown {
+  if (!isDocumentV2(document) && !setTypeOfKind(kind)) {
+    try {
+      return validateDocument(document, kind, previous);
+    } catch (err) {
+      // Answer with the whole body (the empty sizes, the problems), not just its message.
+      if (err instanceof KindTemplateError) throw new TemplateLibraryError(err.status, err.body);
+      throw err;
+    }
+  }
   const problems = templateDocumentErrors(document, kind);
   if (problems.length > 0) {
     throw new TemplateLibraryError(400, { error: problems[0], problems: problems.slice(0, 20) });
@@ -420,7 +433,9 @@ export async function saveCopy(
     });
   }
   const document =
-    body.document === undefined ? undefined : validateCopyDocument(body.document, kind);
+    body.document === undefined
+      ? undefined
+      : validateCopyDocument(body.document, kind, row.adjustments);
   if (row.version !== body.baseVersion) throw await conflict(row);
   const fit = document === undefined ? null : initialFit();
   const [saved] = await db

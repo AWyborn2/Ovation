@@ -7,7 +7,7 @@
  *
  * Layout, one folder per look:
  *
- *   <look-slug>/look.json      { name, description?, displayOrder?, family? }
+ *   <look-slug>/look.json      { name, description?, displayOrder?, family?, sizes? }
  *   <look-slug>/<kind>.json    { name, version, listed, document }
  *
  *   elements/<look-slug>.json  the look's decorations for the element library
@@ -17,6 +17,9 @@
  * change a document by raising its `version`. `listed` asks for the template to be
  * listed; the server lists it once that version passes the fit check.
  */
+
+/** A card size a look can design (`TemplateSize` in `@workspace/scorecard`). */
+export type BundleLookSize = "square" | "portrait" | "story" | "landscape";
 
 /** `look.json`. */
 export type BundleLookFile = {
@@ -29,6 +32,14 @@ export type BundleLookFile = {
    * family as one look with a heading per style.
    */
   family?: string;
+  /**
+   * The sizes the look designs (plan 2026-11-19-portrait-story-sizes, Stage 5):
+   * a new look sets `["portrait", "story"]`, and every page of every template
+   * must then cover exactly these sizes, with no layer on any other. A look
+   * without it (every look from before the change) must cover all four. The
+   * bundle fit check enforces both (`check-template-bundles-core.ts`).
+   */
+  sizes?: BundleLookSize[];
 };
 
 /** `<kind>.json`. */

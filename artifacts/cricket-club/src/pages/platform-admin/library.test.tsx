@@ -7,7 +7,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route } from "wouter";
-import { placeholderDocument } from "@workspace/scorecard/kind-templates";
+import { OFFERED_SIZES, placeholderDocument } from "@workspace/scorecard/kind-templates";
 import { renderAt, renderWithHistory } from "@/test/render";
 import LibraryPage from "./library";
 import LibraryEditorPage from "./library-editor";
@@ -313,7 +313,8 @@ describe("console library page", () => {
     const created = requests.find((r) => r.method === "POST" && /library\/templates$/.test(r.url))!
       .body as Record<string, unknown>;
     expect(created).toMatchObject({ kind: "record", name: "Night record", lookId: 3 });
-    expect(created.document).toEqual(placeholderDocument("record"));
+    // A new console design is Portrait and Story only (sizes plan, Stage 4).
+    expect(created.document).toEqual(placeholderDocument("record", OFFERED_SIZES));
 
     fireEvent.change(screen.getByRole("textbox", { name: "New look's name" }), {
       target: { value: "Night Shift" },
