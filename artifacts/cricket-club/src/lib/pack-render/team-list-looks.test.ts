@@ -593,8 +593,8 @@ describe("List rows clear of the photo, data and each other on every list kind",
 
 // ── Sponsor tiles inside their sheet (round 5 retest) ───────────────────────
 
-/** The sponsor counts a sponsors page is held to: 7, 8 and the most a slide holds. */
-const SPONSOR_COUNTS = [7, 8, MAX_SPONSORS_PER_SLIDE];
+/** The sponsor counts a sponsors page is held to: 1, 3, 7, 8, 12 and the most a slide holds. */
+const SPONSOR_COUNTS = [1, 3, 7, 8, 12, MAX_SPONSORS_PER_SLIDE];
 
 /**
  * The optional fields a sponsors page draws with or without: its layers'
@@ -655,7 +655,11 @@ function tilesExtent(l: RowsLayerV2, box: Box, size: CardSize, count: number): R
  * must lie inside it. A list drawn straight on the card's ground has no sheet
  * to keep inside.
  */
-function tilesOutsideSheet(name: string, doc: TemplateDocumentV2): string[] {
+function tilesOutsideSheet(
+  name: string,
+  doc: TemplateDocumentV2,
+  counts: readonly number[] = SPONSOR_COUNTS,
+): string[] {
   const out: string[] = [];
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
     const layers = flattenLayers(p?.layers ?? []);
@@ -666,7 +670,7 @@ function tilesOutsideSheet(name: string, doc: TemplateDocumentV2): string[] {
             if (list.kind !== "rows" || list.rows.layout !== "tiles") continue;
             const box = drawnWith(list, size, card, fields);
             if (!box) continue;
-            for (const count of SPONSOR_COUNTS) {
+            for (const count of counts) {
               const tiles = tilesExtent(list, box, size, count);
               if (!tiles) continue;
               const top: Pt = [(tiles.left + tiles.right) / 2, tiles.top + 1];
@@ -703,7 +707,7 @@ const solidPanel = (l: TemplateLayerV2) =>
 const holdsPoint = (r: Rect, [x, y]: Pt) =>
   r.left <= x && x <= r.right && r.top <= y && y <= r.bottom;
 
-describe("Sponsor tiles inside their sheet with 7, 8 and the most sponsors", () => {
+describe("Sponsor tiles inside their sheet with 1, 3, 7, 8, 12 and the most sponsors", () => {
   const pages = bundlesMatching(/^matchDay\.json$/).filter((b) => b.listed && b.doc.pages.sponsors);
 
   it("reads every look's sponsors page", () => {
@@ -914,6 +918,128 @@ describe("Results day rows: the result label clear of the grade and team", () =>
       expect.arrayContaining([
         "duotone/matchSummary day square: day-l20 result label runs off its pill",
         "duotone/matchSummary day square: day-l20 result label 0 px from grade",
+      ]),
+    );
+  });
+});
+
+// ── Bold Type's sponsors slide: the tiles spread to fill it (retest 6) ─────
+
+/** How far the tile group's centre may sit from its area's centre, as a share of the card's height. */
+const SPREAD_CENTRE_TOLERANCE = 0.02;
+/** With no photo, the slide's content reaches this close to the footer (share of the card's height). */
+const SPREAD_FOOT_GAP = 0.04;
+
+/** A layer that prints data (a `{{token}}`), drawn on this card. */
+const dataText = (l: TemplateLayerV2) => l.kind === "text" && layerTokens(l).length > 0;
+
+/**
+ * How Bold Type's sponsors slide lays its tiles out (Ash, retest 6, set 980:
+ * the tiles sat in the top half, the bottom half empty): for each size, card
+ * (photo or not, senior or junior), next home game or not, and 1, 3, 7, 12
+ * and 16 sponsors, the tile group is centred (within
+ * {@link SPREAD_CENTRE_TOLERANCE}) in the area between the header above it
+ * and whatever is drawn below it (the call to action, the photo, the
+ * footer); no tile is taller than the list's cap (its `rowHeight`, so one to
+ * three sponsors don't grow giant); and with no photo the slide's content
+ * runs down to just above the footer, leaving no empty half.
+ */
+function sponsorSpread(name: string, doc: TemplateDocumentV2): string[] {
+  const out: string[] = [];
+  const layers = flattenLayers(doc.pages.sponsors?.layers ?? []);
+  for (const fields of fieldStates(layers))
+    for (const card of CARDS)
+      for (const size of SIZE_KEYS) {
+        const H = SIZES[size].h;
+        const on = layers
+          .map((l) => ({ l, b: drawnWith(l, size, card, fields) }))
+          .filter((d): d is { l: TemplateLayerV2; b: Box } => !!d.b);
+        const list = on.find(
+          (d) => d.l.kind === "rows" && (d.l as RowsLayerV2).rows.layout === "tiles",
+        );
+        if (!list) continue;
+        const box = px(list.b, size);
+        const footer = on
+          .filter((d) => d.l.kind === "shape" && d.b.y > 80 && d.b.w >= 80 && d.b.h < 10)
+          .map((d) => px(d.b, size).top)
+          .reduce((a, b) => Math.min(a, b), H);
+        // The header: the lowest data line wholly above the tiles.
+        const head = on
+          .filter((d) => dataText(d.l) && px(d.b, size).bottom <= box.top + 1)
+          .map((d) => px(d.b, size).bottom)
+          .reduce((a, b) => Math.max(a, b), 0);
+        // Below: the first data line, photo or footer under the tiles, across them.
+        const below = on
+          .filter((d) => {
+            const r = px(d.b, size);
+            return (
+              (dataText(d.l) || d.l.kind === "photo") &&
+              r.top >= box.bottom - 1 &&
+              r.left < box.right &&
+              r.right > box.left
+            );
+          })
+          .map((d) => px(d.b, size).top)
+          .reduce((a, b) => Math.min(a, b), footer);
+        const at = `${size} (${card.junior ? "junior" : "senior"}, ${card.photo ? "photo" : "no photo"}${Object.entries(
+          fields,
+        )
+          .map(([k, v]) => `, ${v ? "" : "no "}${k}`)
+          .join("")})`;
+        const spec = (list.l as RowsLayerV2).rows;
+        const cap = (Number(spec.rowHeight ?? 7) / 100) * SIZES[size].w;
+        for (const count of [1, 3, 7, 12, MAX_SPONSORS_PER_SLIDE]) {
+          const tiles = tilesExtent(list.l as RowsLayerV2, list.b, size, count);
+          if (!tiles) continue;
+          const centre = (tiles.top + tiles.bottom) / 2;
+          const area = (head + below) / 2;
+          if (Math.abs(centre - area) > SPREAD_CENTRE_TOLERANCE * H)
+            out.push(
+              `${name} ${at}: ${count} sponsors centred ${Math.round(centre)} px, their area's centre ${Math.round(area)} px`,
+            );
+          const tallest = tileGrid({
+            count,
+            majors: 0,
+            width: box.right - box.left,
+            height: box.bottom - box.top,
+            gap: (Number(spec.gap ?? 0) / 100) * SIZES[size].w,
+            maxTileHeight: cap,
+          }).reduce((m, t) => Math.max(m, t.h), 0);
+          if (tallest > cap + 0.5) out.push(`${name} ${at}: ${count} sponsors' tiles over the cap`);
+        }
+        if (!card.photo) {
+          const foot = on
+            .filter(
+              (d) => (dataText(d.l) || d.l.kind === "rows") && px(d.b, size).bottom <= footer + 1,
+            )
+            .map((d) => px(d.b, size).bottom)
+            .reduce((a, b) => Math.max(a, b), 0);
+          if (footer - foot > SPREAD_FOOT_GAP * H)
+            out.push(
+              `${name} ${at}: the slide ends ${Math.round(footer - foot)} px above the footer (an empty band)`,
+            );
+        }
+      }
+  return [...new Set(out)];
+}
+
+describe("Bold Type's sponsors slide: tiles spread to fill it (set 980)", () => {
+  const bold = bundlesMatching(/^matchDay\.json$/).find((b) => b.name === "bold-type/matchDay")!;
+
+  it("centres 1 to 16 sponsors between the header and what's below, capped, and fills the slide", () => {
+    expect(sponsorSpread("bold-type/matchDay", bold.doc)).toEqual([]);
+  });
+
+  it("would catch the slide as it was (no photo: tiles in the top half, an empty band below)", () => {
+    const was = structuredClone(bold.doc);
+    was.pages.sponsors!.layers = was.pages.sponsors!.layers.filter(
+      (l) => l.id !== "sponsors-tiles-tall" && !l.id.endsWith("-low"),
+    );
+    for (const l of was.pages.sponsors!.layers)
+      if (l.showWhen?.photo === true) delete l.showWhen.photo;
+    expect(sponsorSpread("bold-type/matchDay", was)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^bold-type\/matchDay story \(senior, no photo.*empty band\)$/),
       ]),
     );
   });

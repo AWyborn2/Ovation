@@ -1,6 +1,6 @@
 {
   "name": "Bold Type matchDay",
-  "version": 12,
+  "version": 13,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -7298,6 +7298,68 @@
                   "show": "logo"
                 }
               ]
+            },
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "id": "sponsors-tiles-tall",
+            "kind": "rows",
+            "name": "Sponsor tiles (no photo)",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 26.9,
+                "w": 88,
+                "h": 38.3
+              },
+              "portrait": {
+                "x": 6,
+                "y": 24.65,
+                "w": 88,
+                "h": 37.35
+              },
+              "story": {
+                "x": 6,
+                "y": 17.81,
+                "w": 88,
+                "h": 53.7
+              },
+              "landscape": {
+                "x": 20,
+                "y": 26.6,
+                "w": 60,
+                "h": 40.9
+              }
+            },
+            "rows": {
+              "repeat": "sponsors",
+              "layout": "tiles",
+              "rowHeight": 14,
+              "gap": 1.6,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 18,
+                  "w": 64,
+                  "y": 12,
+                  "h": 76,
+                  "show": "logo"
+                }
+              ]
+            },
+            "showWhen": {
+              "photo": false
             }
           },
           {
@@ -7330,7 +7392,43 @@
                 "h": 2.22
               }
             },
-            "sig": "text:160vlb303j1ucu"
+            "sig": "text:160vlb303j1ucu",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorCta}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.72,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l31-low",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 22.46,
+                "y": 67.22,
+                "w": 55.07,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7368,7 +7466,49 @@
                 "h": 1.67
               }
             },
-            "sig": "text:1onspjc10xzu95"
+            "sig": "text:1onspjc10xzu95",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorCta}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l32-low",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 13.28,
+                "y": 63.46,
+                "w": 73.43,
+                "h": 2.37
+              },
+              "story": {
+                "x": 13.28,
+                "y": 73.55,
+                "w": 73.43,
+                "h": 1.67
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7400,7 +7540,43 @@
                 "h": 2.22
               }
             },
-            "sig": "text:0ueuwsc02glv2b"
+            "sig": "text:0ueuwsc02glv2b",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorCta}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.9,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l33-low",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 35.48,
+                "y": 69.45,
+                "w": 29.05,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7428,7 +7604,36 @@
             },
             "sig": "text:1pa18ar1n4yvge",
             "showWhen": {
-              "field": "nextHomeMatch"
+              "field": "nextHomeMatch",
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "NEXT HOME GAME",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.72,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3
+            },
+            "id": "sponsors-l34-low",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 39.65,
+                "y": 71.43,
+                "w": 20.7,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "field": "nextHomeMatch",
+              "photo": false
             }
           },
           {
@@ -7463,7 +7668,42 @@
             },
             "sig": "text:19iwmx00eree4h",
             "showWhen": {
-              "field": "nextHomeMatch"
+              "field": "nextHomeMatch",
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "NEXT HOME GAME",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3
+            },
+            "id": "sponsors-l35-low",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 36.37,
+                "y": 67.95,
+                "w": 27.27,
+                "h": 2.37
+              },
+              "story": {
+                "x": 36.37,
+                "y": 76.7,
+                "w": 27.27,
+                "h": 1.67
+              }
+            },
+            "showWhen": {
+              "field": "nextHomeMatch",
+              "photo": false
             }
           },
           {
@@ -7492,7 +7732,36 @@
             },
             "sig": "text:1yvcsf01ebjdar",
             "showWhen": {
-              "field": "nextHomeMatch"
+              "field": "nextHomeMatch",
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "NEXT HOME GAME",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.9,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3
+            },
+            "id": "sponsors-l36-low",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 44.33,
+                "y": 73.65,
+                "w": 11.33,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "field": "nextHomeMatch",
+              "photo": false
             }
           },
           {
@@ -7524,7 +7793,42 @@
                 "h": 2.87
               }
             },
-            "sig": "text:1fdlf6706v2h7q"
+            "sig": "text:1fdlf6706v2h7q",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{nextHomeMatch}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.3,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l37-low",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 7.74,
+                "y": 73.91,
+                "w": 84.51,
+                "h": 2.87
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7561,7 +7865,48 @@
                 "h": 4.03
               }
             },
-            "sig": "text:067ufoj1v0hyca"
+            "sig": "text:067ufoj1v0hyca",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{nextHomeMatch}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 4.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l38-low",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 70.59,
+                "w": 88,
+                "h": 5.74
+              },
+              "story": {
+                "x": 6,
+                "y": 78.56,
+                "w": 88,
+                "h": 4.03
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7592,7 +7937,42 @@
                 "h": 2.86
               }
             },
-            "sig": "text:1k72agy0b67kht"
+            "sig": "text:1k72agy0b67kht",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{nextHomeMatch}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.73,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l39-low",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 27.84,
+                "y": 76.09,
+                "w": 44.32,
+                "h": 2.86
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7624,7 +8004,43 @@
                 "h": 2.22
               }
             },
-            "sig": "text:18jk2650fl3vww"
+            "sig": "text:18jk2650fl3vww",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{nextHomeWhen}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.72,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l40-low",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.7,
+                "y": 77.04,
+                "w": 82.61,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7662,7 +8078,49 @@
                 "h": 3.34
               }
             },
-            "sig": "text:07v8ok61d4bd37"
+            "sig": "text:07v8ok61d4bd37",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{nextHomeWhen}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "sponsors-l41-low",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 76.56,
+                "w": 88.09,
+                "h": 4.75
+              },
+              "story": {
+                "x": 6,
+                "y": 82.76,
+                "w": 88.09,
+                "h": 3.34
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7694,7 +8152,43 @@
                 "h": 2.22
               }
             },
-            "sig": "text:0u6e6n20rw29xt"
+            "sig": "text:0u6e6n20rw29xt",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{nextHomeWhen}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.9,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1.3,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l42-low",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 28.33,
+                "y": 79.26,
+                "w": 43.33,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7724,7 +8218,41 @@
                 "h": 4.45
               }
             },
-            "sig": "text:0qdr0zb1uuoag4"
+            "sig": "text:0qdr0zb1uuoag4",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorSocials}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.72,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "align": "center",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "sponsors-l43-low",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 80.86,
+                "w": 88.09,
+                "h": 4.45
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7760,7 +8288,47 @@
                 "h": 3.34
               }
             },
-            "sig": "text:1rrl0ka00p2yql"
+            "sig": "text:1rrl0ka00p2yql",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorSocials}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "align": "center",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "sponsors-l44-low",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 83.01,
+                "w": 88.09,
+                "h": 4.75
+              },
+              "story": {
+                "x": 6,
+                "y": 87.3,
+                "w": 88.09,
+                "h": 3.34
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "text",
@@ -7790,7 +8358,41 @@
                 "h": 2.22
               }
             },
-            "sig": "text:0eselei1206amn"
+            "sig": "text:0eselei1206amn",
+            "showWhen": {
+              "photo": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorSocials}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.9,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "align": "center",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l45-low",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 20.35,
+                "y": 83.07,
+                "w": 59.29,
+                "h": 2.22
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",

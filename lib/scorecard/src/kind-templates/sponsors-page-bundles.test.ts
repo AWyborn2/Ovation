@@ -61,9 +61,12 @@ describe("Match Day sponsors pages", () => {
       for (const t of tiles)
         for (const cta of ctas) {
           // Only a grid and a call to action that can show together.
+          const tp = t.showWhen?.photo;
+          const cp = cta.showWhen?.photo;
           const clash =
             (t.showWhen?.field && cta.showWhen?.noField === t.showWhen.field) ||
-            (t.showWhen?.noField && cta.showWhen?.field === t.showWhen.noField);
+            (t.showWhen?.noField && cta.showWhen?.field === t.showWhen.noField) ||
+            (typeof tp === "boolean" && typeof cp === "boolean" && tp !== cp);
           if (clash) continue;
           for (const [size, box] of Object.entries(t.geometry)) {
             const c = cta.geometry[size as keyof typeof cta.geometry];

@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match day",
-  "version": 14,
+  "version": 15,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -4820,9 +4820,9 @@
                 "h": 24.93
               },
               "landscape": {
-                "x": 48.5,
+                "x": 51.5,
                 "y": 28.99,
-                "w": 45.66,
+                "w": 44.38,
                 "h": 42.99
               }
             },
@@ -4879,9 +4879,9 @@
                 "h": 35.87
               },
               "landscape": {
-                "x": 48.5,
+                "x": 51.5,
                 "y": 28.99,
-                "w": 45.66,
+                "w": 44.38,
                 "h": 42.99
               }
             },
