@@ -109,6 +109,8 @@ const TEAM: Record<string, unknown> = {
  * sponsors (`showWhen.sponsors`) is measured in its own state.
  */
 let sweepSponsors = true;
+/** How many sponsors the sweep's cards carry when they carry any (`lowContrast`'s `sponsorCount`). */
+let sweepSponsorCount = 1;
 
 /**
  * The card drawn with `brand`, with or without its photo, as a senior or a
@@ -127,7 +129,12 @@ function render(
   const data: PackCardData = {
     brand: { ...BRANDS[brand], logoUrl: "https://cdn.example.org/crest.png" },
     hashtag: "#HHCC",
-    sponsors: sweepSponsors ? [{ name: "Sponsor", logoUrl: "https://cdn.example.org/s.png" }] : [],
+    sponsors: sweepSponsors
+      ? Array.from({ length: sweepSponsorCount }, (_, i) => ({
+          name: `Sponsor ${i + 1}`,
+          logoUrl: `https://cdn.example.org/s${i + 1}.png`,
+        }))
+      : [],
     ...(photo ? { photoUrl: "https://cdn.example.org/photo.jpg" } : {}),
   } as PackCardData;
   const tokens = resolveCardTokens({ theme: null, junior, data, packId: BLANK_PACK_ID });
@@ -582,6 +589,8 @@ type SweepOptions = {
   pages?: readonly string[];
   /** Draw the cards with a sponsor (default) or none. */
   sponsors?: boolean;
+  /** How many sponsors, when they're on (default 1). */
+  sponsorCount?: number;
 };
 
 /**
@@ -589,12 +598,13 @@ type SweepOptions = {
  * line of text the card draws (a card of `kind`, each of its pages).
  */
 function lowContrast(name: string, doc: TemplateDocumentV2, opts: SweepOptions = {}): string[] {
-  const was = sweepSponsors;
+  const was = [sweepSponsors, sweepSponsorCount] as const;
   sweepSponsors = opts.sponsors ?? true;
+  sweepSponsorCount = opts.sponsorCount ?? 1;
   try {
     return sweep(name, doc, opts);
   } finally {
-    sweepSponsors = was;
+    [sweepSponsors, sweepSponsorCount] = was;
   }
 }
 
@@ -875,4 +885,27 @@ describe("Cover and title text contrast on every look", () => {
       found.some((f) => f.includes('"{{weekendTitle}}" (default brand, junior, no photo)')),
     ).toBe(true);
   });
+});
+
+describe("Bold Type's sponsors slide contrast with 1 to 16 sponsors (retest 6)", () => {
+  const bold = coverPages().find((b) => b.name === "bold-type/matchDay");
+
+  it("reads Bold Type's Match Day sponsors slide", () => {
+    expect(bold?.doc.pages.sponsors).toBeTruthy();
+  });
+
+  // The tiles spread to fill the slide (set 980): every line of text on it,
+  // the call to action and next home game moved under them included, clears
+  // WCAG AA and is never drawn over a sponsor's tile, at every count.
+  for (const count of [1, 3, 7, 12, 16])
+    it(`${count} sponsor${count === 1 ? "" : "s"}: every line clears WCAG AA, senior and junior, photo or not`, () => {
+      expect(
+        lowContrast("bold-type/matchDay", bold!.doc, {
+          kind: bold!.kind,
+          every: true,
+          pages: ["sponsors"],
+          sponsorCount: count,
+        }),
+      ).toEqual([]);
+    });
 });

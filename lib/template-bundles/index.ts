@@ -262,7 +262,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "fiveFor", hash: "9204f49783c88fbb108ea3e6124bda185c126efcaffecf67b0623dd73984e7dd", file: look0_5 },
       { kind: "gradeLeader", hash: "a6532c24f472c99e3e389f4372ed5790e7c0098787f6a5525c5aba04f5b48a2d", file: look0_6 },
       { kind: "ladder", hash: "8ca34b91af9c795ff7591a73429b032367f7534ae0411ddff293c09efbb38a15", file: look0_7 },
-      { kind: "matchDay", hash: "de62de8899f6ddb7615e24100e331ec9aeda5ed1fd9ea1716ad8d4b6fe460862", file: look0_8 },
+      { kind: "matchDay", hash: "76f2ae254e211477abf0fd7679bd595df7a27b939271325302c13a57d7493f83", file: look0_8 },
       { kind: "matchSummary", hash: "9cdfd04f89ad3c6b101287e3dace0254d5b26476a4cbf2aa291f4a1dc38270c3", file: look0_9 },
       { kind: "milestone", hash: "ac5cd0f90ad6ff0a45572403f9bdac503dfe1b7a0b39f819d1977c03f12c7ff7", file: look0_10 },
       { kind: "newSigning", hash: "a6d336c70f9fd7a518eb06e4fe136e8b4db698428e81729fb8df907f5db6e63f", file: look0_11 },
@@ -423,7 +423,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
     slug: "duotone",
     look: look6,
     templates: [
-      { kind: "matchDay", hash: "6ee3c1de3c6c42cc4d13449472c31b470d7fa73f906915f005dca01835a87f80", file: look6_0 },
+      { kind: "matchDay", hash: "7648ef491bdab03eb7770b2238a4c2af7ab0e38c5d471fb4840a9d39fdd84254", file: look6_0 },
       { kind: "matchSummary", hash: "9e0a02010e6904dc35b9a7ba9570528999671cc7fd870d20760a7dfa17eddadf", file: look6_1 },
       { kind: "teamList", hash: "43d1b533b5f652977a32df3a2f2e3259980f304c6d34cb6d6fd474848b8f0cd3", file: look6_2 },
     ],
