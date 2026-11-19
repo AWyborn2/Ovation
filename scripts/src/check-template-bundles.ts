@@ -2,8 +2,9 @@
  * Fit-check Ovation's template bundles in a real browser (ADR-011 §4, L2-B,
  * T2.8): build the web app, serve the render harness, and run its `fitCheck`
  * on each bundle template (every page × size × preset × photo and sponsor
- * variant, with worst-case content). Writes a report and exits non-zero when
- * any template fails.
+ * variant, with worst-case content). Every bundle's sizes are checked first,
+ * without the browser (`bundleSizeErrors`: a look's `sizes`, else all four).
+ * Writes a report and exits non-zero when any template fails.
  *
  *   pnpm --filter @workspace/scripts run check-template-bundles
  *     [--changed-since=<git ref>]  only bundles changed since the ref, or all of
@@ -22,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { fitReportSummary, type TemplateFitReport } from "@workspace/scorecard/kind-templates";
 import { REPO_ROOT, callHarness, withHarness } from "./lib/harness-browser";
 import {
+  checkBundleSizes,
   gateFailures,
   readBundleTargets,
   renderReport,
@@ -29,6 +31,7 @@ import {
   setReportFromParts,
   type CheckedTemplate,
   type KnownFailures,
+  type SizeFailure,
 } from "./check-template-bundles-core";
 
 /** Listed bundles known to fail today, with why; polish takes them off. */
@@ -86,8 +89,14 @@ function changedFiles(ref: string): string[] {
   return out.split("\n").filter(Boolean);
 }
 
-export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedTemplate[]> {
+export async function checkTemplateBundles(
+  opts: CheckOptions,
+): Promise<{ checked: CheckedTemplate[]; sizes: SizeFailure[] }> {
   const bundles = readBundleTargets(REPO_ROOT);
+  // Pure and quick, so every bundle, whatever changed: a look.json is no fit target.
+  const sizes = checkBundleSizes(bundles);
+  for (const f of sizes)
+    for (const e of f.errors) process.stderr.write(`[fit] sizes: ${f.id}: ${e}\n`);
   let targets = opts.changedSince
     ? selectChanged(bundles, changedFiles(opts.changedSince))
     : bundles;
@@ -144,7 +153,7 @@ export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedT
   mkdirSync(opts.out, { recursive: true });
   writeFileSync(
     path.join(opts.out, "report.md"),
-    renderReport(checked, { selection, known: readKnownFailures() }),
+    renderReport(checked, { selection, known: readKnownFailures(), sizes }),
   );
   writeFileSync(
     path.join(opts.out, "report.json"),
@@ -162,12 +171,12 @@ export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedT
   process.stderr.write(
     `[fit] report: ${path.relative(REPO_ROOT, path.join(opts.out, "report.md"))}\n`,
   );
-  return checked;
+  return { checked, sizes };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   checkTemplateBundles(parseArgs(process.argv.slice(2))).then(
-    (checked) => {
+    ({ checked, sizes }) => {
       const gate = gateFailures(checked, readKnownFailures());
       const failed = gate.blocking.length + gate.known.length + gate.unlisted.length;
       process.stderr.write(
@@ -175,11 +184,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
           `${gate.known.length} known, ${gate.unlisted.length} unlisted\n`,
       );
       for (const c of gate.blocking) process.stderr.write(`[fit] blocking: ${c.target.id}\n`);
+      if (sizes.length)
+        process.stderr.write(
+          `[fit] ${sizes.length} template${sizes.length === 1 ? "" : "s"} with the wrong sizes (blocking): ` +
+            `${sizes.map((f) => f.id).join(", ")}\n`,
+        );
       if (gate.nowPassing.length)
         process.stderr.write(
           `[fit] now passing, take off the known-failures list: ${gate.nowPassing.join(", ")}\n`,
         );
-      process.exit(gate.blocking.length > 0 ? 1 : 0);
+      process.exit(gate.blocking.length > 0 || sizes.length > 0 ? 1 : 0);
     },
     (err) => {
       process.stderr.write(`[fit] ${String(err instanceof Error ? err.stack : err)}\n`);
