@@ -44,6 +44,7 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
 import { renderCardStill, harnessOriginFromHeaders } from "../lib/card-video-renderer";
+import { RendererBusyError } from "../lib/render-slots";
 import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
 import { resolveFamilyConfig, syncFamilySettings } from "../lib/social-families";
 import { persistDueDrafts } from "../lib/effective-draft-state";
@@ -517,7 +518,10 @@ router.post(
       // pre-flattened string so server logs keep the trace too.
       req.log.error({ err }, "card still render failed");
       const detail = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: `Card render failed: ${detail}` });
+      // A full render queue is a "try again shortly", not a broken card.
+      res
+        .status(err instanceof RendererBusyError ? 503 : 500)
+        .json({ error: `Card render failed: ${detail}` });
     }
   },
 );

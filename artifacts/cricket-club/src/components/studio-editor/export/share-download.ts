@@ -52,3 +52,79 @@ export function downloadSafeInput(input: ShareCardInput): ShareCardInput {
   if (card.junior !== true || card.juniorPhotoAllowed === true) return input;
   return { ...card, photoUrl: null } as unknown as ShareCardInput;
 }
+
+/** What a failed render says: the server's own words when it sent any. */
+export function renderFailure(e: unknown): string {
+  const data = (e as { data?: { error?: unknown } } | null)?.data;
+  const raw =
+    typeof data?.error === "string" ? data.error : e instanceof Error ? e.message : String(e);
+  return raw.replace(/^Card render failed:\s*/, "").trim() || "It couldn't be drawn.";
+}
+
+/** A request the server refused outright (bad input, signed out): trying again won't help. */
+const permanent = (e: unknown) => {
+  const status = (e as { status?: unknown } | null)?.status;
+  return typeof status === "number" && status >= 400 && status < 500;
+};
+
+/** A set download that stopped at a slide; the message names it. */
+export class SlideDownloadError extends Error {
+  constructor(
+    /** The slide's place in the download, from 0. */
+    readonly index: number,
+    readonly label: string,
+    detail: string,
+  ) {
+    super(`${label} couldn't be saved. ${detail}`);
+    this.name = "SlideDownloadError";
+  }
+}
+
+/**
+ * Render `count` slides, `concurrency` at a time, results in slide order
+ * (round 6 retest). A slide that fails is tried again (`attempts` in all);
+ * one that still fails stops the download: no slide after it is started, and
+ * the error names the slide, so a set is never saved with a slide missing or
+ * drawn without its images. `onSaved` reports progress.
+ */
+export async function renderSlidesInOrder<T>(
+  count: number,
+  render: (n: number) => Promise<T>,
+  {
+    concurrency = 2,
+    attempts = 2,
+    label = (n: number) => `Slide ${n + 1}`,
+    onSaved = () => {},
+  }: {
+    concurrency?: number;
+    attempts?: number;
+    label?: (n: number) => string;
+    onSaved?: (done: number) => void;
+  } = {},
+): Promise<T[]> {
+  const out: T[] = new Array(count);
+  let next = 0;
+  let done = 0;
+  let failure: SlideDownloadError | null = null;
+  const worker = async () => {
+    while (next < count && !failure) {
+      const n = next++;
+      for (let attempt = 1; ; attempt++) {
+        try {
+          out[n] = await render(n);
+          break;
+        } catch (e) {
+          if (failure) return;
+          if (attempt >= attempts || permanent(e)) {
+            failure = new SlideDownloadError(n, label(n), renderFailure(e));
+            return;
+          }
+        }
+      }
+      onSaved(++done);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, count)) }, worker));
+  if (failure) throw failure;
+  return out;
+}
