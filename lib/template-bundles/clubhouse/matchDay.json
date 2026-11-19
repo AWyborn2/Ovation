@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match day",
-  "version": 11,
+  "version": 12,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1029,11 +1029,12 @@
       "title": {
         "layers": [
           {
+            "id": "title-stage",
             "kind": "shape",
+            "name": "Stage",
             "style": {
-              "fill": "var(--ink)"
+              "background": "var(--ck-stage,#16206B)"
             },
-            "id": "title-l1",
             "geometry": {
               "square": {
                 "x": 0,
@@ -1059,328 +1060,249 @@
                 "w": 100,
                 "h": 100
               }
-            },
-            "sig": "shape:1n943401b7btsl"
+            }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--ink)"
-            },
-            "id": "title-l2",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            },
-            "sig": "shape:1n943401b7btsl"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "radial",
-                "at": {
-                  "x": 100,
-                  "y": 0
-                },
-                "stops": [
-                  {
-                    "color": "var(--dt-p-22)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 70
-                  }
-                ]
-              }
-            },
-            "showWhen": {
-              "photo": false
-            },
-            "id": "title-l3",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            },
-            "sig": "shape:06mpf690gl12ko"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "radial",
-                "at": {
-                  "x": 0,
-                  "y": 100
-                },
-                "stops": [
-                  {
-                    "color": "var(--panel)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 72
-                  }
-                ]
-              }
-            },
-            "showWhen": {
-              "photo": false
-            },
-            "id": "title-l4",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            },
-            "sig": "shape:11frxh518etagc"
-          },
-          {
+            "id": "title-photo",
             "kind": "photo",
+            "name": "Photo",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "id": "title-photo-tint",
+            "kind": "shape",
+            "name": "Photo tint",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-80) 45%,var(--ck-stage) 100%)"
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "id": "title-crest-mark",
+            "kind": "image",
+            "name": "Crest watermark",
+            "content": "{{clubLogo}}",
             "style": {
               "filter": [
                 {
-                  "preset": "duotone",
-                  "dark": "var(--dt-ink)",
-                  "light": "var(--dt-p)"
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
                 }
-              ]
-            },
-            "id": "title-l5",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 60,
-                "h": 100
-              }
-            },
-            "sig": "photo:1mc7jmb0h7xx80"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "angle": 90,
-                "stops": [
-                  {
-                    "color": "#00000000",
-                    "at": 55
-                  },
-                  {
-                    "color": "var(--ink)",
-                    "at": 100
-                  }
-                ]
-              }
-            },
-            "showWhen": {
-              "photo": true
-            },
-            "id": "title-l6",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 60,
-                "h": 100
-              }
-            },
-            "sig": "shape:05g2y5c01uoihl"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "stops": [
-                  {
-                    "color": "var(--dt-ink-80)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 100
-                  }
-                ]
-              }
-            },
-            "showWhen": {
-              "photo": true
-            },
-            "id": "title-l7",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 30
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 30
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 26.5
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 35
-              }
-            },
-            "sig": "shape:1pvy7uk0nubdud"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "radial",
-                "shape": "circle",
-                "stops": [
-                  {
-                    "color": "var(--dt-ink-55)"
-                  },
-                  {
-                    "color": "#00000000"
-                  }
-                ]
-              }
+              ],
+              "opacity": 0.08
             },
             "showWhen": {
               "photo": false
             },
-            "id": "title-l15",
             "geometry": {
               "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
               },
               "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
               },
               "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
               },
               "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
               }
+            }
+          },
+          {
+            "id": "title-stroke-1",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.85
             },
-            "sig": "shape:105lcvu1jv32id"
+            "geometry": {
+              "square": {
+                "x": -8,
+                "y": 90,
+                "w": 30,
+                "h": 2.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -8,
+                "y": 92,
+                "w": 30,
+                "h": 1.76,
+                "rotate": -38
+              },
+              "story": {
+                "x": -8,
+                "y": 94.38,
+                "w": 30,
+                "h": 1.24,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -4.2,
+                "y": 90,
+                "w": 15.75,
+                "h": 2.2,
+                "rotate": -38
+              }
+            }
+          },
+          {
+            "id": "title-stroke-2",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.6
+            },
+            "geometry": {
+              "square": {
+                "x": -4,
+                "y": 94,
+                "w": 22,
+                "h": 1.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -4,
+                "y": 95.2,
+                "w": 22,
+                "h": 0.96,
+                "rotate": -38
+              },
+              "story": {
+                "x": -4,
+                "y": 96.63,
+                "w": 22,
+                "h": 0.67,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -2.1,
+                "y": 94,
+                "w": 11.55,
+                "h": 1.2,
+                "rotate": -38
+              }
+            }
+          },
+          {
+            "id": "title-stroke-3",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.55
+            },
+            "geometry": {
+              "square": {
+                "x": 80,
+                "y": 4,
+                "w": 26,
+                "h": 1.6,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": 80,
+                "y": 3.2,
+                "w": 26,
+                "h": 1.28,
+                "rotate": -38
+              },
+              "story": {
+                "x": 80,
+                "y": 2.25,
+                "w": 26,
+                "h": 0.9,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": 89.5,
+                "y": 4,
+                "w": 13.65,
+                "h": 1.6,
+                "rotate": -38
+              }
+            }
           },
           {
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 6.63,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.12,
@@ -1414,17 +1336,16 @@
                 "h": 9.56
               }
             },
-            "sig": "text:0k7xbdv1fel1ow"
+            "link": "title-l8"
           },
           {
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 6.62,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.12,
@@ -1452,17 +1373,16 @@
                 "h": 8.02
               }
             },
-            "sig": "text:1y2c1k80zsyh8r"
+            "link": "title-l8"
           },
           {
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 3.76,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.12,
@@ -1490,13 +1410,12 @@
                 "h": 15.24
               }
             },
-            "sig": "text:1t9dhlv0g92doc"
+            "link": "title-l8"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 59.4,
               "boxShadow": [
                 {
                   "x": 0,
@@ -1528,13 +1447,42 @@
                 "h": 26.39
               }
             },
-            "sig": "shape:0opoupm06a0pzr"
+            "link": "title-l11"
+          },
+          {
+            "id": "title-l11-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 56.01,
+                "w": 1,
+                "h": 39.99
+              },
+              "portrait": {
+                "x": 4,
+                "y": 62.9,
+                "w": 1,
+                "h": 33.9
+              },
+              "story": {
+                "x": 4,
+                "y": 55.35,
+                "w": 1,
+                "h": 26.39
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "link": "title-l11-edge"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 31.5,
               "boxShadow": [
                 {
                   "x": 0,
@@ -1554,7 +1502,25 @@
                 "h": 90
               }
             },
-            "sig": "shape:0pa4uz806z62fb"
+            "link": "title-l11"
+          },
+          {
+            "id": "title-l12-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 56.63,
+                "y": 5,
+                "w": 0.52,
+                "h": 90
+              }
+            },
+            "sizes": ["landscape"],
+            "link": "title-l11-edge"
           },
           {
             "kind": "image",
@@ -1585,17 +1551,16 @@
                 "w": 6.14,
                 "h": 11.7
               }
-            },
-            "sig": "image:194ijcq0drv4o1"
+            }
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 3,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -1614,16 +1579,16 @@
                 "h": 2.31
               }
             },
-            "sig": "text:1wgqvie0krwnz9"
+            "link": "title-l16"
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 3.18,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -1642,16 +1607,16 @@
                 "h": 1.93
               }
             },
-            "sig": "text:1k6u1an1dcle8a"
+            "link": "title-l16"
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 3.42,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -1670,16 +1635,16 @@
                 "h": 1.41
               }
             },
-            "sig": "text:15aipzk14pzd01"
+            "link": "title-l16"
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 2.05,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -1698,14 +1663,14 @@
                 "h": 3.02
               }
             },
-            "sig": "text:1mf0rik0wl6sat"
+            "link": "title-l16"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 700,
               "align": "left",
@@ -1726,14 +1691,14 @@
                 "h": 2.59
               }
             },
-            "sig": "text:0eb8m9b1rfvmt4"
+            "link": "title-l20"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.54,
               "fontWeight": 700,
               "align": "left",
@@ -1754,14 +1719,14 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1pe9w4q1ezqltv"
+            "link": "title-l20"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.74,
               "fontWeight": 700,
               "align": "left",
@@ -1782,14 +1747,14 @@
                 "h": 1.67
               }
             },
-            "sig": "text:0d081n80cn27md"
+            "link": "title-l20"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.64,
               "fontWeight": 700,
               "align": "left",
@@ -1810,16 +1775,16 @@
                 "h": 3.33
               }
             },
-            "sig": "text:08gl2061mu02t3"
+            "link": "title-l20"
           },
           {
             "kind": "text",
             "content": "{{weekendTitle}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 5.6,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.05
             },
@@ -1833,16 +1798,16 @@
                 "h": 7.44
               }
             },
-            "sig": "text:1t4e2hs1k6xbfl"
+            "link": "title-l24"
           },
           {
             "kind": "text",
             "content": "{{weekendTitle}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 5.94,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.05
             },
@@ -1856,16 +1821,16 @@
                 "h": 6.28
               }
             },
-            "sig": "text:0018doj1imsdhw"
+            "link": "title-l24"
           },
           {
             "kind": "text",
             "content": "{{weekendTitle}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 7.3,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.05
             },
@@ -1879,16 +1844,16 @@
                 "h": 5.43
               }
             },
-            "sig": "text:0dt9wsn0zwpiby"
+            "link": "title-l24"
           },
           {
             "kind": "text",
             "content": "{{weekendTitle}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 3.41,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.05
             },
@@ -1902,17 +1867,16 @@
                 "h": 12.75
               }
             },
-            "sig": "text:0ocwaqv1cgbjes"
+            "link": "title-l24"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)",
+              "fill": "var(--ck-p)",
               "border": {
                 "width": 0.19,
-                "color": "var(--gold)"
-              },
-              "radius": 1069.2
+                "color": "var(--ck-p)"
+              }
             },
             "id": "title-l28",
             "sizes": ["square", "portrait"],
@@ -1930,7 +1894,7 @@
                 "h": 3.47
               }
             },
-            "sig": "shape:09zngj91fufb3u",
+            "link": "title-l28",
             "showWhen": {
               "field": "livestream"
             }
@@ -1938,12 +1902,11 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)",
+              "fill": "var(--ck-p)",
               "border": {
                 "width": 0.28,
-                "color": "var(--gold)"
-              },
-              "radius": 1069.2
+                "color": "var(--ck-p)"
+              }
             },
             "id": "title-l29",
             "sizes": ["story"],
@@ -1955,7 +1918,7 @@
                 "h": 2.72
               }
             },
-            "sig": "shape:1f1xya916xif8u",
+            "link": "title-l28",
             "showWhen": {
               "field": "livestream"
             }
@@ -1963,12 +1926,11 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)",
+              "fill": "var(--ck-p)",
               "border": {
                 "width": 0.17,
-                "color": "var(--gold)"
-              },
-              "radius": 623.7
+                "color": "var(--ck-p)"
+              }
             },
             "id": "title-l30",
             "sizes": ["landscape"],
@@ -1980,7 +1942,7 @@
                 "h": 5.51
               }
             },
-            "sig": "shape:096ogzj1u57r6e",
+            "link": "title-l28",
             "showWhen": {
               "field": "livestream"
             }
@@ -1989,8 +1951,8 @@
             "kind": "text",
             "content": "WATCH LIVE",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.3,
               "fontWeight": 800,
               "align": "left",
@@ -2006,7 +1968,7 @@
                 "h": 2.5
               }
             },
-            "sig": "text:0d61zwn0crqq0w",
+            "link": "title-l31",
             "showWhen": {
               "field": "livestream"
             }
@@ -2015,8 +1977,8 @@
             "kind": "text",
             "content": "WATCH LIVE",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.44,
               "fontWeight": 800,
               "align": "left",
@@ -2032,7 +1994,7 @@
                 "h": 2.15
               }
             },
-            "sig": "text:1gmbzae1glgf33",
+            "link": "title-l31",
             "showWhen": {
               "field": "livestream"
             }
@@ -2041,8 +2003,8 @@
             "kind": "text",
             "content": "WATCH LIVE",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.62,
               "fontWeight": 800,
               "align": "left",
@@ -2058,7 +2020,7 @@
                 "h": 1.61
               }
             },
-            "sig": "text:0vr1rvm01q8s73",
+            "link": "title-l31",
             "showWhen": {
               "field": "livestream"
             }
@@ -2067,8 +2029,8 @@
             "kind": "text",
             "content": "WATCH LIVE",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.57,
               "fontWeight": 800,
               "align": "left",
@@ -2084,7 +2046,7 @@
                 "h": 3.33
               }
             },
-            "sig": "text:1pw08kz1woyita",
+            "link": "title-l31",
             "showWhen": {
               "field": "livestream"
             }
@@ -2093,8 +2055,8 @@
             "kind": "text",
             "content": "{{livestream}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.2,
               "fontWeight": 600,
               "align": "left",
@@ -2115,14 +2077,14 @@
                 "h": 2.41
               }
             },
-            "sig": "text:0byoulw0wgbj7h"
+            "link": "title-l35"
           },
           {
             "kind": "text",
             "content": "{{livestream}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.33,
               "fontWeight": 600,
               "align": "left",
@@ -2143,14 +2105,14 @@
                 "h": 2
               }
             },
-            "sig": "text:0ldg4z0173colj"
+            "link": "title-l35"
           },
           {
             "kind": "text",
             "content": "{{livestream}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.51,
               "fontWeight": 600,
               "align": "left",
@@ -2171,14 +2133,14 @@
                 "h": 1.56
               }
             },
-            "sig": "text:0lehueg1t2lkbz"
+            "link": "title-l35"
           },
           {
             "kind": "text",
             "content": "{{livestream}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.5,
               "fontWeight": 600,
               "align": "left",
@@ -2199,14 +2161,14 @@
                 "h": 3.17
               }
             },
-            "sig": "text:02cvgo41ojkcp9"
+            "link": "title-l35"
           },
           {
             "kind": "text",
             "content": "Presented by",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2,
               "fontWeight": 500,
               "align": "left",
@@ -2225,14 +2187,14 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1q4c5qt0weh10g"
+            "link": "title-l39"
           },
           {
             "kind": "text",
             "content": "Presented by",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.12,
               "fontWeight": 500,
               "align": "left",
@@ -2251,14 +2213,14 @@
                 "h": 1.85
               }
             },
-            "sig": "text:07mn5641q9up6b"
+            "link": "title-l39"
           },
           {
             "kind": "text",
             "content": "Presented by",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.28,
               "fontWeight": 500,
               "align": "left",
@@ -2277,14 +2239,14 @@
                 "h": 1.41
               }
             },
-            "sig": "text:0rvlghl1p650h6"
+            "link": "title-l39"
           },
           {
             "kind": "text",
             "content": "Presented by",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.37,
               "fontWeight": 500,
               "align": "left",
@@ -2303,7 +2265,7 @@
                 "h": 2.7
               }
             },
-            "sig": "text:1isnhne1smiro5"
+            "link": "title-l39"
           },
           {
             "kind": "image",
@@ -2334,14 +2296,12 @@
                 "w": 8.87,
                 "h": 7.28
               }
-            },
-            "sig": "image:16m2gfo0dd71nj"
+            }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ink)",
-              "radius": 1069.2
+              "fill": "var(--ck-stage)"
             },
             "id": "title-l44",
             "sizes": ["square", "portrait"],
@@ -2359,13 +2319,12 @@
                 "h": 3.43
               }
             },
-            "sig": "shape:115mpzk0ptge11"
+            "link": "title-l44"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ink)",
-              "radius": 623.7
+              "fill": "var(--ck-stage)"
             },
             "id": "title-l45",
             "sizes": ["landscape"],
@@ -2377,14 +2336,14 @@
                 "h": 5.26
               }
             },
-            "sig": "shape:1yevo661wbinph"
+            "link": "title-l44"
           },
           {
             "kind": "text",
             "content": "SWIPE →",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.9,
               "fontWeight": 800,
               "letterSpacing": 0.1,
@@ -2401,14 +2360,14 @@
                 "h": 2.04
               }
             },
-            "sig": "text:1n199tq152tu8d"
+            "link": "title-l46"
           },
           {
             "kind": "text",
             "content": "SWIPE →",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.01,
               "fontWeight": 800,
               "letterSpacing": 0.1,
@@ -2425,14 +2384,14 @@
                 "h": 1.78
               }
             },
-            "sig": "text:0igow8n1nnowgy"
+            "link": "title-l46"
           },
           {
             "kind": "text",
             "content": "SWIPE →",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.3,
               "fontWeight": 800,
               "letterSpacing": 0.1,
@@ -2449,18 +2408,19 @@
                 "h": 2.7
               }
             },
-            "sig": "text:0a64eyw14r274n"
+            "link": "title-l46"
           }
         ]
       },
       "day": {
         "layers": [
           {
+            "id": "day-stage",
             "kind": "shape",
+            "name": "Stage",
             "style": {
-              "fill": "var(--ink)"
+              "background": "var(--ck-stage,#16206B)"
             },
-            "id": "day-l1",
             "geometry": {
               "square": {
                 "x": 0,
@@ -2486,142 +2446,124 @@
                 "w": 100,
                 "h": 100
               }
-            },
-            "sig": "shape:1n943401b7btsl"
+            }
           },
           {
+            "id": "day-stroke-1",
             "kind": "shape",
+            "name": "Paint stroke",
             "style": {
-              "fill": "var(--ink)"
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.85
             },
-            "id": "day-l2",
             "geometry": {
               "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -8,
+                "y": 90,
+                "w": 30,
+                "h": 2.2,
+                "rotate": -38
               },
               "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -8,
+                "y": 92,
+                "w": 30,
+                "h": 1.76,
+                "rotate": -38
               },
               "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -8,
+                "y": 94.38,
+                "w": 30,
+                "h": 1.24,
+                "rotate": -38
               },
               "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -4.2,
+                "y": 90,
+                "w": 15.75,
+                "h": 2.2,
+                "rotate": -38
               }
-            },
-            "sig": "shape:1n943401b7btsl"
+            }
           },
           {
+            "id": "day-stroke-2",
             "kind": "shape",
+            "name": "Paint stroke",
             "style": {
-              "fill": {
-                "type": "radial",
-                "at": {
-                  "x": 100,
-                  "y": 0
-                },
-                "stops": [
-                  {
-                    "color": "var(--dt-p-22)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 70
-                  }
-                ]
-              }
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.6
             },
-            "id": "day-l3",
             "geometry": {
               "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -4,
+                "y": 94,
+                "w": 22,
+                "h": 1.2,
+                "rotate": -38
               },
               "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -4,
+                "y": 95.2,
+                "w": 22,
+                "h": 0.96,
+                "rotate": -38
               },
               "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -4,
+                "y": 96.63,
+                "w": 22,
+                "h": 0.67,
+                "rotate": -38
               },
               "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": -2.1,
+                "y": 94,
+                "w": 11.55,
+                "h": 1.2,
+                "rotate": -38
               }
-            },
-            "sig": "shape:06mpf690gl12ko"
+            }
           },
           {
+            "id": "day-stroke-3",
             "kind": "shape",
+            "name": "Paint stroke",
             "style": {
-              "fill": {
-                "type": "radial",
-                "at": {
-                  "x": 0,
-                  "y": 100
-                },
-                "stops": [
-                  {
-                    "color": "var(--panel)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 72
-                  }
-                ]
-              }
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.55
             },
-            "id": "day-l4",
             "geometry": {
               "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 80,
+                "y": 4,
+                "w": 26,
+                "h": 1.6,
+                "rotate": -38
               },
               "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 80,
+                "y": 3.2,
+                "w": 26,
+                "h": 1.28,
+                "rotate": -38
               },
               "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 80,
+                "y": 2.25,
+                "w": 26,
+                "h": 0.9,
+                "rotate": -38
               },
               "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
+                "x": 89.5,
+                "y": 4,
+                "w": 13.65,
+                "h": 1.6,
+                "rotate": -38
               }
-            },
-            "sig": "shape:11frxh518etagc"
+            }
           },
           {
             "kind": "image",
@@ -2665,63 +2607,16 @@
                 "w": 57.75,
                 "h": 110
               }
-            },
-            "sig": "image:1ouezsv1sscvsa"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "radial",
-                "shape": "circle",
-                "stops": [
-                  {
-                    "color": "var(--dt-ink-55)"
-                  },
-                  {
-                    "color": "#00000000"
-                  }
-                ]
-              }
-            },
-            "id": "day-l6",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            },
-            "sig": "shape:105lcvu1jv32id"
+            }
           },
           {
             "kind": "text",
             "content": "{{dayHeading}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 6.72,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.12,
@@ -2761,17 +2656,16 @@
                 "h": 7.03
               }
             },
-            "sig": "text:1ov75uf171silg"
+            "link": "day-l7"
           },
           {
             "kind": "text",
             "content": "{{dayHeading}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 2.45,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.12,
@@ -2799,13 +2693,12 @@
                 "h": 8.73
               }
             },
-            "sig": "text:1wamxpm0qnj73d"
+            "link": "day-l7"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 59.4,
               "boxShadow": [
                 {
                   "x": 0,
@@ -2837,13 +2730,121 @@
                 "h": 53.67
               }
             },
-            "sig": "shape:0opoupm06a0pzr"
+            "link": "day-l9",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "id": "day-l9-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 34.83,
+                "w": 1,
+                "h": 61.18
+              },
+              "portrait": {
+                "x": 4,
+                "y": 37.79,
+                "w": 1,
+                "h": 59.01
+              },
+              "story": {
+                "x": 4,
+                "y": 28.06,
+                "w": 1,
+                "h": 53.67
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "showWhen": {
+              "sponsors": false
+            },
+            "link": "day-l9-edge"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 31.5,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.2,
+                  "blur": 4,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "day-l9-sponsored",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 27.83,
+                "w": 92,
+                "h": 68.18
+              },
+              "portrait": {
+                "x": 4,
+                "y": 31.79,
+                "w": 92,
+                "h": 65.01
+              },
+              "story": {
+                "x": 4,
+                "y": 28.06,
+                "w": 92,
+                "h": 58.94
+              }
+            },
+            "link": "day-l9",
+            "showWhen": {
+              "sponsors": true
+            }
+          },
+          {
+            "id": "day-l9-sponsored-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 27.83,
+                "w": 1,
+                "h": 68.18
+              },
+              "portrait": {
+                "x": 4,
+                "y": 31.79,
+                "w": 1,
+                "h": 65.01
+              },
+              "story": {
+                "x": 4,
+                "y": 28.06,
+                "w": 1,
+                "h": 58.94
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "showWhen": {
+              "sponsors": true
+            },
+            "link": "day-l9-edge"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF",
               "boxShadow": [
                 {
                   "x": 0,
@@ -2863,7 +2864,25 @@
                 "h": 90
               }
             },
-            "sig": "shape:0pa4uz806z62fb"
+            "link": "day-l9"
+          },
+          {
+            "id": "day-l10-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 38.63,
+                "y": 5,
+                "w": 0.52,
+                "h": 90
+              }
+            },
+            "sizes": ["landscape"],
+            "link": "day-l9-edge"
           },
           {
             "kind": "image",
@@ -2895,16 +2914,52 @@
                 "h": 7.8
               }
             },
-            "sig": "image:194ijcq0drv4o1"
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "day-l11-sponsored",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 31.43,
+                "w": 6,
+                "h": 6
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 34.85,
+                "w": 6.36,
+                "h": 5.09
+              },
+              "story": {
+                "x": 8.79,
+                "y": 30.37,
+                "w": 6.84,
+                "h": 3.85
+              },
+              "landscape": {
+                "x": 41.5,
+                "y": 9.68,
+                "w": 4.09,
+                "h": 7.8
+              }
+            },
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 2.8,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -2923,16 +2978,50 @@
                 "h": 2.31
               }
             },
-            "sig": "text:0jmtuij0becg54"
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": false
+            }
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 2.8,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l12-sponsored",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 16,
+                "y": 31.96,
+                "w": 39.97,
+                "h": 2.31
+              }
+            },
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 2.97,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -2951,16 +3040,50 @@
                 "h": 1.93
               }
             },
-            "sig": "text:18ezihr14evgsi"
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": false
+            }
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 2.97,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l13-sponsored",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.72,
+                "y": 35.3,
+                "w": 42.39,
+                "h": 1.93
+              }
+            },
+            "link": "day-l12",
+            "showWhen": {
+              "sponsors": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 3.19,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -2979,16 +3102,16 @@
                 "h": 1.46
               }
             },
-            "sig": "text:0ny471g05yj5wl"
+            "link": "day-l12"
           },
           {
             "kind": "text",
             "content": "{{clubName}}",
             "style": {
-              "color": "var(--dt-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-stage,#16206B)",
+              "fontFamily": "'Cinzel',Georgia,serif",
               "fontSize": 1.91,
-              "fontWeight": 900,
+              "fontWeight": 700,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -3007,14 +3130,14 @@
                 "h": 3.02
               }
             },
-            "sig": "text:0hcmtmm0rjj0lz"
+            "link": "day-l12"
           },
           {
             "kind": "text",
             "content": "Junior match day",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2,
               "fontWeight": 500,
               "align": "left",
@@ -3030,14 +3153,43 @@
                 "h": 2.22
               }
             },
-            "sig": "text:00sino21chb713"
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": false
+            }
           },
           {
             "kind": "text",
             "content": "Junior match day",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l16-sponsored",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 16,
+                "y": 34.48,
+                "w": 41.17,
+                "h": 2.22
+              }
+            },
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Junior match day",
+            "style": {
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.12,
               "fontWeight": 500,
               "align": "left",
@@ -3053,14 +3205,43 @@
                 "h": 1.85
               }
             },
-            "sig": "text:00dsmp10fqy1a2"
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": false
+            }
           },
           {
             "kind": "text",
             "content": "Junior match day",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.12,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l17-sponsored",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.72,
+                "y": 37.43,
+                "w": 43.66,
+                "h": 1.85
+              }
+            },
+            "link": "day-l16",
+            "showWhen": {
+              "sponsors": true
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Junior match day",
+            "style": {
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.28,
               "fontWeight": 500,
               "align": "left",
@@ -3076,14 +3257,14 @@
                 "h": 1.41
               }
             },
-            "sig": "text:061yjo807tbtg3"
+            "link": "day-l16"
           },
           {
             "kind": "text",
             "content": "Junior match day",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.37,
               "fontWeight": 500,
               "align": "left",
@@ -3099,7 +3280,7 @@
                 "h": 2.7
               }
             },
-            "sig": "text:1qhasq31nd62kc"
+            "link": "day-l16"
           },
           {
             "kind": "rows",
@@ -3125,11 +3306,12 @@
                   "y": 35.2,
                   "h": 30.6,
                   "style": {
-                    "fontSize": 2.8,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 2.35,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3140,10 +3322,11 @@
                   "h": 26.99,
                   "style": {
                     "fontSize": 1.9,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 700,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3153,11 +3336,12 @@
                   "y": 40.02,
                   "h": 20.98,
                   "style": {
-                    "fontSize": 3,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 2.52,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3168,10 +3352,11 @@
                   "h": 26.99,
                   "style": {
                     "fontSize": 1.9,
-                    "color": "#5B656E",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "rgba(16,21,27,.66)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 500,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3194,7 +3379,112 @@
                 "h": 46.38
               }
             },
-            "sig": "rows:0ituovl03gi0oi"
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 9.15,
+              "cells": [
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.01,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 17.74,
+                  "y": 35.2,
+                  "h": 30.6,
+                  "style": {
+                    "fontSize": 2.35,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 17.74,
+                  "w": 75.56,
+                  "y": 13.04,
+                  "h": 26.99,
+                  "style": {
+                    "fontSize": 1.9,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 17.74,
+                  "w": 75.56,
+                  "y": 40.02,
+                  "h": 20.98,
+                  "style": {
+                    "fontSize": 2.52,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 17.74,
+                  "w": 75.56,
+                  "y": 60.99,
+                  "h": 26.99,
+                  "style": {
+                    "fontSize": 1.9,
+                    "color": "rgba(16,21,27,.66)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 93.3,
+                  "w": 6.7,
+                  "y": 19.9,
+                  "h": 61.22,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l20-sponsored",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 39.02,
+                "w": 83.6,
+                "h": 46.38
+              }
+            },
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "rows",
@@ -3221,11 +3511,12 @@
                   "y": 35.01,
                   "h": 30.94,
                   "style": {
-                    "fontSize": 2.97,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 2.49,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3236,10 +3527,11 @@
                   "h": 27.2,
                   "style": {
                     "fontSize": 2.01,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 700,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3249,11 +3541,12 @@
                   "y": 40.35,
                   "h": 20.28,
                   "style": {
-                    "fontSize": 3.18,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 2.67,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3264,10 +3557,11 @@
                   "h": 27.2,
                   "style": {
                     "fontSize": 2.01,
-                    "color": "#5B656E",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "rgba(16,21,27,.66)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 500,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3290,7 +3584,113 @@
                 "h": 46.45
               }
             },
-            "sig": "rows:1up52110nc1bli"
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": false
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 9.6,
+              "gap": 0,
+              "cells": [
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.96,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "time",
+                  "x": 0,
+                  "w": 18.94,
+                  "y": 35.01,
+                  "h": 30.94,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 18.94,
+                  "w": 73.91,
+                  "y": 13.15,
+                  "h": 27.2,
+                  "style": {
+                    "fontSize": 2.01,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 18.94,
+                  "w": 73.91,
+                  "y": 40.35,
+                  "h": 20.28,
+                  "style": {
+                    "fontSize": 2.67,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 18.94,
+                  "w": 73.91,
+                  "y": 60.63,
+                  "h": 27.2,
+                  "style": {
+                    "fontSize": 2.01,
+                    "color": "rgba(16,21,27,.66)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left",
+                    "lineHeight": 1
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.85,
+                  "w": 7.15,
+                  "y": 19.55,
+                  "h": 61.87,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l21-sponsored",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 41.3,
+                "w": 83.1,
+                "h": 46.45
+              }
+            },
+            "link": "day-l20",
+            "showWhen": {
+              "sponsors": true
+            }
           },
           {
             "kind": "rows",
@@ -3316,11 +3716,12 @@
                   "y": 37.52,
                   "h": 25.68,
                   "style": {
-                    "fontSize": 3.19,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 2.68,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3331,10 +3732,11 @@
                   "h": 22.72,
                   "style": {
                     "fontSize": 2.17,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 700,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3344,11 +3746,12 @@
                   "y": 33.53,
                   "h": 33.69,
                   "style": {
-                    "fontSize": 3.42,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 2.87,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3359,10 +3762,11 @@
                   "h": 22.72,
                   "style": {
                     "fontSize": 2.17,
-                    "color": "#5B656E",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "rgba(16,21,27,.66)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 500,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3385,7 +3789,7 @@
                 "h": 44.19
               }
             },
-            "sig": "rows:074obhf0738vp8"
+            "link": "day-l20"
           },
           {
             "kind": "rows",
@@ -3411,11 +3815,12 @@
                   "y": 35.26,
                   "h": 30.81,
                   "style": {
-                    "fontSize": 1.91,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 1.6,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3426,10 +3831,11 @@
                   "h": 27.16,
                   "style": {
                     "fontSize": 1.3,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 700,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3439,11 +3845,12 @@
                   "y": 40.59,
                   "h": 20.17,
                   "style": {
-                    "fontSize": 2.05,
-                    "color": "var(--ink)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 900,
-                    "align": "left"
+                    "fontSize": 1.72,
+                    "color": "var(--ck-stage,#16206B)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3454,10 +3861,11 @@
                   "h": 27.16,
                   "style": {
                     "fontSize": 1.3,
-                    "color": "#5B656E",
-                    "fontFamily": "'Archivo',sans-serif",
+                    "color": "rgba(16,21,27,.66)",
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 500,
-                    "align": "left"
+                    "align": "left",
+                    "lineHeight": 1
                   }
                 },
                 {
@@ -3480,18 +3888,216 @@
                 "h": 47.27
               }
             },
-            "sig": "rows:1qpx0tb1vu6cui"
+            "link": "day-l20"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 88.47,
+                "w": 13.13,
+                "h": 2.22
+              }
+            },
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.12,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label-portrait",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 90.39,
+                "w": 13.86,
+                "h": 1.85
+              }
+            },
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.28,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label-story",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 81.94,
+                "w": 14.83,
+                "h": 1.41
+              }
+            },
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "text",
+            "content": "Supported by",
+            "style": {
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.37,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "day-strip-label-landscape",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 41.5,
+                "y": 85.21,
+                "w": 9.27,
+                "h": 2.7
+              }
+            },
+            "link": "day-strip-label"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "id": "day-strip-sponsor1",
+            "geometry": {
+              "square": {
+                "x": 21.93,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 23,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 24.43,
+                "y": 80.9,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 50.88,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor2}}",
+            "id": "day-strip-sponsor2",
+            "geometry": {
+              "square": {
+                "x": 36.43,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 38.28,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 40.25,
+                "y": 80.9,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 60.75,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor3}}",
+            "id": "day-strip-sponsor3",
+            "geometry": {
+              "square": {
+                "x": 50.93,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 53.56,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 56.07,
+                "y": 80.9,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 70.62,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            }
           }
         ]
       },
       "sponsors": {
         "layers": [
           {
+            "id": "sponsors-stage",
             "kind": "shape",
+            "name": "Stage",
             "style": {
-              "fill": "var(--ink)"
+              "background": "var(--ck-stage,#16206B)"
             },
-            "id": "sponsors-l1",
             "geometry": {
               "square": {
                 "x": 0,
@@ -3517,55 +4123,12 @@
                 "w": 100,
                 "h": 100
               }
-            },
-            "sig": "shape:1n943401b7btsl"
+            }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--ink)"
-            },
-            "id": "sponsors-l2",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            },
-            "sig": "shape:1n943401b7btsl"
-          },
-          {
+            "id": "sponsors-photo",
             "kind": "photo",
-            "style": {
-              "filter": [
-                {
-                  "preset": "duotone",
-                  "dark": "var(--dt-ink)",
-                  "light": "var(--dt-p)"
-                }
-              ]
-            },
-            "id": "sponsors-l3",
+            "name": "Photo",
             "geometry": {
               "square": {
                 "x": 0,
@@ -3588,64 +4151,163 @@
               "landscape": {
                 "x": 0,
                 "y": 0,
-                "w": 60,
+                "w": 100,
                 "h": 100
               }
-            },
-            "sig": "photo:1mc7jmb0h7xx80"
+            }
           },
           {
+            "id": "sponsors-photo-tint",
             "kind": "shape",
-            "id": "sponsors-l3-nophoto-panel",
-            "name": "No-photo brand panel",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 60,
-                "h": 100
-              }
-            },
+            "name": "Photo tint",
             "style": {
-              "fill": {
-                "type": "radial",
-                "at": {
-                  "x": 100,
-                  "y": 0
-                },
-                "stops": [
-                  {
-                    "color": "var(--panel)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 78
-                  }
-                ]
-              },
-              "opacity": 0.38
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-80) 45%,var(--ck-stage) 100%)"
             },
             "showWhen": {
-              "photo": false
+              "photo": true
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "id": "sponsors-stroke-1",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.85
+            },
+            "geometry": {
+              "square": {
+                "x": -8,
+                "y": 90,
+                "w": 30,
+                "h": 2.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -8,
+                "y": 92,
+                "w": 30,
+                "h": 1.76,
+                "rotate": -38
+              },
+              "story": {
+                "x": -8,
+                "y": 94.38,
+                "w": 30,
+                "h": 1.24,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -4.2,
+                "y": 90,
+                "w": 15.75,
+                "h": 2.2,
+                "rotate": -38
+              }
+            }
+          },
+          {
+            "id": "sponsors-stroke-2",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.6
+            },
+            "geometry": {
+              "square": {
+                "x": -4,
+                "y": 94,
+                "w": 22,
+                "h": 1.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -4,
+                "y": 95.2,
+                "w": 22,
+                "h": 0.96,
+                "rotate": -38
+              },
+              "story": {
+                "x": -4,
+                "y": 96.63,
+                "w": 22,
+                "h": 0.67,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -2.1,
+                "y": 94,
+                "w": 11.55,
+                "h": 1.2,
+                "rotate": -38
+              }
+            }
+          },
+          {
+            "id": "sponsors-stroke-3",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.55
+            },
+            "geometry": {
+              "square": {
+                "x": 80,
+                "y": 4,
+                "w": 26,
+                "h": 1.6,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": 80,
+                "y": 3.2,
+                "w": 26,
+                "h": 1.28,
+                "rotate": -38
+              },
+              "story": {
+                "x": 80,
+                "y": 2.25,
+                "w": 26,
+                "h": 0.9,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": 89.5,
+                "y": 4,
+                "w": 13.65,
+                "h": 1.6,
+                "rotate": -38
+              }
             }
           },
           {
@@ -3697,90 +4359,13 @@
             }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "angle": 90,
-                "stops": [
-                  {
-                    "color": "#00000000",
-                    "at": 55
-                  },
-                  {
-                    "color": "var(--ink)",
-                    "at": 100
-                  }
-                ]
-              }
-            },
-            "id": "sponsors-l4",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 60,
-                "h": 100
-              }
-            },
-            "sig": "shape:05g2y5c01uoihl"
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "stops": [
-                  {
-                    "color": "var(--dt-ink-80)",
-                    "at": 0
-                  },
-                  {
-                    "color": "#00000000",
-                    "at": 100
-                  }
-                ]
-              }
-            },
-            "id": "sponsors-l5",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 30
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 30
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 26.5
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 35
-              }
-            },
-            "sig": "shape:1pvy7uk0nubdud"
-          },
-          {
             "kind": "text",
             "content": "{{sponsorThanks}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 5.47,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.06,
@@ -3809,17 +4394,16 @@
                 "h": 12.88
               }
             },
-            "sig": "text:0f30ptx1xlz460"
+            "link": "sponsors-l6"
           },
           {
             "kind": "text",
             "content": "{{sponsorThanks}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 5.45,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.06,
@@ -3842,17 +4426,16 @@
                 "h": 10.07
               }
             },
-            "sig": "text:05o42v31hyolgm"
+            "link": "sponsors-l6"
           },
           {
             "kind": "text",
             "content": "{{sponsorThanks}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 2.68,
-              "fontWeight": 900,
-              "letterSpacing": -0.01,
+              "fontWeight": 400,
               "uppercase": true,
               "align": "left",
               "lineHeight": 1.06,
@@ -3875,13 +4458,12 @@
                 "h": 16.04
               }
             },
-            "sig": "text:1l8az3u03llpnf"
+            "link": "sponsors-l6"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 59.4,
               "boxShadow": [
                 {
                   "x": 0,
@@ -3913,16 +4495,48 @@
                 "h": 36.77
               }
             },
-            "sig": "shape:0opoupm06a0pzr",
+            "link": "sponsors-l9",
             "showWhen": {
               "field": "nextHomeMatch"
             }
           },
           {
+            "id": "sponsors-l9-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 32.37,
+                "w": 1,
+                "h": 39.83
+              },
+              "portrait": {
+                "x": 4,
+                "y": 35.53,
+                "w": 1,
+                "h": 41.37
+              },
+              "story": {
+                "x": 4,
+                "y": 30.17,
+                "w": 1,
+                "h": 36.77
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "showWhen": {
+              "field": "nextHomeMatch"
+            },
+            "link": "sponsors-l9-edge"
+          },
+          {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 59.4,
               "boxShadow": [
                 {
                   "x": 0,
@@ -3954,16 +4568,48 @@
                 "h": 47.13
               }
             },
-            "sig": "shape:0opoupm06a0pzr",
+            "link": "sponsors-l9",
             "showWhen": {
               "noField": "nextHomeMatch"
             }
           },
           {
+            "id": "sponsors-l9-tall-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 32.37,
+                "w": 1,
+                "h": 56.23
+              },
+              "portrait": {
+                "x": 4,
+                "y": 35.53,
+                "w": 1,
+                "h": 55.07
+              },
+              "story": {
+                "x": 4,
+                "y": 30.17,
+                "w": 1,
+                "h": 47.13
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            },
+            "link": "sponsors-l9-edge"
+          },
+          {
             "kind": "shape",
             "style": {
               "fill": "#FFFFFF",
-              "radius": 31.5,
               "boxShadow": [
                 {
                   "x": 0,
@@ -3983,14 +4629,32 @@
                 "h": 90
               }
             },
-            "sig": "shape:0pa4uz806z62fb"
+            "link": "sponsors-l9"
+          },
+          {
+            "id": "sponsors-l10-edge",
+            "kind": "shape",
+            "name": "Panel edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 50,
+                "y": 5,
+                "w": 0.52,
+                "h": 90
+              }
+            },
+            "sizes": ["landscape"],
+            "link": "sponsors-l9-edge"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 700,
               "align": "center",
@@ -4011,14 +4675,14 @@
                 "h": 2.59
               }
             },
-            "sig": "text:0xwfbs716dab5g"
+            "link": "sponsors-l11"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.54,
               "fontWeight": 700,
               "align": "center",
@@ -4039,14 +4703,14 @@
                 "h": 2.22
               }
             },
-            "sig": "text:0rr6zua1kpm9vz"
+            "link": "sponsors-l11"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.74,
               "fontWeight": 700,
               "align": "center",
@@ -4067,14 +4731,14 @@
                 "h": 1.67
               }
             },
-            "sig": "text:15d69to1x9ymkh"
+            "link": "sponsors-l11"
           },
           {
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#5B656E",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "rgba(16,21,27,.66)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.64,
               "fontWeight": 700,
               "align": "center",
@@ -4095,7 +4759,7 @@
                 "h": 3.33
               }
             },
-            "sig": "text:19k4lji08z3bwz"
+            "link": "sponsors-l11"
           },
           {
             "id": "sponsors-tiles",
@@ -4219,14 +4883,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.3,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 1069.2
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4243,7 +4906,7 @@
                 "h": 4.11
               }
             },
-            "sig": "text:0pyy9gu19xpmal",
+            "link": "sponsors-l22",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4252,14 +4915,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.3,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 1069.2
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4276,7 +4938,7 @@
                 "h": 4.11
               }
             },
-            "sig": "text:0pyy9gu19xpmal",
+            "link": "sponsors-l22-tall",
             "showWhen": {
               "noField": "nextHomeMatch"
             }
@@ -4285,14 +4947,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.44,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 1069.2
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4309,7 +4970,7 @@
                 "h": 3.47
               }
             },
-            "sig": "text:00d2zal1amxyj0",
+            "link": "sponsors-l22",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4318,14 +4979,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.44,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 1069.2
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4342,7 +5002,7 @@
                 "h": 3.47
               }
             },
-            "sig": "text:00d2zal1amxyj0",
+            "link": "sponsors-l22-tall",
             "showWhen": {
               "noField": "nextHomeMatch"
             }
@@ -4351,14 +5011,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.62,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 1069.2
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4375,7 +5034,7 @@
                 "h": 2.72
               }
             },
-            "sig": "text:00mguvp04meb5k",
+            "link": "sponsors-l22",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4384,14 +5043,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.62,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 1069.2
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4408,7 +5066,7 @@
                 "h": 2.72
               }
             },
-            "sig": "text:00mguvp04meb5k",
+            "link": "sponsors-l22-tall",
             "showWhen": {
               "noField": "nextHomeMatch"
             }
@@ -4417,14 +5075,13 @@
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
-              "color": "var(--accent-ink)",
-              "fontFamily": "'Archivo',sans-serif",
+              "color": "var(--ck-onp,#10151B)",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.57,
               "fontWeight": 800,
               "align": "center",
               "lineHeight": 1.15,
-              "background": "var(--gold)",
-              "radius": 623.7
+              "background": "var(--ck-p,var(--gold,#F5B400))"
             },
             "fit": {
               "minScale": 0.6,
@@ -4441,14 +5098,14 @@
                 "h": 5.51
               }
             },
-            "sig": "text:1b03hbw1rjakep"
+            "link": "sponsors-l22"
           },
           {
             "kind": "text",
             "content": "NEXT HOME GAME",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 700,
               "letterSpacing": 0.08,
@@ -4474,7 +5131,7 @@
                 "h": 2.59
               }
             },
-            "sig": "text:1qajdvj1ibu9mi",
+            "link": "sponsors-l26",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4484,7 +5141,7 @@
             "content": "NEXT HOME GAME",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.54,
               "fontWeight": 700,
               "letterSpacing": 0.08,
@@ -4510,7 +5167,7 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1hfxmb80hf50p3",
+            "link": "sponsors-l26",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4520,7 +5177,7 @@
             "content": "NEXT HOME GAME",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.74,
               "fontWeight": 700,
               "letterSpacing": 0.08,
@@ -4546,7 +5203,7 @@
                 "h": 1.67
               }
             },
-            "sig": "text:08lf48a0gtwsah",
+            "link": "sponsors-l26",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4556,7 +5213,7 @@
             "content": "NEXT HOME GAME",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.64,
               "fontWeight": 700,
               "letterSpacing": 0.08,
@@ -4582,7 +5239,7 @@
                 "h": 3.33
               }
             },
-            "sig": "text:014o4w20e8co0t",
+            "link": "sponsors-l26",
             "showWhen": {
               "field": "nextHomeMatch"
             }
@@ -4592,9 +5249,9 @@
             "content": "{{nextHomeMatch}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 3.4,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -4613,16 +5270,16 @@
                 "h": 5.32
               }
             },
-            "sig": "text:013qnxl04co24q"
+            "link": "sponsors-l30"
           },
           {
             "kind": "text",
             "content": "{{nextHomeMatch}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 3.6,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -4641,16 +5298,16 @@
                 "h": 4.45
               }
             },
-            "sig": "text:0fw2xqr0rwhh9g"
+            "link": "sponsors-l30"
           },
           {
             "kind": "text",
             "content": "{{nextHomeMatch}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
               "fontSize": 3.88,
-              "fontWeight": 900,
+              "fontWeight": 400,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -4669,16 +5326,16 @@
                 "h": 3.35
               }
             },
-            "sig": "text:1d9xbft1gd97h4"
+            "link": "sponsors-l30"
           },
           {
             "kind": "text",
             "content": "{{nextHomeMatch}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.32,
-              "fontWeight": 900,
+              "fontWeight": 800,
               "align": "left",
               "lineHeight": 1.1
             },
@@ -4697,14 +5354,14 @@
                 "h": 6.79
               }
             },
-            "sig": "text:0gpw4a10q28bi4"
+            "link": "sponsors-l30"
           },
           {
             "kind": "text",
             "content": "{{nextHomeWhen}}",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 700,
               "align": "left",
@@ -4733,14 +5390,14 @@
                 "h": 2.59
               }
             },
-            "sig": "text:0d94eg21tcchrf"
+            "link": "sponsors-l34"
           },
           {
             "kind": "text",
             "content": "{{nextHomeWhen}}",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.54,
               "fontWeight": 700,
               "align": "left",
@@ -4769,14 +5426,14 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1wu1orl0bj7tvy"
+            "link": "sponsors-l34"
           },
           {
             "kind": "text",
             "content": "{{nextHomeWhen}}",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.74,
               "fontWeight": 700,
               "align": "left",
@@ -4805,14 +5462,14 @@
                 "h": 1.67
               }
             },
-            "sig": "text:1dxdprb0opv0ow"
+            "link": "sponsors-l34"
           },
           {
             "kind": "text",
             "content": "{{nextHomeWhen}}",
             "style": {
               "color": "#FFFFFFD1",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.64,
               "fontWeight": 700,
               "align": "left",
@@ -4836,14 +5493,14 @@
                 "h": 7.08
               }
             },
-            "sig": "text:1k86bcb0gdz2tc"
+            "link": "sponsors-l34"
           },
           {
             "kind": "text",
             "content": "{{sponsorSocials}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.3,
               "fontWeight": 700,
               "align": "left",
@@ -4859,14 +5516,14 @@
                 "h": 5.49
               }
             },
-            "sig": "text:0nq0ruo0xrv56p"
+            "link": "sponsors-l38"
           },
           {
             "kind": "text",
             "content": "{{sponsorSocials}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.44,
               "fontWeight": 700,
               "align": "left",
@@ -4882,14 +5539,14 @@
                 "h": 4.69
               }
             },
-            "sig": "text:1pa0jm91w0kxpm"
+            "link": "sponsors-l38"
           },
           {
             "kind": "text",
             "content": "{{sponsorSocials}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 2.62,
               "fontWeight": 700,
               "align": "left",
@@ -4905,14 +5562,14 @@
                 "h": 3.53
               }
             },
-            "sig": "text:186m01d08ay8ri"
+            "link": "sponsors-l38"
           },
           {
             "kind": "text",
             "content": "{{sponsorSocials}}",
             "style": {
               "color": "#FFFFFF",
-              "fontFamily": "'Archivo',sans-serif",
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
               "fontSize": 1.57,
               "fontWeight": 700,
               "align": "left",
@@ -4928,11 +5585,11 @@
                 "h": 7.22
               }
             },
-            "sig": "text:12aasl612sqvud"
+            "link": "sponsors-l38"
           }
         ]
       }
     },
-    "palettes": ["duotone", "club-kit"]
+    "palettes": ["club-kit"]
   }
 }

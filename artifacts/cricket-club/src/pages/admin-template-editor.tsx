@@ -59,7 +59,11 @@ import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { FieldsPanel } from "@/components/studio-editor/fields-panel";
-import { photoRuleFor } from "@/components/studio-editor/junior-photos";
+import {
+  isJuniorRule,
+  juniorSafeAddedLayers,
+  photoRuleFor,
+} from "@/components/studio-editor/junior-photos";
 import { RowsPanel } from "@/components/studio-editor/rows-panel";
 import { TextStyleBar } from "@/components/studio-editor/text-style-bar";
 import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-dialog";
@@ -1739,6 +1743,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 ? `A page drawn like ${cur.label}`
                 : `A page drawn like ${cur.label}, no data`,
             },
+            // A page of one of the club's templates, as the template editor adds
+            // one (retest 6, item K): a design page that draws the club's brand
+            // and no card data. On a junior set it comes in junior-safe.
+            {
+              id: "template",
+              label: "From another template",
+              detail: "Copy a page of one of your templates",
+            },
             ...deletedOnes.map(({ key, label }) => ({
               id: `restore:${key}`,
               label: "Restore a deleted slide",
@@ -1747,6 +1759,10 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             })),
           ]}
           onAdd={(option) => {
+            if (option === "template") {
+              setPickingPage(true);
+              return;
+            }
             if (option.startsWith("restore:")) {
               const key = option.slice("restore:".length);
               setHistory((h) => {
@@ -1868,11 +1884,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 page: picked.page,
                 name: picked.name,
               },
-              picked.layers,
+              // A junior set's page keeps no stored image and no photo source
+              // (ADR-007): it draws the club's brand and approved stock only.
+              isJuniorRule(photoRule) ? juniorSafeAddedLayers(picked.layers) : picked.layers,
               cur.id,
             );
             setHistory((h) => commit(h, r.doc));
-            setPageId(r.id);
+            if (slidesMode) setSlideKey(`page:${r.id}`);
+            else setPageId(r.id);
             enterScope(null);
           }}
         />

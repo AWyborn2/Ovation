@@ -4,8 +4,9 @@
  * approved junior stock, or to nothing. A club library photo held in the
  * design (an image layer, an image override, a page background) is dropped
  * unless it is approved junior stock; a junior player's photo is dropped
- * unless it is the card's own photo the server cleared. The club's uploads
- * (logos, artwork) are not photos and stay.
+ * unless it is the card's own photo the server cleared. A raster upload (PNG,
+ * JPEG, WebP) might be a photo of a child and is dropped too; a vector upload
+ * (SVG logos and artwork, drawn as markup) stays.
  *
  * Shared by the server (on save and on post) and the web (every place a
  * junior draft is drawn, Download included), so both draw the same thing.
@@ -22,6 +23,15 @@ export function photoKey(url: string): string {
 
 /** The club photo library's storage prefix (senior photos, junior stock, junior players). */
 const LIBRARY_PREFIX = "/objects/library/";
+
+/**
+ * The club's raster uploads (Uploads: PNG, JPEG, WebP), stored by the API under
+ * `club-uploads/` (`CLUB_UPLOAD_PREFIX`). One might be a photo of a child, so a
+ * junior design keeps none, wherever it is drawn: the server knew them by its
+ * table, the web did not (retest 6), so the prefix counts too. A vector upload
+ * is SVG markup in a vector layer, never a stored image, and stays.
+ */
+const UPLOADS_PREFIX = "/objects/club-uploads/";
 
 /** A junior player's photo: under its private prefix, or through its admin-only route. */
 export const isJuniorPlayerPhotoUrl = (url: string): boolean =>
@@ -130,7 +140,8 @@ export function juniorSafeDesignWith(
     const key = photoKey(url);
     if (own !== null && key === own) return false;
     if (isJuniorPlayerPhotoUrl(url) || rule.juniorPlayers?.has(key)) return true;
-    const library = key.startsWith(LIBRARY_PREFIX) || !!rule.library?.has(key);
+    const library =
+      key.startsWith(LIBRARY_PREFIX) || key.startsWith(UPLOADS_PREFIX) || !!rule.library?.has(key);
     return library && !rule.approved.has(key);
   };
   const { value, removed } = withoutPhotos(design, isBad);
