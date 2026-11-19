@@ -342,6 +342,94 @@ describe("POST /social-drafts/:id/post-pack", () => {
     expect(Object.keys(zip.files)).toContain("roundFixtures-square-4of4.png");
   });
 
+  describe("sizes the design draws (portrait and story sizes plan, Stage 1, D3)", () => {
+    const box = { x: 10, y: 10, w: 80, h: 20 };
+    const designed = (sizes: string[]) =>
+      draft({
+        packId: "blank",
+        templateVersion: 1,
+        adjustments: {
+          layers: [
+            {
+              id: "title",
+              kind: "text",
+              text: "Sam Keeper",
+              sizes,
+              geometry: Object.fromEntries(sizes.map((s) => [s, box])),
+            },
+          ],
+        },
+      });
+    const squareSwitch = (on: boolean) =>
+      db
+        .update(socialSettingsTable)
+        .set({ sizeSquare: on })
+        .where(eq(socialSettingsTable.tenantId, tenantId));
+    const sizesOf = (res: { body: { images: Array<{ size: string }> } }) =>
+      res.body.images.map((i) => i.size);
+
+    it("a portrait-and-story design downloads only the club's sizes it draws, never a blank square", async () => {
+      // This club has square and story on, portrait off.
+      renders.length = 0;
+      const res = await post((await designed(["portrait", "story"])).id);
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(sizesOf(res)).toEqual(["story"]);
+      expect(renders.map((r) => r.options.size)).toEqual(["story"]);
+      // Downloads wait for every image, as posts do.
+      expect(renders.every((r) => r.options.strictImages === true)).toBe(true);
+    });
+
+    it("a design's own older size still downloads once the club switches it off", async () => {
+      await squareSwitch(false);
+      try {
+        renders.length = 0;
+        const res = await post((await designed(["square"])).id);
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(sizesOf(res)).toEqual(["square"]);
+      } finally {
+        await squareSwitch(true);
+      }
+    });
+
+    it("a square carousel still downloads square once the club switches square off", async () => {
+      const slides = ["title", "fixture", "sponsors"].map((id, i) => ({
+        id,
+        label: id,
+        junior: false,
+        sponsorsOn: false,
+        warnings: [],
+        input:
+          i === 1
+            ? { kind: "matchDay", fixtures: [] }
+            : { kind: "matchDay", carouselPage: { page: id, sponsors: [] } },
+        data: {},
+      }));
+      const d = await draft({
+        packId: "club-kit-v1",
+        cardInput: {
+          kind: "matchDay",
+          weekendCarousel: {
+            version: 1,
+            setType: "matchDay",
+            submissionId: crypto.randomUUID(),
+            size: "square",
+            slides,
+          },
+        },
+      });
+      await squareSwitch(false);
+      try {
+        renders.length = 0;
+        const res = await post(d.id);
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(sizesOf(res)).toEqual(["square", "square", "square"]);
+        expect(renders.every((r) => r.options.size === "square")).toBe(true);
+      } finally {
+        await squareSwitch(true);
+      }
+    });
+  });
+
   it("another tenant's draft is 404", async () => {
     const foreign = await draft({}, otherTenantId);
     expect((await post(foreign.id)).status).toBe(404);

@@ -953,9 +953,11 @@ export function setCardPngRenderer(fn: CardPngRenderer | null): void {
 async function renderCardPngs(draft: SocialDraftRow, origin: string | null): Promise<Buffer[]> {
   if (cardPngRenderer) return cardPngRenderer(draft, origin);
   // Loaded on use: it pulls in the pack and sponsor stack the team-sheet path never needs.
-  const { canRenderHeadless, enabledSizes, renderDraftSlides } = await import("./draft-render");
+  const { canRenderHeadless, draftSizes, renderDraftSlides } = await import("./draft-render");
+  const { ensureSettings } = await import("./social-cards-helpers");
   if (!canRenderHeadless() && !origin) throw new Error("no render harness configured");
-  const [size] = await enabledSizes(draft.tenantId);
+  // The first enabled size the design draws (portrait and story sizes plan, Stage 1).
+  const [size] = draftSizes(draft, await ensureSettings(draft.tenantId));
   const slides = await renderDraftSlides(draft, [size], origin, defaultLogger);
   return slides.map((s) => s.png);
 }
