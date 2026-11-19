@@ -5,7 +5,13 @@
  * (tested in draft-sizes.test.ts).
  */
 import { describe, expect, it } from "vitest";
-import { designSizeRefusal, madeInOlderSizes, SIZES_SAVED_FROM } from "./draft-design-size";
+import {
+  designSizeRefusal,
+  initialDesignSize,
+  keptDesignSize,
+  madeInOlderSizes,
+  SIZES_SAVED_FROM,
+} from "./draft-design-size";
 
 const box = { x: 5, y: 5, w: 90, h: 20 };
 const newLayer = {
@@ -160,5 +166,38 @@ describe("madeInOlderSizes (round 9 B8)", () => {
     expect(madeInOlderSizes(carousel("landscape"))).toEqual(["landscape"]);
     expect(madeInOlderSizes(carousel("square"))).toEqual(["square"]);
     expect(madeInOlderSizes(carousel("portrait"))).toEqual([]);
+  });
+});
+
+describe("the size a draft is made at (round 9)", () => {
+  const storyOnly = {
+    ...fresh,
+    adjustments: {
+      layers: [{ id: "s", kind: "shape", sizes: ["story"], geometry: { story: box } }],
+    },
+  };
+
+  it("Portrait by default, the asked-for size when drawn, never one the design lacks", () => {
+    expect(initialDesignSize(fourSize)).toBe("portrait");
+    expect(initialDesignSize(fourSize, "story")).toBe("story");
+    expect(initialDesignSize(storyOnly)).toBe("story");
+    expect(initialDesignSize(noStory, "story")).toBe("portrait");
+    expect(initialDesignSize({ ...fresh, adjustments: { layers: [noStoryLayer] } }, "square")).toBe(
+      "square",
+    );
+    // A pack design draws all four.
+    expect(initialDesignSize({ cardInput: card, adjustments: null, templateVersion: null })).toBe(
+      "portrait",
+    );
+  });
+
+  it("an older draft keeps no size when none is asked for; others keep theirs where drawn", () => {
+    const older = { designSize: null, createdAt: before };
+    const newer = { designSize: "story" as const, createdAt: after };
+    expect(keptDesignSize(older, fourSize)).toBeNull();
+    expect(keptDesignSize({ ...older, designSize: "square" }, fourSize)).toBe("square");
+    expect(keptDesignSize(newer, fourSize)).toBe("story");
+    expect(keptDesignSize(newer, noStory)).toBe("portrait");
+    expect(keptDesignSize({ designSize: null, createdAt: after }, fourSize)).toBe("portrait");
   });
 });

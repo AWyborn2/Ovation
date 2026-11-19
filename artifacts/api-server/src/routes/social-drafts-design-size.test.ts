@@ -175,13 +175,26 @@ describe("Create saves the size the design is started at", () => {
     expect(one.body.designSize).toBe("story");
   });
 
-  it("leaves it null when Create names no size (an older client), as drafts were before", async () => {
+  it("saves Portrait when Create names no size (an older client), never relying on the cutoff (round 9)", async () => {
     const res = await send("post", "/social-drafts", {
       cardInput: { kind: "announcement", title: "Hello" },
       packId: "blank",
     });
     expect(res.status).toBe(201);
-    expect(res.body.designSize).toBeNull();
+    expect(res.body.designSize).toBe("portrait");
+  });
+
+  it("saves a size the design draws: Story for a Story-only design", async () => {
+    const storyOnly = await libraryTemplate("story-only", "milestone", {
+      layers: [{ id: "so-1", kind: "shape", sizes: ["story"], geometry: { story: box } }],
+    });
+    lib.storyOnly = storyOnly;
+    const res = await send("post", "/social-drafts", {
+      cardInput: milestone,
+      templateRef: { libraryTemplateId: storyOnly, version: 1 },
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.designSize).toBe("story");
   });
 
   it("never starts a new design at an older size, even from a four-size look (round 9 B8)", async () => {
@@ -441,11 +454,8 @@ describe("Revisions record the size and restore it", () => {
   });
 
   it("an older revision with no size restores as null (the draft opens at Square, as then)", async () => {
-    const res = await send("post", "/social-drafts", {
-      cardInput: milestone,
-      templateRef: { libraryTemplateId: lib.fourSize, version: 1 },
-    });
-    const id = res.body.id as number;
+    const id = await fourSizeDraft();
+    await makeOlder(id);
     // A caption edit records a revision of the draft before any size was saved.
     await send("patch", `/social-drafts/${id}`, { caption: "First" });
     await send("patch", `/social-drafts/${id}`, { designSize: "story" });
@@ -454,5 +464,21 @@ describe("Revisions record the size and restore it", () => {
     expect(revs[0]!.designSize).toBeNull();
     const reverted = await send("post", `/social-drafts/${id}/revisions/${revs[0]!.id}/revert`);
     expect(reverted.body.designSize).toBeNull();
+  });
+
+  it("a newer draft restoring a revision with no size keeps a size its design draws (round 9)", async () => {
+    const id = await fourSizeDraft();
+    // A revision with no size (as one made between the cutoff and round 9 has).
+    await db
+      .update(socialDraftsTable)
+      .set({ designSize: null })
+      .where(eq(socialDraftsTable.id, id));
+    await send("patch", `/social-drafts/${id}`, { caption: "First" });
+    await send("patch", `/social-drafts/${id}`, { designSize: "story" });
+    const revs = await listDraftRevisions(tenantId, id);
+    expect(revs[0]!.designSize).toBeNull();
+    const reverted = await send("post", `/social-drafts/${id}/revisions/${revs[0]!.id}/revert`);
+    expect(reverted.status).toBe(200);
+    expect(reverted.body.designSize).toBe("portrait");
   });
 });

@@ -265,6 +265,38 @@ describe("planTemplateSlides: performance lists (full draft editor, D8)", () => 
   });
 });
 
+describe("layoutBlocksAutomation on the feed size (round 9, decision (b))", () => {
+  const warn = [{ reason: "overflow" }];
+  const checked = (layoutWarnings: Partial<Record<string, unknown[]>>) => ({
+    templateVersion: 1,
+    layoutCheckPending: false,
+    layoutWarnings,
+  });
+
+  it("a Story-only warning doesn't block when the feed size is known and clean", () => {
+    expect(layoutBlocksAutomation(checked({ portrait: [], story: warn }), "portrait")).toBe(false);
+  });
+
+  it("a warning on the feed size blocks", () => {
+    expect(layoutBlocksAutomation(checked({ portrait: warn, story: [] }), "portrait")).toBe(true);
+    expect(layoutBlocksAutomation(checked({ square: warn, portrait: [] }), "square")).toBe(true);
+  });
+
+  it("fails closed: no feed size, or one the check didn't cover, blocks on any warning", () => {
+    expect(layoutBlocksAutomation(checked({ portrait: [], story: warn }))).toBe(true);
+    expect(layoutBlocksAutomation(checked({ portrait: [], story: warn }), null)).toBe(true);
+    expect(layoutBlocksAutomation(checked({ story: warn }), "portrait")).toBe(true);
+    expect(layoutBlocksAutomation(checked({ story: [] }), "portrait")).toBe(false);
+    // A pending check still blocks, whatever the feed size.
+    expect(
+      layoutBlocksAutomation(
+        { templateVersion: 1, layoutCheckPending: true, layoutWarnings: { portrait: [] } },
+        "portrait",
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("layoutBlocksAutomation (KTD10)", () => {
   it("never blocks a pack draft", () => {
     expect(

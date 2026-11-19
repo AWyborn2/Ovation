@@ -37,7 +37,8 @@ import {
   runPendingLayoutChecks,
   setStillRenderer,
 } from "./draft-render";
-import { effectiveDraftStatus, persistDueDrafts } from "./effective-draft-state";
+import { applyTemplateToDrafts } from "./kind-templates";
+import { effectiveDraftStatus, loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { autoPublishCandidates } from "./publishing/auto-publish";
 import { prepareMedia } from "./publishing/prepare-media";
 import { DestinationError } from "./publishing/destination";
@@ -201,6 +202,82 @@ describe("automated drafts copy the kind template (T7.1)", () => {
   it("a kind templates don't cover keeps its pack", async () => {
     const { draft: d } = await upsert("unknown", { kind: "notAKind" });
     expect(d.templateVersion).toBeNull();
+    // Saved at a size too (round 9): a pack design draws all four, so Portrait.
+    expect(d.designSize).toBe("portrait");
+  });
+
+  it("round 9: a sweep's new draft saves a size its design draws, never relying on the cutoff", async () => {
+    const { draft: d } = await upsert("sized", {
+      kind: "milestone",
+      playerName: "Sam",
+      value: 100,
+    });
+    expect(d.designSize).toBe("portrait");
+    // A data refresh keeps it.
+    const again = await upsert("sized", { kind: "milestone", playerName: "Sam", value: 101 });
+    expect(again.draft.designSize).toBe("portrait");
+  });
+
+  it("round 9: a sweep's queued carousel saves its own size", async () => {
+    const slides = ["title", "fixture", "sponsors"].map((id, i) => ({
+      id,
+      label: id,
+      junior: false,
+      sponsorsOn: false,
+      warnings: [],
+      input:
+        i === 1
+          ? { kind: "matchDay", fixtures: [] }
+          : { kind: "matchDay", carouselPage: { page: id, sponsors: [] } },
+      data: {},
+    }));
+    const { draft: d } = await upsert("carousel", {
+      kind: "matchDay",
+      weekendCarousel: {
+        version: 1,
+        setType: "matchDay",
+        submissionId: "12345678-1234-1234-1234-123456789abc",
+        size: "story",
+        slides,
+      },
+    });
+    expect(d.designSize).toBe("story");
+  });
+
+  it("round 9: applying a template keeps the draft's size where the new design draws it, else Portrait", async () => {
+    const { draft: d } = await upsert("apply", {
+      kind: "milestone",
+      playerName: "Sam",
+      value: 100,
+    });
+    await db
+      .update(socialDraftsTable)
+      .set({ designSize: "story" })
+      .where(eq(socialDraftsTable.id, d.id));
+    const [template] = await db
+      .select()
+      .from(cardTemplatesTable)
+      .where(and(eq(cardTemplatesTable.tenantId, tenantId), eq(cardTemplatesTable.source, "kind")));
+    const box = { x: 5, y: 5, w: 90, h: 20 };
+    // A new version with no Story layers: Story can't be kept.
+    const noStory = {
+      ...template,
+      version: template.version + 1,
+      adjustments: {
+        layers: [{ id: "p", kind: "shape", sizes: ["portrait"], geometry: { portrait: box } }],
+      },
+    };
+    await db.transaction((tx) => applyTemplateToDrafts(tx, noStory as typeof template));
+    expect((await reload(d.id)).designSize).toBe("portrait");
+    // One that draws Story keeps it.
+    await db
+      .update(socialDraftsTable)
+      .set({ designSize: "story" })
+      .where(eq(socialDraftsTable.id, d.id));
+    await db.transaction((tx) =>
+      applyTemplateToDrafts(tx, { ...template, version: template.version + 2 } as typeof template),
+    );
+    expect((await reload(d.id)).designSize).toBe("story");
   });
 });
 
@@ -380,11 +457,16 @@ describe("layout checks (KTD10)", () => {
 });
 
 describe("automation leaves a card that needs a look alone (T7.4)", () => {
-  it("promotes a clean templated draft and pack drafts, never a pending or warned one", async () => {
+  // This club posts its feed at Square (Square on, Portrait off), so Square is
+  // the size a feed warning is read on (round 9, Ash's decision (b)).
+  const storyWarning = [{ reason: "overflow" as const, size: "story" as const }];
+  const squareWarning = [{ reason: "font" as const, size: "square" as const }];
+
+  it("promotes a clean templated draft and pack drafts, never a pending or feed-warned one", async () => {
     const clean = await draft();
     const pending = await draft({ layoutCheckPending: true });
     const warned = await draft({
-      layoutWarnings: { square: [], story: [{ reason: "overflow", size: "story" }] },
+      layoutWarnings: { square: squareWarning, story: [] },
     });
     const pack = await draft({
       packId: "club-kit",
@@ -396,20 +478,46 @@ describe("automation leaves a card that needs a look alone (T7.4)", () => {
     const promoted = await persistDueDrafts(tenantId);
     expect(promoted.sort()).toEqual([clean.id, pack.id].sort());
 
-    const autoPost = { enabled: true };
-    expect(effectiveDraftStatus(pending, autoPost)).toBe("awaiting_review");
-    expect(effectiveDraftStatus(warned, autoPost)).toBe("awaiting_review");
-    expect(effectiveDraftStatus(clean, autoPost)).toBe("ready");
+    const autoPost = await loadAutoPost(tenantId);
+    expect(effectiveDraftStatus(pending, { ...autoPost, enabled: true })).toBe("awaiting_review");
+    expect(effectiveDraftStatus(warned, { ...autoPost, enabled: true })).toBe("awaiting_review");
+    expect(effectiveDraftStatus(clean, { ...autoPost, enabled: true })).toBe("ready");
   });
 
-  it("auto-publish skips a ready templated draft that needs a look", async () => {
+  it("round 9 (b): a Story-only warning doesn't block promotion; it still shows on the draft", async () => {
+    const storyOnly = await draft({ layoutWarnings: { square: [], story: storyWarning } });
+    expect(await persistDueDrafts(tenantId)).toEqual([storyOnly.id]);
+    const after = await reload(storyOnly.id);
+    expect(after.status).toBe("ready");
+    // The warning stays for the admin to see in the Queue.
+    expect(after.layoutWarnings).toEqual({ square: [], story: storyWarning });
+    const sizes = (await loadAutoPost(tenantId)).sizes;
+    expect(effectiveDraftStatus(storyOnly, { enabled: true, sizes })).toBe("ready");
+    // Fail-closed: with the club's switches unknown, any warning blocks.
+    expect(effectiveDraftStatus(storyOnly, { enabled: true })).toBe("awaiting_review");
+  });
+
+  it("round 9 (b): a feed size the check didn't cover falls back to any warning blocking", async () => {
+    // Checked at Story only: the feed size (Square) has no result, so the Story warning blocks.
+    const unchecked = await draft({ layoutWarnings: { story: storyWarning } });
+    expect(await persistDueDrafts(tenantId)).toEqual([]);
+    expect((await reload(unchecked.id)).status).toBe("awaiting_review");
+  });
+
+  it("auto-publish skips a ready templated draft that needs a look on its feed size", async () => {
     const clean = await draft({ status: "ready" });
+    const storyOnly = await draft({
+      status: "ready",
+      layoutWarnings: { square: [], story: storyWarning },
+    });
     await draft({
       status: "ready",
-      layoutWarnings: { square: [{ reason: "font", size: "square" }] },
+      layoutWarnings: { square: squareWarning },
     });
     await draft({ status: "ready", layoutCheckPending: true });
-    expect(await autoPublishCandidates(tenantId, 48, new Date())).toEqual([clean.id]);
+    expect((await autoPublishCandidates(tenantId, 48, new Date())).sort()).toEqual(
+      [clean.id, storyOnly.id].sort(),
+    );
   });
 });
 

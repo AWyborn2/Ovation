@@ -22,13 +22,14 @@ import { designSizes, type DraftDesign } from "./draft-render";
 export const OLDER_DESIGN_SIZES: readonly DraftDesignSize[] = ["square", "landscape"];
 
 /**
- * When drafts began saving their size (sizes plan Stage 2, #685, merged
- * 19 Nov 2026 14:22 AWST). A draft with no saved size made before this is an
- * older draft, designed at whatever size it was opened at, so it keeps the
- * older sizes its design draws (D5). One made since (a sweep's draft, which
- * saves no size) is a new design: Portrait and Story only.
+ * When drafts began saving their size: production's build with sizes plan
+ * Stage 2 (#685) went live at about 08:07 UTC on 19 Nov 2026. A draft with no
+ * saved size made before this is an older draft, designed at whatever size it
+ * was opened at, so it keeps the older sizes its design draws (D5). Since
+ * round 9 every path that makes a draft saves its size, so a draft made since
+ * has one.
  */
-export const SIZES_SAVED_FROM = new Date("2026-11-19T06:22:26Z");
+export const SIZES_SAVED_FROM = new Date("2026-11-19T08:15:00Z");
 
 /** What `madeInOlderSizes` reads from a draft. */
 export type DraftForSizes = DraftDesign & {
@@ -55,6 +56,41 @@ export function madeInOlderSizes(
   }
   const drawn = designSizes(draft);
   return OLDER_DESIGN_SIZES.filter((size) => made.has(size) && drawn.includes(size));
+}
+
+/**
+ * The size a new draft is saved at (round 9): `wanted` (Create's size, or a
+ * Story-made item's Story) when the design draws it, else a queued
+ * carousel's own size when drawn, else Portrait, else Story, else the first
+ * size the design draws. Never a size the design doesn't draw, so no path
+ * makes a draft that relies on the `SIZES_SAVED_FROM` cutoff.
+ */
+export function initialDesignSize(
+  design: DraftDesign,
+  wanted?: DraftDesignSize | null,
+): DraftDesignSize {
+  const drawn = designSizes(design);
+  const carousel = readQueuedCarousel(design.cardInput ?? {});
+  for (const size of [wanted, carousel?.size, "portrait", "story"] as const) {
+    if (size && drawn.includes(size)) return size;
+  }
+  return drawn[0] ?? "portrait";
+}
+
+/**
+ * The size a draft keeps when its design is replaced (a template applied, a
+ * set saved, a revision restored): an older draft (made before
+ * `SIZES_SAVED_FROM`) asked for no size keeps none (D5, it opens at Square as
+ * before); any other keeps `wanted` (its own size, a revision's or a
+ * carousel's) when the new design draws it, else `initialDesignSize`.
+ */
+export function keptDesignSize(
+  draft: { designSize: DraftDesignSize | null; createdAt: Date | string },
+  design: DraftDesign,
+  wanted: DraftDesignSize | null = draft.designSize,
+): DraftDesignSize | null {
+  if (wanted == null && new Date(draft.createdAt) < SIZES_SAVED_FROM) return null;
+  return initialDesignSize(design, wanted);
 }
 
 /** The saved sizes each draft's revisions recorded, by draft id. */

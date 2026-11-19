@@ -5,7 +5,9 @@
 import { describe, expect, it } from "vitest";
 import {
   designSizes,
+  draftFeedSize,
   emptySizeRefusal,
+  feedSizeFor,
   layerDocumentCoverage,
   pagesCoverage,
 } from "./design-sizes";
@@ -54,5 +56,22 @@ describe("design sizes", () => {
     );
     expect(emptySizeRefusal(t20, input, "portrait")).toBeNull();
     expect(emptySizeRefusal({ layers: [] }, input, "story")).toBeNull();
+  });
+});
+
+describe("the feed size automation judges on (round 9 (b))", () => {
+  const on = { sizePortrait: true };
+  it("Portrait where the design and club have it, Square for an older design otherwise", () => {
+    expect(feedSizeFor(["square", "portrait", "story", "landscape"], on)).toBe("portrait");
+    expect(feedSizeFor(["square", "portrait"], { sizePortrait: false })).toBe("square");
+    expect(feedSizeFor(["portrait", "story"], { sizePortrait: false })).toBe("portrait");
+    expect(feedSizeFor(["story"], on)).toBeNull();
+  });
+
+  it("a draft's, or null (fail closed) without the club's switches or the design", () => {
+    const d = { cardInput: input, adjustments: t20, templateVersion: 2 };
+    expect(draftFeedSize(d, on)).toBe("portrait");
+    expect(draftFeedSize(d, null)).toBeNull();
+    expect(draftFeedSize({ templateVersion: 2 }, on)).toBeNull();
   });
 });

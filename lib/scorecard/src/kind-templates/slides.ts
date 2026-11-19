@@ -210,11 +210,18 @@ export type DraftLayoutState = {
 
 /**
  * Whether automation must leave a draft alone: a templated draft whose layout
- * hasn't been checked yet, or that has a warning on any size. Pack drafts are
- * never blocked.
+ * hasn't been checked yet, or that has a warning on the size a feed post
+ * would use (`feedSize`; automation only posts to the feed, D6). A Story-only
+ * warning still shows in the Queue but doesn't block (round 9, Ash's decision
+ * (b)). Fail-closed: with no feed size worked out (`feedSize` null or not
+ * given), or one the check didn't cover, a warning on any size blocks. Pack
+ * drafts are never blocked.
  */
-export function layoutBlocksAutomation(draft: DraftLayoutState): boolean {
+export function layoutBlocksAutomation(draft: DraftLayoutState, feedSize?: string | null): boolean {
   if (draft.templateVersion === null) return false;
   if (draft.layoutCheckPending) return true;
-  return Object.values(draft.layoutWarnings ?? {}).some((list) => (list?.length ?? 0) > 0);
+  const warnings = draft.layoutWarnings ?? {};
+  const feed = feedSize ? warnings[feedSize] : undefined;
+  if (Array.isArray(feed)) return feed.length > 0;
+  return Object.values(warnings).some((list) => (list?.length ?? 0) > 0);
 }

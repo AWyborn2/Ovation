@@ -44,6 +44,7 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { recordDraftRevision } from "./draft-revisions";
+import { keptDesignSize } from "./draft-design-size";
 import { isAutoPhoto } from "./draft-enrich";
 import { draftLayerPhotos } from "./layer-photos";
 import { layoutCheckOwed, type LayoutCheckOwed } from "./layout-check-state";
@@ -398,6 +399,12 @@ export async function applyTemplateToDrafts(
         designEditedAt: null,
         layoutWarnings: null,
         ...layoutCheckOwed(),
+        // A size the new design draws (round 9): the draft's own when it can.
+        designSize: keptDesignSize(draft, {
+          cardInput: draft.cardInput,
+          adjustments,
+          templateVersion: template.version,
+        }),
       })
       .where(eq(socialDraftsTable.id, draft.id));
     changed += 1;

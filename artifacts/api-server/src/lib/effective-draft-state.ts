@@ -3,6 +3,7 @@ import { db, socialDraftsTable, socialSettingsTable } from "@workspace/db";
 // From the schema subpath so suites that vi.mock("@workspace/db") keep loading this module.
 import { JUNIOR_SYNC_ID_START } from "@workspace/db/schema";
 import { layoutBlocksAutomation } from "@workspace/scorecard/kind-templates";
+import { draftFeedSize, type DesignSizeSwitches } from "@workspace/scorecard/design-sizes";
 import { normalizeDraftStatus, type DraftStatus } from "./draft-status";
 import { isSyncedJuniorDraft } from "./junior-publishing";
 
@@ -13,10 +14,20 @@ import { isSyncedJuniorDraft } from "./junior-publishing";
  * the sweep only makes it permanent. Manual actions clear `autoReadyAt`, so
  * they always stick.
  */
-export type AutoPost = { enabled: boolean };
+export type AutoPost = {
+  enabled: boolean;
+  /**
+   * The club's size switches, for the feed size a draft's layout is judged on
+   * (round 9 (b)). Without them automation blocks on a warning at any size.
+   */
+  sizes?: DesignSizeSwitches;
+};
 
 /** The layout fields a templated draft carries (card kind templates, KTD10). */
 type LayoutFields = {
+  /** The design, for its feed size (round 9 (b)); without it any warning blocks. */
+  cardInput?: unknown;
+  adjustments?: unknown;
   templateVersion?: number | null;
   layoutCheckPending?: boolean;
   layoutWarnings?: unknown;
@@ -25,12 +36,40 @@ type LayoutFields = {
 };
 
 /**
- * SQL for "automation may touch this draft": a pack draft always, a templated
- * draft only once its layout check has run and found nothing (KTD10). Mirrors
- * `layoutBlocksAutomation`; every automated promotion and auto-post query uses
- * it so a card that needs a look is never posted unseen.
+ * SQL for "automation may touch this draft, as far as its layout check goes":
+ * a pack draft always, a templated draft only once its layout check has run
+ * (KTD10). It can't work out a design's feed size, so the warnings themselves
+ * are judged after it by `layoutBlocks` (round 9 (b): only a warning on the
+ * feed size blocks). Every automated promotion and auto-post query uses both,
+ * so a card that needs a look is never posted unseen.
  */
-export const layoutClear: SQL = sql`(${socialDraftsTable.templateVersion} is null or (${socialDraftsTable.layoutCheckPending} = false and not coalesce((select bool_or(jsonb_typeof(w.value) = 'array' and jsonb_array_length(w.value) > 0) from jsonb_each(coalesce(${socialDraftsTable.layoutWarnings}, '{}'::jsonb)) w), false)))`;
+export const layoutClear: SQL = sql`(${socialDraftsTable.templateVersion} is null or ${socialDraftsTable.layoutCheckPending} = false)`;
+
+/**
+ * Whether a draft's layout keeps automation away (round 9 (b)): a pending
+ * check, or a warning on the size its feed post would use at the club's
+ * switches. Fail-closed: with the switches or the design unknown, a warning on
+ * any size blocks. Mirrors `layoutClear` plus the warnings it can't judge.
+ */
+export function layoutBlocks(
+  draft: {
+    cardInput?: unknown;
+    adjustments?: unknown;
+    templateVersion?: number | null;
+    layoutCheckPending?: boolean;
+    layoutWarnings?: unknown;
+  },
+  sizes: DesignSizeSwitches | null | undefined,
+): boolean {
+  return layoutBlocksAutomation(
+    {
+      templateVersion: draft.templateVersion ?? null,
+      layoutCheckPending: draft.layoutCheckPending ?? false,
+      layoutWarnings: (draft.layoutWarnings ?? null) as Partial<Record<string, unknown[]>> | null,
+    },
+    draftFeedSize(draft as Parameters<typeof draftFeedSize>[0], sizes),
+  );
+}
 
 /**
  * SQL for "this is one of the junior sync's own drafts": a junior team-list card
@@ -111,11 +150,7 @@ export function effectiveDraftStatus(
     draft.expiredAt == null &&
     draft.autoReadyAt != null &&
     new Date(draft.autoReadyAt).getTime() <= now.getTime() &&
-    !layoutBlocksAutomation({
-      templateVersion: draft.templateVersion ?? null,
-      layoutCheckPending: draft.layoutCheckPending ?? false,
-      layoutWarnings: (draft.layoutWarnings ?? null) as Partial<Record<string, unknown[]>> | null,
-    })
+    !layoutBlocks(draft, autoPost.sizes)
   ) {
     return "ready";
   }
@@ -124,10 +159,23 @@ export function effectiveDraftStatus(
 
 export async function loadAutoPost(tenantId: number): Promise<AutoPost> {
   const [row] = await db
-    .select({ enabled: socialSettingsTable.autoPostEnabled })
+    .select({
+      enabled: socialSettingsTable.autoPostEnabled,
+      sizeSquare: socialSettingsTable.sizeSquare,
+      sizePortrait: socialSettingsTable.sizePortrait,
+      sizeStory: socialSettingsTable.sizeStory,
+      sizeLandscape: socialSettingsTable.sizeLandscape,
+    })
     .from(socialSettingsTable)
     .where(eq(socialSettingsTable.tenantId, tenantId));
-  return { enabled: row?.enabled ?? false };
+  if (!row) return { enabled: false };
+  const { enabled, ...sizes } = row;
+  return { enabled: enabled ?? false, sizes };
+}
+
+/** The club's size switches (null when it has no settings row yet: then any warning blocks). */
+export async function loadSizeSwitches(tenantId: number): Promise<DesignSizeSwitches | null> {
+  return (await loadAutoPost(tenantId)).sizes ?? null;
 }
 
 /** The deadline for a new auto-draft, from the club's window. */
@@ -151,23 +199,51 @@ export async function persistDueDrafts(
   tenantId: number,
   now: Date = new Date(),
 ): Promise<number[]> {
-  const rows = await db
-    .update(socialDraftsTable)
-    .set({ status: "ready" })
-    .where(
-      and(
-        eq(socialDraftsTable.tenantId, tenantId),
-        eq(socialDraftsTable.status, "awaiting_review"),
-        isNotNull(socialDraftsTable.autoReadyAt),
-        lte(socialDraftsTable.autoReadyAt, now),
-        // An expired card (posting calendar) never comes back by itself.
-        isNull(socialDraftsTable.expiredAt),
-        layoutClear,
-        // A junior draft is promoted only for a team set to auto-post, even if a stray
-        // auto-ready time slipped through (KTD14).
-        juniorAutoPostClear,
-      ),
-    )
-    .returning({ id: socialDraftsTable.id });
-  return rows.map((r) => r.id);
+  const due = and(
+    eq(socialDraftsTable.tenantId, tenantId),
+    eq(socialDraftsTable.status, "awaiting_review"),
+    isNotNull(socialDraftsTable.autoReadyAt),
+    lte(socialDraftsTable.autoReadyAt, now),
+    // An expired card (posting calendar) never comes back by itself.
+    isNull(socialDraftsTable.expiredAt),
+    layoutClear,
+    // A junior draft is promoted only for a team set to auto-post, even if a stray
+    // auto-ready time slipped through (KTD14).
+    juniorAutoPostClear,
+  );
+  const candidates = await db
+    .select({
+      id: socialDraftsTable.id,
+      cardInput: socialDraftsTable.cardInput,
+      adjustments: socialDraftsTable.adjustments,
+      templateVersion: socialDraftsTable.templateVersion,
+      layoutCheckPending: socialDraftsTable.layoutCheckPending,
+      layoutWarnings: socialDraftsTable.layoutWarnings,
+    })
+    .from(socialDraftsTable)
+    .where(due);
+  if (candidates.length === 0) return [];
+  // Only a warning on the feed size keeps a card waiting (round 9 (b)).
+  const sizes = await loadSizeSwitches(tenantId);
+  const promoted: number[] = [];
+  for (const c of candidates) {
+    if (layoutBlocks(c, sizes)) continue;
+    // The stored state is re-checked, warnings included, so two sweeps (or a
+    // layout check landing in between) never promote a card twice or unseen.
+    const [row] = await db
+      .update(socialDraftsTable)
+      .set({ status: "ready" })
+      .where(
+        and(
+          eq(socialDraftsTable.id, c.id),
+          due,
+          c.layoutWarnings === null
+            ? isNull(socialDraftsTable.layoutWarnings)
+            : sql`${socialDraftsTable.layoutWarnings} = ${JSON.stringify(c.layoutWarnings)}::jsonb`,
+        ),
+      )
+      .returning({ id: socialDraftsTable.id });
+    if (row) promoted.push(row.id);
+  }
+  return promoted;
 }

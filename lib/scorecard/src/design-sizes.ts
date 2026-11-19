@@ -120,3 +120,38 @@ export function emptySizeMessage(size: TemplateSize): string {
   const label = DESIGN_SIZE_LABEL[size];
   return `This design has no ${label} size, so there's nothing to download at ${label}. Pick a size it has in Format.`;
 }
+
+/** A club's size switches, as social settings hold them. */
+export type DesignSizeSwitches = {
+  sizeSquare: boolean;
+  sizePortrait: boolean;
+  sizeStory: boolean;
+  sizeLandscape: boolean;
+};
+
+/**
+ * The size a design posts to the feed at (Stage 1): Portrait when it covers
+ * Portrait and either the club has Portrait on or the design has no Square;
+ * otherwise Square. Null when the design has neither, so it has no feed size.
+ */
+export function feedSizeFor(
+  design: readonly TemplateSize[],
+  settings: Pick<DesignSizeSwitches, "sizePortrait">,
+): TemplateSize | null {
+  if (design.includes("portrait") && (settings.sizePortrait || !design.includes("square")))
+    return "portrait";
+  return design.includes("square") ? "square" : null;
+}
+
+/**
+ * The feed size automation judges a draft's layout on (round 9 (b)): its
+ * design's feed size at the club's switches. Null (automation then blocks on
+ * any warning) when the switches or the design aren't known.
+ */
+export function draftFeedSize(
+  draft: DesignOf,
+  settings: Pick<DesignSizeSwitches, "sizePortrait"> | null | undefined,
+): TemplateSize | null {
+  if (!settings || !("adjustments" in draft) || !("cardInput" in draft)) return null;
+  return feedSizeFor(designSizes(draft), settings);
+}

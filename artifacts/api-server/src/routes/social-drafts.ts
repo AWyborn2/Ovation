@@ -50,13 +50,7 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { recaptionQueuedDrafts } from "../lib/draft-recaption";
-import {
-  effectiveDraftStatus,
-  layoutClear,
-  syncedJuniorDraft,
-  loadAutoPost,
-  type AutoPost,
-} from "../lib/effective-draft-state";
+import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
   listDraftRevisions,
@@ -93,6 +87,7 @@ import { notePhotoUsage } from "../lib/card-content/photos";
 import { layoutCheckOwed } from "../lib/layout-check-state";
 import {
   designSizeRefusal,
+  initialDesignSize,
   madeInOlderSizes,
   revisionSizesByDraft,
 } from "../lib/draft-design-size";
@@ -257,18 +252,37 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
     isNull(socialDraftsTable.expiredAt),
   ];
   // Drafts past their deadline already read as ready while auto-post is on —
-  // unless their layout needs a look, which keeps them waiting (KTD10).
-  if ((await loadAutoPost(tenantId)).enabled) {
-    conditions.push(
-      // A synced junior draft waits for the sweep (effectiveDraftStatus), so it stays pending.
-      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear} OR ${syncedJuniorDraft})`,
-    );
+  // unless their layout needs a look on the feed size, which keeps them
+  // waiting (KTD10, round 9 (b)). A synced junior draft waits for the sweep.
+  const autoPost = await loadAutoPost(tenantId);
+  if (!autoPost.enabled) {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(socialDraftsTable)
+      .where(and(...conditions));
+    res.json({ count: Number(row?.count ?? 0) });
+    return;
   }
-  const [row] = await db
-    .select({ count: sql<number>`count(*)::int` })
+  // Read as the queue reads them (effectiveDraftStatus): the feed size a
+  // draft's layout is judged on can't be worked out in SQL.
+  const rows = await db
+    .select({
+      status: socialDraftsTable.status,
+      autoReadyAt: socialDraftsTable.autoReadyAt,
+      sourceKey: socialDraftsTable.sourceKey,
+      expiredAt: socialDraftsTable.expiredAt,
+      cardInput: socialDraftsTable.cardInput,
+      adjustments: socialDraftsTable.adjustments,
+      templateVersion: socialDraftsTable.templateVersion,
+      layoutCheckPending: socialDraftsTable.layoutCheckPending,
+      layoutWarnings: socialDraftsTable.layoutWarnings,
+    })
     .from(socialDraftsTable)
     .where(and(...conditions));
-  res.json({ count: Number(row?.count ?? 0) });
+  const now = new Date();
+  res.json({
+    count: rows.filter((r) => effectiveDraftStatus(r, autoPost, now) === "awaiting_review").length,
+  });
 });
 
 /**
@@ -715,21 +729,21 @@ router.post(
     adjustments = (await juniorSafeDesign(tenantId, juniorRow, adjustments)).design;
     // The size the design is started at (Stage 2): an older size only when the
     // new design has layers on it.
-    const designSize = parsed.data.designSize ?? null;
-    if (designSize) {
-      const refused = designSizeRefusal(
-        {
-          cardInput,
-          adjustments: templated ? templated.adjustments : adjustments,
-          templateVersion: templated ? templated.templateVersion : null,
-        },
-        designSize,
-      );
+    const newDesign = {
+      cardInput,
+      adjustments: templated ? templated.adjustments : adjustments,
+      templateVersion: templated ? templated.templateVersion : null,
+    };
+    if (parsed.data.designSize) {
+      const refused = designSizeRefusal(newDesign, parsed.data.designSize);
       if (refused) {
         res.status(400).json({ error: refused });
         return;
       }
     }
+    // Every new draft saves a size (round 9): Create's, else a carousel's own,
+    // else Portrait, always one its design draws.
+    const designSize = initialDesignSize(newDesign, parsed.data.designSize ?? null);
     const [row] = await db
       .insert(socialDraftsTable)
       .values({

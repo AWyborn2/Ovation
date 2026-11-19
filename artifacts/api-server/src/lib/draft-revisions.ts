@@ -9,6 +9,7 @@ import {
 import { draftPhotoFocus } from "./photo-focus-snapshot";
 import { draftLayerPhotos } from "./layer-photos";
 import { layoutCheckNotOwed, layoutCheckOwed } from "./layout-check-state";
+import { keptDesignSize } from "./draft-design-size";
 
 /** Revisions kept per draft; the oldest are dropped beyond this (KTD2). */
 export const MAX_DRAFT_REVISIONS = 20;
@@ -144,9 +145,18 @@ export async function revertDraftToRevision(
           cardInput: rev.cardInput,
         }),
         ...designBase,
-        // The size the restored design was made at; an older revision's null
-        // restores as null, so the draft opens at Square as it did then.
-        designSize: rev.designSize,
+        // The size the restored design was made at. An older draft's null
+        // revision restores as null, so it opens at Square as it did then; a
+        // newer draft always keeps a size its restored design draws (round 9).
+        designSize: keptDesignSize(
+          draft,
+          {
+            cardInput: rev.cardInput,
+            adjustments: rev.adjustments,
+            templateVersion: rev.templateVersion,
+          },
+          rev.designSize,
+        ),
         editedAt: new Date(),
         // A manual action: stop any pending auto-promotion (KTD4).
         autoReadyAt: null,

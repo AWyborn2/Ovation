@@ -21,6 +21,7 @@ import {
 import {
   DESIGN_SIZE_LABEL,
   designSizes as sharedDesignSizes,
+  feedSizeFor,
 } from "@workspace/scorecard/design-sizes";
 import { env } from "../config";
 import { ensureSettings } from "./social-cards-helpers";
@@ -173,9 +174,7 @@ export function designSizes(draft: DraftDesign): CardSize[] {
  * design has neither, so it has no feed size.
  */
 export function feedSize(design: readonly CardSize[], settings: SizeSwitches): CardSize | null {
-  if (design.includes("portrait") && (settings.sizePortrait || !design.includes("square")))
-    return "portrait";
-  return design.includes("square") ? "square" : null;
+  return feedSizeFor(design, settings);
 }
 
 /**

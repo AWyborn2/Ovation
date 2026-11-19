@@ -5,7 +5,7 @@ import { db, socialDraftsTable, socialPublicationsTable, socialSettingsTable } f
 import { loadConnection, publishingAvailable } from "./connections";
 import { ScheduleConflictError, schedulePublications } from "./publications";
 import type { Platform } from "./destination";
-import { layoutClear } from "../effective-draft-state";
+import { layoutBlocks, layoutClear, loadSizeSwitches } from "../effective-draft-state";
 import { resolvePostingSchedule } from "../posting-schedule";
 
 /**
@@ -58,6 +58,10 @@ export async function autoPublishCandidates(
       id: socialDraftsTable.id,
       sourceMatchIsJunior: socialDraftsTable.sourceMatchIsJunior,
       cardInput: socialDraftsTable.cardInput,
+      adjustments: socialDraftsTable.adjustments,
+      templateVersion: socialDraftsTable.templateVersion,
+      layoutCheckPending: socialDraftsTable.layoutCheckPending,
+      layoutWarnings: socialDraftsTable.layoutWarnings,
     })
     .from(socialDraftsTable)
     .where(
@@ -75,7 +79,12 @@ export async function autoPublishCandidates(
     );
   // Junior content passes only through the per-team gate (ADR-006), failing closed.
   const publishing = rows.some(isJuniorDraft) ? await loadJuniorTeamPublishing(tenantId) : null;
-  return rows.filter((r) => juniorDraftMayAutoPublish(r, publishing)).map((r) => r.id);
+  // Only a warning on the feed size (the one auto-post uses) blocks (round 9 (b)).
+  const sizes = rows.length ? await loadSizeSwitches(tenantId) : null;
+  return rows
+    .filter((r) => !layoutBlocks(r, sizes))
+    .filter((r) => juniorDraftMayAutoPublish(r, publishing))
+    .map((r) => r.id);
 }
 
 /**

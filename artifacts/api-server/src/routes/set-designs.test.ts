@@ -229,6 +229,8 @@ describe("a queued carousel's set design", () => {
     expect(res.status).toBe(200);
     const wc = res.body.cardInput.weekendCarousel;
     expect(wc.size).toBe("portrait");
+    // Its saved size follows the set's own (round 9: every draft saves one).
+    expect(res.body.designSize).toBe("portrait");
     expect(wc.slides.map((s: { id: string }) => s.id)).toEqual([
       "fx-2",
       "title",
