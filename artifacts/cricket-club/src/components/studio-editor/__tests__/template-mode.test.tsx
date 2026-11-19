@@ -226,6 +226,40 @@ describe("template editor", () => {
     expect(saved(requests)).toHaveLength(0);
   });
 
+  it("saves a Portrait and Story template with no Square or Landscape (sizes plan, Stage 4)", async () => {
+    const { square: _s, landscape: _l, ...geometry } = FULL_DOC.layers[0]!.geometry;
+    const requests = open({
+      template: template({
+        coverage: { pages: ["card"], sizes: ["portrait", "story"] },
+        document: {
+          layers: [{ ...FULL_DOC.layers[0], sizes: ["portrait", "story"], geometry }],
+        },
+      }),
+    });
+    await screen.findByRole("combobox", { name: "Format" });
+    format("portrait");
+    selectLayer("title");
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Font size" }), {
+      target: { value: "9" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(saved(requests)).toHaveLength(1));
+    expect(screen.queryByText(/has no elements/)).toBeNull();
+  });
+
+  it("won't let a four-size template lose Square by accident (sizes plan, Stage 4)", async () => {
+    const requests = open();
+    await screen.findByRole("combobox", { name: "Format" });
+    selectLayer("title");
+    // Delete it from Square only; its copies on the other sizes stay.
+    fireEvent.keyDown(window, { key: "Delete" });
+    const prompt = screen.queryByRole("dialog", { name: "Delete on other sizes" });
+    if (prompt) fireEvent.keyDown(prompt, { key: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Square has no elements/);
+    expect(saved(requests)).toHaveLength(0);
+  });
+
   it("shows a conflict instead of overwriting another admin's save", async () => {
     open({
       saveStatus: 409,

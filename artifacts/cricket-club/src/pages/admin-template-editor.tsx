@@ -1001,9 +1001,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
       }
     }
     const v2 = sourceFormat === 2 || !!full.setDesign || needsV2(full, kind);
-    // A version 1 template keeps version 1's rule: every size has something on it.
+    // A version 1 template keeps version 1's rule (KTD15, relaxed in the sizes
+    // plan's Stage 4): Portrait and Story have something on them, and so does
+    // any older size the version last saved had, so a four-size template can't
+    // lose Square or Landscape by accident.
     // A draft posts at its own sizes, so the rule is the template's, not the draft's.
-    const blockers = v2 || draftMode ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
+    const primary = primaryPage(kind);
+    const lastSaved = JSON.parse(savedJson) as EditorTemplateDoc;
+    const blockers =
+      v2 || draftMode ? [] : saveBlockers(pageDoc(full, primary), pageDoc(lastSaved, primary));
     if (v2 && Object.values(full.pages).every((p) => !p?.layers.length)) {
       blockers.push("Add at least one element before saving.");
     }

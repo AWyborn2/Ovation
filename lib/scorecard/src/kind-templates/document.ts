@@ -200,9 +200,32 @@ export function sizesWithLayers(doc: LayerDocument): TemplateSize[] {
   return TEMPLATE_SIZE_ORDER.filter((size) => layersForSize(doc, size).length > 0);
 }
 
-/** The sizes with no layers at all — a template can't be saved with any (KTD15). */
+/** The sizes with no layers at all, in standard order. */
 export function emptySizes(doc: LayerDocument): TemplateSize[] {
   return TEMPLATE_SIZE_ORDER.filter((size) => layersForSize(doc, size).length === 0);
+}
+
+/**
+ * The sizes a template must have layers on to be saved (KTD15, relaxed by plan
+ * 2026-11-19-portrait-story-sizes Stage 4): Portrait and Story always, plus any
+ * older size (Square, Landscape) its previous version had layers on, so an
+ * existing four-size template can't lose one by accident. A new template (no
+ * previous version) needs only Portrait and Story. In standard order.
+ */
+export function requiredSizes(previous?: LayerDocument | null): TemplateSize[] {
+  const required = new Set<TemplateSize>(OFFERED_SIZES);
+  if (previous && Array.isArray(previous.layers)) {
+    for (const size of sizesWithLayers(previous)) required.add(size);
+  }
+  return TEMPLATE_SIZE_ORDER.filter((size) => required.has(size));
+}
+
+/**
+ * The sizes `doc` can't be saved without (KTD15): those `requiredSizes` names
+ * that have no layers. Empty when the template can be saved.
+ */
+export function missingSizes(doc: LayerDocument, previous?: LayerDocument | null): TemplateSize[] {
+  return requiredSizes(previous).filter((size) => layersForSize(doc, size).length === 0);
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);

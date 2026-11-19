@@ -49,6 +49,7 @@ import {
 import { LoadingState, QueryError } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
+import { isOlderSize, OFFERED_SIZES } from "@/lib/offered-sizes";
 import type { CardSize } from "@/lib/share-card";
 import { groupFamilies, lookLabel } from "./look-families";
 import { MakeSetDialog } from "./make-set-dialog";
@@ -113,6 +114,43 @@ export function usedByLabel(t: Pick<LibraryTemplate, "usedBy">): string | null {
   return n > 0 ? `Used by ${n} ${n === 1 ? "club" : "clubs"}` : null;
 }
 export const sizeLabel = (size: string) => SIZE_LABELS[size as CardSize] ?? size;
+
+/**
+ * A size a template covers, as the library shows it: an older size (Square,
+ * Landscape, retired for new designs by the sizes plan) reads "Square (older)".
+ */
+export const coverageSizeLabel = (size: string): string =>
+  isOlder(size) ? `${sizeLabel(size)} (older)` : sizeLabel(size);
+
+/** Whether a stored size string is an older size (Square, Landscape). */
+const isOlder = (size: string): boolean => size in SIZE_LABELS && isOlderSize(size as CardSize);
+
+/** The library's size filter: Portrait and Story first, then the older sizes. */
+const SIZE_FILTER_ORDER: readonly CardSize[] = [
+  ...OFFERED_SIZES,
+  ...(Object.keys(SIZE_LABELS) as CardSize[]).filter((s) => isOlderSize(s)),
+];
+
+/** A template's sizes as chips, an older size marked "(older)". */
+function SizeChips({ name, sizes }: { name: string; sizes: readonly string[] }) {
+  if (sizes.length === 0) return null;
+  return (
+    <ul aria-label={`${name} sizes`} className="mt-1 flex flex-wrap gap-1">
+      {sizes.map((size) => (
+        <li
+          key={size}
+          className={`rounded-full border px-2 py-0.5 text-[11px] ${
+            isOlder(size)
+              ? "border-dashed border-border text-muted-foreground"
+              : "border-border text-foreground"
+          }`}
+        >
+          {coverageSizeLabel(size)}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 type Preview = LibraryPreview;
 
@@ -192,6 +230,7 @@ function TemplateTile({
           <p className="truncate text-xs text-muted-foreground">{usedByLabel(template)}</p>
         )}
       </button>
+      <SizeChips name={template.name} sizes={template.coverage.sizes} />
       {/* Shown on hover or focus where there is a pointer; always on small screens. */}
       <Button
         size="sm"
@@ -341,7 +380,7 @@ export function TemplateDetailDialog({
                           size={size as CardSize}
                         />
                         <figcaption className="mt-1 text-center text-xs text-muted-foreground">
-                          {sizeLabel(size)}
+                          {coverageSizeLabel(size)}
                         </figcaption>
                       </figure>
                     ))}
@@ -364,7 +403,7 @@ export function TemplateDetailDialog({
                             page={page as PageKey}
                           />
                           <figcaption className="mt-1 text-center text-xs text-muted-foreground">
-                            {sizeLabel(size)}
+                            {coverageSizeLabel(size)}
                           </figcaption>
                         </figure>
                       ))}
@@ -521,7 +560,7 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
         ])}
         {select("library-size", "Size", size, setSize, [
           ["", "Every size"],
-          ...Object.entries(SIZE_LABELS),
+          ...SIZE_FILTER_ORDER.map((s) => [s, coverageSizeLabel(s)] as [string, string]),
         ])}
         {select("library-look", "Look", look, setLook, [
           ["", "Every look"],

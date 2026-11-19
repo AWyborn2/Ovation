@@ -27,7 +27,6 @@ import {
   type TemplateFitStatus,
 } from "@workspace/db";
 import {
-  emptySizes,
   fallbackTemplateName,
   isRetiredPack,
   isSetDocument,
@@ -35,9 +34,13 @@ import {
   setTypeOfKind,
   lazyDefaultSlugs,
   lookTemplateSlug,
+  missingSizes,
   starterLookForPack,
   templateDocumentErrors,
+  type LayerDocument,
   type StarterDocument,
+  type TemplateLayerBase,
+  type TemplateSize,
 } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { recordDraftRevision } from "./draft-revisions";
@@ -126,9 +129,16 @@ export async function updatedByName(row: CardTemplateRow): Promise<string | null
  * Reject a document the template can't hold: a strictly checked shape (only
  * known settings, finite in-range numbers, bounded text, this kind's own
  * fields — security review 2026-10-08), at most MAX_TEMPLATE_LAYERS elements,
- * and no empty size (KTD15).
+ * and no empty required size (KTD15). Since plan 2026-11-19 Stage 4 a
+ * template needs layers on Portrait and Story, and on any older size
+ * (Square, Landscape) `previous` (the version being replaced) had layers on;
+ * a new template has no previous version and needs only Portrait and Story.
  */
-export function validateDocument(document: unknown, kind: string): StarterDocument {
+export function validateDocument(
+  document: unknown,
+  kind: string,
+  previous?: unknown,
+): StarterDocument {
   const problems = templateDocumentErrors(document, kind);
   if (problems.length > 0) {
     throw new KindTemplateError(400, {
@@ -137,14 +147,36 @@ export function validateDocument(document: unknown, kind: string): StarterDocume
     });
   }
   const doc = document as StarterDocument;
-  const empty = emptySizes(doc);
+  const empty = missingSizes(doc, previousLayers(previous));
   if (empty.length > 0) {
     throw new KindTemplateError(400, {
-      error: `Add at least one element to every size before saving (empty: ${empty.join(", ")}).`,
+      error: `Add at least one element to ${sizeList(empty)} before saving.`,
       emptySizes: empty,
     });
   }
   return doc;
+}
+
+/** A stored version 1 document's layers, for `missingSizes`; null for anything else. */
+function previousLayers(previous: unknown): LayerDocument | null {
+  if (typeof previous !== "object" || previous === null) return null;
+  const layers = (previous as { layers?: unknown }).layers;
+  return Array.isArray(layers) ? { layers: layers as TemplateLayerBase[] } : null;
+}
+
+const SIZE_NAMES: Record<TemplateSize, string> = {
+  square: "Square",
+  portrait: "Portrait",
+  story: "Story",
+  landscape: "Landscape",
+};
+
+/** "Story", "Portrait and Story", "Square, Portrait and Story". */
+function sizeList(sizes: readonly TemplateSize[]): string {
+  const names = sizes.map((s) => SIZE_NAMES[s]);
+  return names.length <= 1
+    ? (names[0] ?? "")
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
 /**

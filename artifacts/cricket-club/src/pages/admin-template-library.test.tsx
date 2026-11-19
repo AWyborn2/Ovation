@@ -166,6 +166,27 @@ describe("Studio → Templates", () => {
     expect(await within(dialog).findByRole("status")).toHaveTextContent("set as your");
   });
 
+  it("shows a template's sizes as chips, an older size marked older (sizes plan, Stage 4)", async () => {
+    setup();
+    const chips = await screen.findByRole("list", { name: "Club Kit milestone sizes" });
+    expect(
+      within(chips)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["Square (older)", "Portrait"]);
+    // The size filter lists Portrait and Story first; the older sizes stay findable.
+    const filter = screen.getByRole("combobox", { name: "Size" });
+    expect(
+      within(filter)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["Every size", "Portrait", "Story", "Square (older)", "Landscape (older)"]);
+    fireEvent.click(screen.getByRole("button", { name: "Open Club Kit milestone" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Square (older)")).toBeInTheDocument();
+    expect(within(dialog).getByText("Portrait")).toBeInTheDocument();
+  });
+
   it("customises a template from its dialog: a club copy, opened in the editor", async () => {
     const writes = setup();
     fireEvent.click(await screen.findByRole("button", { name: "Open Club Kit milestone" }));
