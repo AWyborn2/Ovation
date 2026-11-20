@@ -32,7 +32,11 @@ import {
   slidePhotoFor,
   type SlidePhoto,
 } from "@workspace/scorecard/kind-templates";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DockPopover as Popover,
+  DockPopoverContent as PopoverContent,
+  DockPopoverTrigger as PopoverTrigger,
+} from "./dock";
 import { cn } from "@/lib/utils";
 import type { EditorActionsContext } from "@/pages/admin-template-editor";
 import type { SetShareContext } from "./export/share-panel";

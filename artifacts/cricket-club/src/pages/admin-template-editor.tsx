@@ -66,6 +66,13 @@ import {
   photoRuleFor,
 } from "@/components/studio-editor/junior-photos";
 import { RowsPanel } from "@/components/studio-editor/rows-panel";
+import { DockProvider, InDock, useDockState } from "@/components/studio-editor/dock";
+import {
+  DOCK_WIDTH,
+  TOOLBAR_STRIP,
+  boardWidth,
+  estimateCanvasArea,
+} from "@/components/studio-editor/canvas-fit";
 import { TextStyleBar } from "@/components/studio-editor/text-style-bar";
 import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-dialog";
 import { LayerDesignPanel } from "@/components/studio-editor/layer-design-panel";
@@ -923,6 +930,26 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   };
 
   const canvasArea = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const dock = useDockState();
+  // The canvas area's size as laid out, so the canvas fits what the panels,
+  // the dock and the slide strip leave it.
+  const [measuredArea, setMeasuredArea] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = canvasArea.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      setMeasuredArea((prev) =>
+        !w || !h ? null : prev && prev.w === w && prev.h === h ? prev : { w, h },
+      );
+    };
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const stateRef = useRef({ doc, pageFull, page, scope, inList, selection, format, inside });
   stateRef.current = { doc, pageFull, page, scope, inList, selection, format, inside };
   /** Delete layers from this size, offering to delete their linked copies on the other sizes. */
@@ -1191,17 +1218,31 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   };
 
   const native = packNativeSize(format);
-  const panelW = panel ? 340 : 0;
-  const areaW = viewport.w - 76 - panelW - 96;
-  const areaH = viewport.h - 56 - 56 - 160;
-  const fit = Math.min(areaW / native.w, areaH / native.h);
-  const boardW = Math.max(160, Math.round(native.w * fit * (zoom / 100)));
+  const rowsLayer = single?.kind === "rows" && single.rows ? single : null;
+  const dockOpen =
+    !!rowsLayer ||
+    single?.kind === "text" ||
+    single?.kind === "element" ||
+    layersOpen ||
+    dock.menuOpen;
+  // The canvas fits the area the panels, the dock and the slide strip leave
+  // it, as measured; until it's measured, as worked out from the viewport.
+  const area =
+    measuredArea ??
+    estimateCanvasArea({
+      viewport,
+      panelOpen: !!panel && rail.some((r) => r.id === panel),
+      dockOpen,
+      stripHeight: 0,
+    });
+  const boardW = boardWidth(area, native, zoom);
   const fitStatus = fitLine(current);
   const status = host.status(baseVersion);
   const selectCls =
     "h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-xs font-semibold text-[var(--ed-ink)]";
 
-  return (
+  // Every menu and panel inside opens in the dock, never over the canvas.
+  const editor = (
     <div className="studio-editor flex h-screen flex-col overflow-hidden">
       <EditorTopBar
         title={current.name}
@@ -1394,421 +1435,455 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         )}
         <main
           ref={canvasArea}
-          className="relative flex min-w-0 flex-1 flex-col items-center overflow-auto bg-[var(--ed-canvas)] p-6 [align-items:safe_center]"
+          className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--ed-canvas)]"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px)",
             backgroundSize: "22px 22px",
           }}
         >
-          <div className="mb-4 flex max-w-full flex-col items-center">
-            <EditorToolbar
-              selected={selected}
-              isGroup={isGroup}
-              fields={pageFields}
-              onText={(t) =>
-                single && edit(updateLayer(doc, single.id, { content: t, name: t.slice(0, 24) }))
-              }
-              onColour={(c) => {
-                if (!single) return;
-                const style =
-                  single.kind === "text"
-                    ? { ...single.style, color: c }
-                    : { ...single.style, background: c };
-                edit(updateLayer(doc, single.id, { style }));
-              }}
-              onLock={() => {
-                const lock = !selected.every((l) => l.locked);
-                edit(selected.reduce((d, l) => updateLayer(d, l.id, { locked: lock }), doc));
-              }}
-              onDuplicate={() => {
-                const r = duplicate(doc, format, selection);
-                const ids = new Set(r.ids);
-                edit({
-                  ...r.doc,
-                  layers: layersOf(r.doc).map((l) => (ids.has(l.id) ? onlyOnSize(l, format) : l)),
-                });
-                setSelection(r.ids);
-              }}
-              onDelete={() => removeSelected(selection)}
-              onGroup={() => edit(groupLayers(doc, selection).doc)}
-              onUngroup={() => edit(ungroup(doc, selection))}
-              onReorder={(move) => edit(reorderLayers(doc, selection, move))}
-              onCopy={copySelection}
-              onPaste={pasteClipboard}
-              canPaste={canPaste}
-              // A club's save is credited to it; the console has no club to credit.
-              onSaveElement={host.club ? () => setSavingElement(true) : undefined}
-              page={
-                scope === null
-                  ? {
-                      background: pageFull.background,
-                      onBackground: (colour) => {
-                        const { background: _old, ...rest } = pageFull;
-                        editPage(colour ? { ...rest, background: colour } : rest);
-                      },
-                      swatches: (() => {
-                        const t = resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID });
-                        return { gold: t.accent, panel: t.panel };
-                      })(),
-                    }
-                  : undefined
-              }
-              arrange={{
-                count: unitCount(doc, format, selection, inside),
-                onAlign: (to) => edit(align(doc, format, selection, to, inside)),
-                onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
-                onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
-              }}
-            />
-            {host.club && (
-              <SaveElementDialog
-                layers={selected}
-                context={elementSaveContext(
-                  data,
-                  resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID }),
-                )}
-                clubName={data.brand?.name || clubName || "your club"}
-                open={savingElement}
-                onClose={() => setSavingElement(false)}
+          {/* The toolbar strip: every toolbar and prompt sits here, above the
+            canvas, never on it. */}
+          <div
+            data-testid="editor-toolbars"
+            className="flex shrink-0 flex-col items-center justify-end px-6 pt-6"
+            style={{ minHeight: TOOLBAR_STRIP }}
+          >
+            <div className="mb-4 flex max-w-full flex-col items-center">
+              <EditorToolbar
+                selected={selected}
+                isGroup={isGroup}
+                fields={pageFields}
+                onText={(t) =>
+                  single && edit(updateLayer(doc, single.id, { content: t, name: t.slice(0, 24) }))
+                }
+                onColour={(c) => {
+                  if (!single) return;
+                  const style =
+                    single.kind === "text"
+                      ? { ...single.style, color: c }
+                      : { ...single.style, background: c };
+                  edit(updateLayer(doc, single.id, { style }));
+                }}
+                onLock={() => {
+                  const lock = !selected.every((l) => l.locked);
+                  edit(selected.reduce((d, l) => updateLayer(d, l.id, { locked: lock }), doc));
+                }}
+                onDuplicate={() => {
+                  const r = duplicate(doc, format, selection);
+                  const ids = new Set(r.ids);
+                  edit({
+                    ...r.doc,
+                    layers: layersOf(r.doc).map((l) => (ids.has(l.id) ? onlyOnSize(l, format) : l)),
+                  });
+                  setSelection(r.ids);
+                }}
+                onDelete={() => removeSelected(selection)}
+                onGroup={() => edit(groupLayers(doc, selection).doc)}
+                onUngroup={() => edit(ungroup(doc, selection))}
+                onReorder={(move) => edit(reorderLayers(doc, selection, move))}
+                onCopy={copySelection}
+                onPaste={pasteClipboard}
+                canPaste={canPaste}
+                // A club's save is credited to it; the console has no club to credit.
+                onSaveElement={host.club ? () => setSavingElement(true) : undefined}
+                page={
+                  scope === null
+                    ? {
+                        background: pageFull.background,
+                        onBackground: (colour) => {
+                          const { background: _old, ...rest } = pageFull;
+                          editPage(colour ? { ...rest, background: colour } : rest);
+                        },
+                        swatches: (() => {
+                          const t = resolveCardTokens({
+                            junior: false,
+                            data,
+                            packId: BLANK_PACK_ID,
+                          });
+                          return { gold: t.accent, panel: t.panel };
+                        })(),
+                      }
+                    : undefined
+                }
+                arrange={{
+                  count: unitCount(doc, format, selection, inside),
+                  onAlign: (to) => edit(align(doc, format, selection, to, inside)),
+                  onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
+                  onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
+                }}
               />
+              {host.club && (
+                <SaveElementDialog
+                  layers={selected}
+                  context={elementSaveContext(
+                    data,
+                    resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID }),
+                  )}
+                  clubName={data.brand?.name || clubName || "your club"}
+                  open={savingElement}
+                  onClose={() => setSavingElement(false)}
+                />
+              )}
+            </div>
+
+            {addPrompt && (!draftFormats || draftFormats.length > 1) && (
+              <div
+                role="dialog"
+                aria-label="Add to other sizes"
+                className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
+              >
+                <span>Add to the other sizes too?</span>
+                <button
+                  type="button"
+                  onClick={acceptAddPrompt}
+                  className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
+                >
+                  Add to all sizes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddPrompt(null)}
+                  className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
+                >
+                  Just {SIZE_LABEL[addPrompt.from].toLowerCase()}
+                </button>
+              </div>
             )}
-            {single?.kind === "text" && (
+
+            {linkPrompt && (
+              <div
+                role="dialog"
+                aria-label="Delete on other sizes"
+                className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
+              >
+                <span>The other sizes have their own copy. Delete it on every size?</span>
+                <button
+                  type="button"
+                  onClick={() => editPage(removeLinked(pageFull, linkPrompt))}
+                  className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
+                >
+                  Delete on every size
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLinkPrompt(null)}
+                  className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
+                >
+                  Just {SIZE_LABEL[format].toLowerCase()}
+                </button>
+              </div>
+            )}
+
+            {scopeGroup && (
+              <nav
+                aria-label="Editing inside"
+                className="mb-3 flex max-w-full flex-wrap items-center gap-1 text-xs text-[var(--ed-ink2)]"
+              >
+                <button
+                  type="button"
+                  className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
+                  onClick={() => enterScope(null, [path[0]!.id])}
+                >
+                  {cur.label}
+                </button>
+                {path.map((g, i) => (
+                  <span key={g.id} className="flex items-center gap-1">
+                    <ChevronRight className="h-3 w-3" aria-hidden />
+                    {i < path.length - 1 ? (
+                      <button
+                        type="button"
+                        className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
+                        onClick={() => enterScope(g.id, [path[i + 1]!.id])}
+                      >
+                        {scopeName(g)}
+                      </button>
+                    ) : (
+                      <span
+                        aria-current="location"
+                        className="px-1.5 font-semibold text-[var(--ed-ink)]"
+                      >
+                        {scopeName(g)}
+                      </span>
+                    )}
+                  </span>
+                ))}
+                <span className="ml-2">
+                  {inList
+                    ? "Editing the first row: every row follows. Esc goes up a level."
+                    : "Esc goes up a level."}
+                </span>
+              </nav>
+            )}
+          </div>
+
+          <div
+            ref={stageRef}
+            data-testid="editor-stage"
+            className="flex min-h-0 flex-1 flex-col items-center overflow-auto px-6 pb-6 [align-items:safe_center]"
+          >
+            <EditorCanvas
+              key={`play-${playing}`}
+              doc={doc}
+              renderDoc={
+                full.setDesign ? pageRenderDocument(full, cur, slide?.key) : asAdjustments(full)
+              }
+              animate={playing > 0}
+              size={format}
+              width={boardW}
+              input={shownInput}
+              theme={null}
+              data={shownData}
+              junior={slide?.junior ?? false}
+              packId={BLANK_PACK_ID}
+              selection={selection}
+              onSelect={(lid) => {
+                // A click off every layer clears the selection and leaves a group.
+                if (lid === null) enterScope(null);
+                else setSelection(selectionFor(doc, lid, inside));
+              }}
+              onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
+              marqueeArea={canvasArea}
+              onSelectMany={(ids, additive) =>
+                setSelection((s) => selectMany(doc, s, ids, inside, additive))
+              }
+              onEnterGroup={(lid, child, at) => {
+                const l = layers.find((x) => x.id === lid);
+                if (l && isContainer(l)) {
+                  // In a list, the cell under the pointer in whichever row was clicked.
+                  const pick = l.kind === "rows" ? (at ? cellAt(l, format, at) : null) : child;
+                  enterScope(lid, pick ? [pick] : []);
+                  return;
+                }
+                setInside(l?.group ?? null);
+                setSelection([lid]);
+              }}
+              scopeId={scopeGroup?.id ?? null}
+              scopeBox={scopeGroup ? boxOf(scopeGroup as FreeLayer, format) : null}
+              measure={scopeInStack(pageFull, scope)}
+              fixed={isStack(scopeGroup)}
+              onChange={onCanvasChange}
+              onLayout={onLayout}
+              touch
+              flagged={warnings.map((w) => w.layerId).filter((x): x is string => !!x)}
+            />
+
+            <div className="mt-4 flex w-full max-w-2xl flex-col gap-2 text-sm">
+              {!full.setDesign && page !== primaryPage(kind) && !pageFull.layers?.length && (
+                <p className="text-[var(--ed-ink2)]">
+                  The {cur.label.toLowerCase()} is empty. Add fields and elements to design it;
+                  carousels use it once it has something on it.
+                </p>
+              )}
+              {full.setDesign && !pageFull.layers?.length && (
+                <p className="text-[var(--ed-ink2)]">
+                  This page is empty. Add fields and elements to design it.
+                </p>
+              )}
+              {cur.repeat && slide && (
+                <p className="text-[var(--ed-ink2)]">
+                  Every {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()} slide shares
+                  this design: editing this one edits them all.
+                </p>
+              )}
+              {cur.repeat && !slide && (
+                <div className="flex flex-wrap items-center gap-2 text-[var(--ed-ink2)]">
+                  <span>
+                    This page repeats: one slide per{" "}
+                    {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()}. Editing it edits
+                    them all.
+                  </span>
+                  <span role="group" aria-label="Sample item" className="flex gap-1">
+                    {[0, 1, 2].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-pressed={sample === n}
+                        onClick={() => setSample(n)}
+                        className={
+                          sample === n
+                            ? "rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-xs font-semibold text-[var(--ed-on-accent)]"
+                            : "rounded-full border border-[var(--ed-line)] px-2 py-0.5 text-xs font-semibold"
+                        }
+                      >
+                        Sample {n + 1}
+                      </button>
+                    ))}
+                  </span>
+                </div>
+              )}
+              {plan.slides.length > 1 && (
+                <p className="text-[var(--ed-ink2)]">
+                  Showing slide 1 of {plan.slides.length}: rows that don&apos;t fit go on extra
+                  slides.
+                </p>
+              )}
+              {!slide && !latest && !stress && (
+                <p className="text-[var(--ed-ink2)]">Previewing with sample data.</p>
+              )}
+              {fitStatus && (
+                <p
+                  role="status"
+                  className={
+                    fitStatus.tone === "bad"
+                      ? "text-[var(--ed-danger)]"
+                      : fitStatus.tone === "wait"
+                        ? "text-amber-300"
+                        : "text-[var(--ed-ink2)]"
+                  }
+                >
+                  {fitStatus.text}
+                </p>
+              )}
+              {pasteNote && (
+                <p role="status" className="text-amber-300">
+                  {pasteNote}
+                </p>
+              )}
+              {layers.filter((l) => l.kind === "photo").length > 1 && (
+                <p role="status" className="text-[var(--ed-ink2)]">
+                  Every Card photo shows the same photo.
+                  {listPhotoField
+                    ? " For a photo per player, select the list and set a cell to show Photo in its settings."
+                    : ""}
+                </p>
+              )}
+              {shownWarnings.length > 0 && (
+                <ul role="status" aria-label="Needs a look" className="flex flex-col gap-1">
+                  {shownWarnings.map((w, i) => (
+                    <li key={i} className="flex items-center gap-2 text-[var(--ed-danger)]">
+                      <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+                      {w.reason === "overflow"
+                        ? `Text doesn't fit in ${layerName(w.layerId)} on ${SIZE_LABEL[w.size as CardSize]}, even shrunk.`
+                        : w.reason === "font"
+                          ? `The font ${w.detail ?? ""} couldn't load; cards would use a fallback.`
+                          : `This list needs more than 10 slides on ${SIZE_LABEL[w.size as CardSize]}; the rest won't post. Make the rows smaller.`}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {page === primaryPage(pageKind) &&
+                keyField &&
+                // A page of its own (Add page) shows no card's data, so it has none to lose.
+                !(full.setDesign && isOwnDesignPage(full, cur.id)) &&
+                !showsKeyField(pageFull, pageKind) && (
+                  <p role="status" className="flex items-center gap-2 text-amber-300">
+                    <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+                    This template no longer shows {keyField.label.toLowerCase()}, so cards
+                    won&apos;t say who or what they&apos;re about.
+                  </p>
+                )}
+              {blocked.map((b) => (
+                <p key={b} role="alert" className="text-[var(--ed-danger)]">
+                  {b}
+                </p>
+              ))}
+              {conflict && (
+                <div
+                  role="alert"
+                  className="flex flex-wrap items-center gap-3 text-[var(--ed-danger)]"
+                >
+                  <span>
+                    Someone else changed this template
+                    {conflict.updatedByName ? ` (${conflict.updatedByName})` : ""} after you opened
+                    it. Your changes weren&apos;t saved.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={reloadTheirs}
+                    className="rounded-full border border-[var(--ed-line)] px-3 py-1 font-semibold text-[var(--ed-ink)]"
+                  >
+                    Load their version
+                  </button>
+                </div>
+              )}
+              {saveError && (
+                <p role="alert" className="text-[var(--ed-danger)]">
+                  {saveError}
+                </p>
+              )}
+            </div>
+          </div>
+        </main>
+        {/* The dock: list settings, layers and every menu that would otherwise
+          float over the canvas. A column of its own, so the canvas shrinks
+          to make room for it instead of being covered. */}
+        <aside
+          aria-label="Settings"
+          data-testid="editor-dock"
+          hidden={!dockOpen}
+          className="flex shrink-0 flex-col gap-3 overflow-y-auto border-l border-[var(--ed-line)] bg-[var(--ed-panel)] p-3"
+          style={{ width: DOCK_WIDTH }}
+        >
+          <div
+            ref={dock.setMenuNode}
+            data-dock-menus
+            className="flex flex-col gap-2 empty:hidden"
+          />
+          {single?.kind === "text" && (
+            <InDock>
               <TextStyleBar
                 style={single.style}
                 onStyle={(patch) => edit(setTextStyle(doc, single.id, patch))}
               />
-            )}
-            {single?.kind === "element" && (
+            </InDock>
+          )}
+          {single?.kind === "element" && (
+            <InDock>
               <ElementPropsEditor
                 layer={single}
                 values={values}
                 onProp={(k, v) => edit(setElementProp(doc, single.id, k, v))}
               />
-            )}
-          </div>
-
-          {addPrompt && (!draftFormats || draftFormats.length > 1) && (
-            <div
-              role="dialog"
-              aria-label="Add to other sizes"
-              className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
-            >
-              <span>Add to the other sizes too?</span>
-              <button
-                type="button"
-                onClick={acceptAddPrompt}
-                className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
-              >
-                Add to all sizes
-              </button>
-              <button
-                type="button"
-                onClick={() => setAddPrompt(null)}
-                className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
-              >
-                Just {SIZE_LABEL[addPrompt.from].toLowerCase()}
-              </button>
-            </div>
+            </InDock>
           )}
-
-          {linkPrompt && (
-            <div
-              role="dialog"
-              aria-label="Delete on other sizes"
-              className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
-            >
-              <span>The other sizes have their own copy. Delete it on every size?</span>
-              <button
-                type="button"
-                onClick={() => editPage(removeLinked(pageFull, linkPrompt))}
-                className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
-              >
-                Delete on every size
-              </button>
-              <button
-                type="button"
-                onClick={() => setLinkPrompt(null)}
-                className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
-              >
-                Just {SIZE_LABEL[format].toLowerCase()}
-              </button>
-            </div>
+          {rowsLayer && (
+            <InDock>
+              <RowsPanel
+                doc={doc}
+                layer={rowsLayer}
+                kind={pageKind}
+                page={page}
+                size={format}
+                clubLabel={values["club.short"]}
+                onEdit={edit}
+              />
+            </InDock>
           )}
-
-          {scopeGroup && (
-            <nav
-              aria-label="Editing inside"
-              className="mb-3 flex max-w-full flex-wrap items-center gap-1 text-xs text-[var(--ed-ink2)]"
-            >
-              <button
-                type="button"
-                className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
-                onClick={() => enterScope(null, [path[0]!.id])}
-              >
-                {cur.label}
-              </button>
-              {path.map((g, i) => (
-                <span key={g.id} className="flex items-center gap-1">
-                  <ChevronRight className="h-3 w-3" aria-hidden />
-                  {i < path.length - 1 ? (
-                    <button
-                      type="button"
-                      className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
-                      onClick={() => enterScope(g.id, [path[i + 1]!.id])}
-                    >
-                      {scopeName(g)}
-                    </button>
-                  ) : (
-                    <span
-                      aria-current="location"
-                      className="px-1.5 font-semibold text-[var(--ed-ink)]"
-                    >
-                      {scopeName(g)}
-                    </span>
-                  )}
-                </span>
-              ))}
-              <span className="ml-2">
-                {inList
-                  ? "Editing the first row: every row follows. Esc goes up a level."
-                  : "Esc goes up a level."}
-              </span>
-            </nav>
-          )}
-
-          <EditorCanvas
-            key={`play-${playing}`}
-            doc={doc}
-            renderDoc={
-              full.setDesign ? pageRenderDocument(full, cur, slide?.key) : asAdjustments(full)
-            }
-            animate={playing > 0}
-            size={format}
-            width={boardW}
-            input={shownInput}
-            theme={null}
-            data={shownData}
-            junior={slide?.junior ?? false}
-            packId={BLANK_PACK_ID}
-            selection={selection}
-            onSelect={(lid) => {
-              // A click off every layer clears the selection and leaves a group.
-              if (lid === null) enterScope(null);
-              else setSelection(selectionFor(doc, lid, inside));
-            }}
-            onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
-            marqueeArea={canvasArea}
-            onSelectMany={(ids, additive) =>
-              setSelection((s) => selectMany(doc, s, ids, inside, additive))
-            }
-            onEnterGroup={(lid, child, at) => {
-              const l = layers.find((x) => x.id === lid);
-              if (l && isContainer(l)) {
-                // In a list, the cell under the pointer in whichever row was clicked.
-                const pick = l.kind === "rows" ? (at ? cellAt(l, format, at) : null) : child;
-                enterScope(lid, pick ? [pick] : []);
-                return;
-              }
-              setInside(l?.group ?? null);
-              setSelection([lid]);
-            }}
-            scopeId={scopeGroup?.id ?? null}
-            scopeBox={scopeGroup ? boxOf(scopeGroup as FreeLayer, format) : null}
-            measure={scopeInStack(pageFull, scope)}
-            fixed={isStack(scopeGroup)}
-            onChange={onCanvasChange}
-            onLayout={onLayout}
-            touch
-            flagged={warnings.map((w) => w.layerId).filter((x): x is string => !!x)}
-          />
-
-          <div className="mt-4 flex w-full max-w-2xl flex-col gap-2 text-sm">
-            {!full.setDesign && page !== primaryPage(kind) && !pageFull.layers?.length && (
-              <p className="text-[var(--ed-ink2)]">
-                The {cur.label.toLowerCase()} is empty. Add fields and elements to design it;
-                carousels use it once it has something on it.
-              </p>
-            )}
-            {full.setDesign && !pageFull.layers?.length && (
-              <p className="text-[var(--ed-ink2)]">
-                This page is empty. Add fields and elements to design it.
-              </p>
-            )}
-            {cur.repeat && slide && (
-              <p className="text-[var(--ed-ink2)]">
-                Every {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()} slide shares this
-                design: editing this one edits them all.
-              </p>
-            )}
-            {cur.repeat && !slide && (
-              <div className="flex flex-wrap items-center gap-2 text-[var(--ed-ink2)]">
-                <span>
-                  This page repeats: one slide per{" "}
-                  {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()}. Editing it edits them
-                  all.
-                </span>
-                <span role="group" aria-label="Sample item" className="flex gap-1">
-                  {[0, 1, 2].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-pressed={sample === n}
-                      onClick={() => setSample(n)}
-                      className={
-                        sample === n
-                          ? "rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-xs font-semibold text-[var(--ed-on-accent)]"
-                          : "rounded-full border border-[var(--ed-line)] px-2 py-0.5 text-xs font-semibold"
-                      }
-                    >
-                      Sample {n + 1}
-                    </button>
-                  ))}
-                </span>
-              </div>
-            )}
-            {plan.slides.length > 1 && (
-              <p className="text-[var(--ed-ink2)]">
-                Showing slide 1 of {plan.slides.length}: rows that don&apos;t fit go on extra
-                slides.
-              </p>
-            )}
-            {!slide && !latest && !stress && (
-              <p className="text-[var(--ed-ink2)]">Previewing with sample data.</p>
-            )}
-            {fitStatus && (
-              <p
-                role="status"
-                className={
-                  fitStatus.tone === "bad"
-                    ? "text-[var(--ed-danger)]"
-                    : fitStatus.tone === "wait"
-                      ? "text-amber-300"
-                      : "text-[var(--ed-ink2)]"
-                }
-              >
-                {fitStatus.text}
-              </p>
-            )}
-            {pasteNote && (
-              <p role="status" className="text-amber-300">
-                {pasteNote}
-              </p>
-            )}
-            {layers.filter((l) => l.kind === "photo").length > 1 && (
-              <p role="status" className="text-[var(--ed-ink2)]">
-                Every Card photo shows the same photo.
-                {listPhotoField
-                  ? " For a photo per player, select the list and set a cell to show Photo in its settings."
-                  : ""}
-              </p>
-            )}
-            {shownWarnings.length > 0 && (
-              <ul role="status" aria-label="Needs a look" className="flex flex-col gap-1">
-                {shownWarnings.map((w, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[var(--ed-danger)]">
-                    <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-                    {w.reason === "overflow"
-                      ? `Text doesn't fit in ${layerName(w.layerId)} on ${SIZE_LABEL[w.size as CardSize]}, even shrunk.`
-                      : w.reason === "font"
-                        ? `The font ${w.detail ?? ""} couldn't load; cards would use a fallback.`
-                        : `This list needs more than 10 slides on ${SIZE_LABEL[w.size as CardSize]}; the rest won't post. Make the rows smaller.`}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {page === primaryPage(pageKind) &&
-              keyField &&
-              // A page of its own (Add page) shows no card's data, so it has none to lose.
-              !(full.setDesign && isOwnDesignPage(full, cur.id)) &&
-              !showsKeyField(pageFull, pageKind) && (
-                <p role="status" className="flex items-center gap-2 text-amber-300">
-                  <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-                  This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t
-                  say who or what they&apos;re about.
-                </p>
-              )}
-            {blocked.map((b) => (
-              <p key={b} role="alert" className="text-[var(--ed-danger)]">
-                {b}
-              </p>
-            ))}
-            {conflict && (
-              <div
-                role="alert"
-                className="flex flex-wrap items-center gap-3 text-[var(--ed-danger)]"
-              >
-                <span>
-                  Someone else changed this template
-                  {conflict.updatedByName ? ` (${conflict.updatedByName})` : ""} after you opened
-                  it. Your changes weren&apos;t saved.
-                </span>
-                <button
-                  type="button"
-                  onClick={reloadTheirs}
-                  className="rounded-full border border-[var(--ed-line)] px-3 py-1 font-semibold text-[var(--ed-ink)]"
-                >
-                  Load their version
-                </button>
-              </div>
-            )}
-            {saveError && (
-              <p role="alert" className="text-[var(--ed-danger)]">
-                {saveError}
-              </p>
-            )}
-          </div>
-
-          {single?.kind === "rows" && single.rows && (
-            // Docked at the foot of the canvas area, after the canvas, so
-            // opening it never moves the card being edited (dev retest 3).
-            <div className="sticky bottom-0 z-20 mt-auto w-full max-w-3xl pt-3">
-              <div className="max-h-[45vh] overflow-auto rounded-xl shadow-xl">
-                <RowsPanel
-                  doc={doc}
-                  layer={single}
-                  kind={pageKind}
-                  page={page}
-                  size={format}
-                  clubLabel={values["club.short"]}
-                  onEdit={edit}
-                />
-              </div>
-            </div>
-          )}
-
           {layersOpen && (
-            <LayersDrawer
-              layers={layersOnSize(pageFull, format)}
-              size={format}
-              scope={scope}
-              fieldLabels={fieldLabels}
-              selection={selection}
-              onSelect={(ids, mode, parent) => {
-                // A row in another group goes inside that group first.
-                if (parent !== scope) {
-                  enterScope(parent, ids);
-                  return;
-                }
-                setSelection((s) =>
-                  mode === "replace"
-                    ? ids
-                    : mode === "toggle"
-                      ? toggleSelection(doc, s, ids[0], inside)
-                      : [...new Set([...s, ...ids])],
-                );
-              }}
-              onToggleHidden={(lid) => {
-                const l = findLayer(pageFull, lid)?.layer;
-                if (l) editPage(updateDeep(pageFull, lid, { hidden: !l.hidden }));
-              }}
-              onToggleLocked={(lid) => {
-                const l = findLayer(pageFull, lid)?.layer;
-                if (l) editPage(updateDeep(pageFull, lid, { locked: !l.locked }));
-              }}
-              onClose={() => setLayersOpen(false)}
-            />
+            <InDock>
+              <LayersDrawer
+                layers={layersOnSize(pageFull, format)}
+                size={format}
+                scope={scope}
+                fieldLabels={fieldLabels}
+                selection={selection}
+                onSelect={(ids, mode, parent) => {
+                  // A row in another group goes inside that group first.
+                  if (parent !== scope) {
+                    enterScope(parent, ids);
+                    return;
+                  }
+                  setSelection((s) =>
+                    mode === "replace"
+                      ? ids
+                      : mode === "toggle"
+                        ? toggleSelection(doc, s, ids[0], inside)
+                        : [...new Set([...s, ...ids])],
+                  );
+                }}
+                onToggleHidden={(lid) => {
+                  const l = findLayer(pageFull, lid)?.layer;
+                  if (l) editPage(updateDeep(pageFull, lid, { hidden: !l.hidden }));
+                }}
+                onToggleLocked={(lid) => {
+                  const l = findLayer(pageFull, lid)?.layer;
+                  if (l) editPage(updateDeep(pageFull, lid, { locked: !l.locked }));
+                }}
+                onClose={() => setLayersOpen(false)}
+              />
+            </InDock>
           )}
-        </main>
+        </aside>
       </div>
       {slidesMode && full.setDesign && (
         <PageStrip
@@ -2040,6 +2115,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
       />
     </div>
   );
+  return <DockProvider api={dock.api}>{editor}</DockProvider>;
 }
 
 /**

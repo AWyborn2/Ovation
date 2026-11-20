@@ -3,6 +3,7 @@ import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
 import type { TemplateStyleV2, TemplateTextStyle } from "@workspace/scorecard/kind-templates";
 import { loadFontCatalogue, primaryFamily, type CatalogueEntry } from "@/lib/document-fonts";
 import { cn } from "@/lib/utils";
+import { DockedMenu } from "./dock";
 
 const field =
   "h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm text-[var(--ed-ink)]";
@@ -117,95 +118,95 @@ export function FontPicker({
       >
         {current}
       </button>
-      {open && (
-        <div
-          role="dialog"
-          aria-label="Choose a font"
-          className="absolute left-0 top-10 z-30 w-64 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2 shadow-xl"
-        >
-          <input
-            ref={inputRef}
-            aria-label="Search fonts"
-            placeholder="Search 1,700+ fonts"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className={cn(field, "mb-2 w-full")}
-          />
-          <ul role="listbox" aria-label="Fonts" className="max-h-64 overflow-auto">
-            <li>
+      <DockedMenu
+        open={open}
+        role="dialog"
+        aria-label="Choose a font"
+        className="mt-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2"
+        floatClassName="absolute left-0 top-10 z-30 mt-0 w-64 shadow-xl"
+      >
+        <input
+          ref={inputRef}
+          aria-label="Search fonts"
+          placeholder="Search 1,700+ fonts"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className={cn(field, "mb-2 w-full")}
+        />
+        <ul role="listbox" aria-label="Fonts" className="max-h-64 overflow-auto">
+          <li>
+            <button
+              type="button"
+              role="option"
+              aria-selected={!value}
+              className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
+              onClick={() => {
+                onChange(undefined);
+                close();
+              }}
+            >
+              {DEFAULT_FONT}
+            </button>
+          </li>
+          {failed && (
+            <li className="px-2 py-1.5 text-sm text-[var(--ed-danger)]">
+              Couldn't load the font list. Try again.
+            </li>
+          )}
+          {!catalogue && !failed && (
+            <li className="px-2 py-1.5 text-sm text-[var(--ed-ink2)]">Loading fonts…</li>
+          )}
+          {!query.trim() && catalogue && featured.length > 0 && (
+            <li role="presentation">
+              <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
+                {FEATURED_FONTS.label}
+              </p>
+              <ul role="group" aria-label={FEATURED_FONTS.label}>
+                {featured.map((f) => (
+                  <li key={f.family}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={primaryFamily(value) === f.family}
+                      className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
+                      onClick={() => {
+                        onChange(fontFamilyValue(f));
+                        close();
+                      }}
+                    >
+                      {f.family}
+                      <span className="ml-2 text-xs text-[var(--ed-ink2)]">{f.category}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="px-2 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
+                All fonts
+              </p>
+            </li>
+          )}
+          {results.map((f) => (
+            <li key={f.family}>
               <button
                 type="button"
                 role="option"
-                aria-selected={!value}
+                aria-selected={primaryFamily(value) === f.family}
                 className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
                 onClick={() => {
-                  onChange(undefined);
+                  onChange(fontFamilyValue(f));
                   close();
                 }}
               >
-                {DEFAULT_FONT}
+                {f.family}
+                <span className="ml-2 text-xs text-[var(--ed-ink2)]">{f.category}</span>
               </button>
             </li>
-            {failed && (
-              <li className="px-2 py-1.5 text-sm text-[var(--ed-danger)]">
-                Couldn't load the font list. Try again.
-              </li>
-            )}
-            {!catalogue && !failed && (
-              <li className="px-2 py-1.5 text-sm text-[var(--ed-ink2)]">Loading fonts…</li>
-            )}
-            {!query.trim() && catalogue && featured.length > 0 && (
-              <li role="presentation">
-                <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
-                  {FEATURED_FONTS.label}
-                </p>
-                <ul role="group" aria-label={FEATURED_FONTS.label}>
-                  {featured.map((f) => (
-                    <li key={f.family}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={primaryFamily(value) === f.family}
-                        className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
-                        onClick={() => {
-                          onChange(fontFamilyValue(f));
-                          close();
-                        }}
-                      >
-                        {f.family}
-                        <span className="ml-2 text-xs text-[var(--ed-ink2)]">{f.category}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <p className="px-2 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
-                  All fonts
-                </p>
-              </li>
-            )}
-            {results.map((f) => (
-              <li key={f.family}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={primaryFamily(value) === f.family}
-                  className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
-                  onClick={() => {
-                    onChange(fontFamilyValue(f));
-                    close();
-                  }}
-                >
-                  {f.family}
-                  <span className="ml-2 text-xs text-[var(--ed-ink2)]">{f.category}</span>
-                </button>
-              </li>
-            ))}
-            {catalogue && results.length === 0 && (
-              <li className="px-2 py-1.5 text-sm text-[var(--ed-ink2)]">No fonts match.</li>
-            )}
-          </ul>
-        </div>
-      )}
+          ))}
+          {catalogue && results.length === 0 && (
+            <li className="px-2 py-1.5 text-sm text-[var(--ed-ink2)]">No fonts match.</li>
+          )}
+        </ul>
+      </DockedMenu>
     </div>
   );
 }

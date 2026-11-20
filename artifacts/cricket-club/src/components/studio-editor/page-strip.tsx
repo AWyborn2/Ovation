@@ -7,7 +7,11 @@
  */
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripVertical, Plus, Repeat2, Trash2 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DockPopover as Popover,
+  DockPopoverContent as PopoverContent,
+  DockPopoverTrigger as PopoverTrigger,
+} from "./dock";
 import { cn } from "@/lib/utils";
 import { useNewStudio } from "@/lib/entitlements";
 import { PageOverview } from "./page-grid";

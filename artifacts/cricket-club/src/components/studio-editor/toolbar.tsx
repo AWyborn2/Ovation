@@ -19,6 +19,7 @@ import type { ReorderMove } from "./document";
 import type { Alignment, MatchDimension, MatchReference } from "./arrange";
 import { ArrangeMenu } from "./arrange-menu";
 import { TokenTextInput, type TokenField } from "./token-text-input";
+import { DockedMenu } from "./dock";
 import { cn } from "@/lib/utils";
 
 const btn =
@@ -329,43 +330,43 @@ function PageColour({ background, onBackground, swatches }: PageColourProps) {
         />
         Page colour
       </button>
-      {open && (
-        <div
-          role="group"
-          aria-label="Page colours"
-          className="absolute left-0 top-10 z-20 flex w-56 flex-col gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2 shadow-xl"
-        >
-          {options.map((o) => (
-            <button
-              key={o.label}
-              type="button"
-              aria-pressed={o.value === background}
-              onClick={() => {
-                onBackground(o.value);
-                setOpen(false);
-              }}
-              className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-sm text-[var(--ed-ink)] hover:bg-[var(--ed-card)] aria-pressed:bg-[var(--ed-card)]"
-            >
-              <span
-                aria-hidden
-                className="h-5 w-5 shrink-0 rounded border border-[var(--ed-line)]"
-                style={{ background: o.show }}
-              />
-              {o.label}
-            </button>
-          ))}
-          <label className="flex items-center gap-2 px-2 py-1 text-sm text-[var(--ed-ink)]">
-            <input
-              type="color"
-              aria-label="Any colour"
-              value={hex}
-              onChange={(e) => onBackground(e.target.value.toUpperCase())}
-              className="h-5 w-5 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent p-0"
+      <DockedMenu
+        open={open}
+        role="group"
+        aria-label="Page colours"
+        className="mt-1 flex flex-col gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2"
+        floatClassName="absolute left-0 top-10 z-20 mt-0 w-56 shadow-xl"
+      >
+        {options.map((o) => (
+          <button
+            key={o.label}
+            type="button"
+            aria-pressed={o.value === background}
+            onClick={() => {
+              onBackground(o.value);
+              setOpen(false);
+            }}
+            className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-sm text-[var(--ed-ink)] hover:bg-[var(--ed-card)] aria-pressed:bg-[var(--ed-card)]"
+          >
+            <span
+              aria-hidden
+              className="h-5 w-5 shrink-0 rounded border border-[var(--ed-line)]"
+              style={{ background: o.show }}
             />
-            Any colour
-          </label>
-        </div>
-      )}
+            {o.label}
+          </button>
+        ))}
+        <label className="flex items-center gap-2 px-2 py-1 text-sm text-[var(--ed-ink)]">
+          <input
+            type="color"
+            aria-label="Any colour"
+            value={hex}
+            onChange={(e) => onBackground(e.target.value.toUpperCase())}
+            className="h-5 w-5 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent p-0"
+          />
+          Any colour
+        </label>
+      </DockedMenu>
     </div>
   );
 }

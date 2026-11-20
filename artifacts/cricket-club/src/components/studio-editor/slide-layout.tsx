@@ -12,7 +12,11 @@
 import { useState } from "react";
 import { LayoutTemplate } from "lucide-react";
 import { MAX_SET_PAGES, setPageLabel } from "@workspace/scorecard/kind-templates";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DockPopover as Popover,
+  DockPopoverContent as PopoverContent,
+  DockPopoverTrigger as PopoverTrigger,
+} from "./dock";
 import { PackCard } from "@/components/pack-card";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { cn } from "@/lib/utils";

@@ -242,10 +242,7 @@ export function LayersDrawer({
   };
 
   return (
-    <aside
-      aria-label="Layers"
-      className="absolute bottom-0 right-0 top-0 z-20 flex w-[320px] flex-col border-l border-[var(--ed-line)] bg-[var(--ed-panel)]"
-    >
+    <aside aria-label="Layers" className="flex min-h-[240px] flex-1 flex-col bg-[var(--ed-panel)]">
       <div className="flex items-center justify-between px-4 py-3">
         <h2 className="font-serif text-[22px] font-extrabold uppercase leading-none">Layers</h2>
         <button
