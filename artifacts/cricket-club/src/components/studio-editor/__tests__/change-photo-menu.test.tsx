@@ -1,5 +1,5 @@
 /**
- * Change photo's menu (Nov 2026): From library, Random (never the photo on
+ * Change photo's panel (Nov 2026): From library, Random (never the photo on
  * show, junior stock only on a junior slide), Focused only with its empty
  * state, and Back to automatic photo.
  */
@@ -19,7 +19,7 @@ vi.mock("@workspace/api-client-react", () => ({
   useListClubPhotos: () => ({ data: state.photos, isLoading: false }),
 }));
 
-import { ChangePhotoMenu } from "../change-photo";
+import { ChangePhotoPanel } from "../change-photo";
 
 const photo = (id: number, over: Record<string, unknown> = {}) => ({
   id,
@@ -38,12 +38,12 @@ const photo = (id: number, over: Record<string, unknown> = {}) => ({
 });
 const stock = (id: number) => photo(id, { grade: null, juniorStock: true });
 
-function open(props: Partial<Parameters<typeof ChangePhotoMenu>[0]> = {}) {
+function open(props: Partial<Parameters<typeof ChangePhotoPanel>[0]> = {}) {
   const onPick = vi.fn(async (_choice: unknown) => {});
   const onAuto = vi.fn(async () => {});
   render(
     <Router hook={memoryLocation({ path: "/admin/social/set/1" }).hook}>
-      <ChangePhotoMenu
+      <ChangePhotoPanel
         draftId={1}
         slideKey="detail:senior:A Grade"
         junior={false}
@@ -55,7 +55,6 @@ function open(props: Partial<Parameters<typeof ChangePhotoMenu>[0]> = {}) {
       />
     </Router>,
   );
-  fireEvent.click(screen.getByRole("button", { name: /change photo/i }));
   return { onPick, onAuto };
 }
 
@@ -83,7 +82,7 @@ describe("Change photo", () => {
     await waitFor(() => expect(onPick).toHaveBeenCalledTimes(1));
     // Photo 1 is on show and 3 isn't in the pool: only 2.
     expect(onPick.mock.calls[0]![0]).toMatchObject({ photoId: 2 });
-    // The menu stays open for another draw.
+    // The panel stays as it is for another draw.
     fireEvent.click(screen.getByText("Random"));
     await waitFor(() => expect(onPick).toHaveBeenCalledTimes(2));
   });

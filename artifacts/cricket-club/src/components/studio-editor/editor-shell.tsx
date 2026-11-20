@@ -7,10 +7,13 @@ import {
   Loader2,
   Maximize2,
   Minus,
+  PanelBottom,
   Plus,
   Redo2,
+  Rows3,
   Save,
   Undo2,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import type { CardSize } from "@/lib/share-card";
@@ -237,55 +240,147 @@ export function EditorRail({
   );
 }
 
-/** The 340px side panel. */
+/** The side panel's width: the canvas takes what is left. */
+export const PANEL_WIDTH = 340;
+
+/**
+ * The side panel beside the rail (340px): the one slot every tool opens in,
+ * the last one opened replacing the one before. `closeIcon` "x" (the New
+ * Studio editors) closes it with an X; the older editor collapses it.
+ */
 export function EditorPanel({
   title,
   onCollapse,
   children,
+  closeIcon = "collapse",
+  id,
 }: {
   title: string;
   onCollapse: () => void;
   children: ReactNode;
+  closeIcon?: "collapse" | "x";
+  /** Which tool is open, for tests and styling (`data-panel`). */
+  id?: string;
 }) {
   return (
-    <aside className="flex w-[340px] shrink-0 flex-col border-r border-[var(--ed-line)] bg-[var(--ed-panel)]">
+    <aside
+      aria-label={title}
+      data-panel={id}
+      data-testid="editor-panel"
+      className="flex shrink-0 flex-col border-r border-[var(--ed-line)] bg-[var(--ed-panel)]"
+      style={{ width: PANEL_WIDTH }}
+    >
       <div className="flex items-center justify-between px-3.5 pb-2 pt-3.5">
         <h2 className="font-serif text-[22px] font-extrabold uppercase leading-none">{title}</h2>
-        <button type="button" className={iconBtn} onClick={onCollapse} aria-label="Collapse panel">
-          <ChevronsLeft className="h-4 w-4" />
-        </button>
+        {closeIcon === "x" ? (
+          <button type="button" className={iconBtn} onClick={onCollapse} aria-label="Close panel">
+            <X className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={iconBtn}
+            onClick={onCollapse}
+            aria-label="Collapse panel"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
+        )}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-4">{children}</div>
     </aside>
   );
 }
 
-/** Bottom bar: layers drawer toggle and zoom (50–160%). */
+/** How a design's pages show: the canvas and a strip of thumbnails, or every page stacked. */
+export type PagesView = "thumbnails" | "scroll";
+
+const PAGES_VIEW_KEY = "ovation.studio.pagesView";
+
+/** The Pages view this browser last picked (Thumbnails until one is). */
+export function readPagesView(): PagesView {
+  try {
+    return window.localStorage.getItem(PAGES_VIEW_KEY) === "scroll" ? "scroll" : "thumbnails";
+  } catch {
+    return "thumbnails";
+  }
+}
+
+/** Remember the Pages view for next time; a blocked storage just doesn't remember. */
+export function writePagesView(view: PagesView): void {
+  try {
+    window.localStorage.setItem(PAGES_VIEW_KEY, view);
+  } catch {
+    // Private mode or blocked storage: the choice lasts this visit only.
+  }
+}
+
+/**
+ * Bottom bar: the Pages view and page count (a design with more than one
+ * page), the layers drawer toggle (the older editor) and zoom (50–160%).
+ */
 export function EditorBottomBar({
   zoom,
   onZoom,
-  layersOpen,
+  layersOpen = false,
   onToggleLayers,
+  pagesView,
+  onPagesView,
+  pageCount,
 }: {
   zoom: number;
   onZoom: (z: number) => void;
-  layersOpen: boolean;
-  onToggleLayers: () => void;
+  layersOpen?: boolean;
+  /** The older editor's Layers drawer; the New Studio editors list layers in Position. */
+  onToggleLayers?: () => void;
+  /** Given with `onPagesView`, the Pages toggle shows. */
+  pagesView?: PagesView;
+  onPagesView?: (view: PagesView) => void;
+  /** "9 / 10" and the grid of every page, beside the toggle. */
+  pageCount?: ReactNode;
 }) {
   const set = (z: number) => onZoom(Math.min(160, Math.max(50, Math.round(z))));
+  const view = (v: PagesView, label: string, Icon: LucideIcon) => (
+    <button
+      type="button"
+      aria-pressed={pagesView === v}
+      onClick={() => onPagesView?.(v)}
+      className={cn(
+        "flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-semibold",
+        pagesView === v
+          ? "bg-[var(--ed-card)] text-[var(--ed-ink)]"
+          : "text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden /> {label}
+    </button>
+  );
   return (
     <footer className="flex h-14 shrink-0 items-center justify-end gap-3 border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4">
-      <button
-        type="button"
-        onClick={onToggleLayers}
-        aria-pressed={layersOpen}
-        className={cn(
-          "flex h-9 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-3 text-sm font-semibold",
-          layersOpen && "bg-[var(--ed-card)]",
-        )}
-      >
-        <Layers className="h-4 w-4" aria-hidden /> Layers
-      </button>
+      {pageCount}
+      {pagesView && onPagesView && (
+        <div
+          role="group"
+          aria-label="Pages"
+          className="flex items-center gap-0.5 rounded-lg border border-[var(--ed-line)] p-0.5"
+        >
+          {view("thumbnails", "Thumbnails", PanelBottom)}
+          {view("scroll", "Scroll", Rows3)}
+        </div>
+      )}
+      {onToggleLayers && (
+        <button
+          type="button"
+          onClick={onToggleLayers}
+          aria-pressed={layersOpen}
+          className={cn(
+            "flex h-9 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-3 text-sm font-semibold",
+            layersOpen && "bg-[var(--ed-card)]",
+          )}
+        >
+          <Layers className="h-4 w-4" aria-hidden /> Layers
+        </button>
+      )}
       <div className="flex items-center gap-2 rounded-lg border border-[var(--ed-line)] px-2 py-1">
         <button
           type="button"

@@ -21,6 +21,8 @@ export type StripItem = {
   note?: string;
   /** Flags the item (a page with nothing on this size). */
   warn?: boolean;
+  /** False: Duplicate isn't offered for this item (a set draft's data slide). */
+  canDuplicate?: boolean;
 };
 
 export type StripAddOption = { id: string; label: string; detail?: string };
@@ -41,6 +43,7 @@ export function PageStrip({
   addOptions,
   onAdd,
   label = "Pages",
+  overview: withOverview = true,
 }: {
   items: StripItem[];
   current: string;
@@ -56,6 +59,8 @@ export function PageStrip({
   addOptions?: StripAddOption[];
   onAdd?: (option: string) => void;
   label?: string;
+  /** False: the host shows the "N / M" counter and grid itself (the editor's bottom bar). */
+  overview?: boolean;
 }) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
@@ -63,7 +68,7 @@ export function PageStrip({
   const h = Math.round(thumbWidth / aspect);
   const canDelete = !!onDelete && items.length > 1;
   // New Studio (preview): an "N / M" counter and a grid of every page.
-  const overview = useNewStudio();
+  const overview = useNewStudio() && withOverview;
 
   const drop = (to: number) => {
     if (dragging && onMove) {
@@ -84,6 +89,7 @@ export function PageStrip({
       <ol className="flex items-end gap-3" aria-label={label}>
         {items.map((item, i) => {
           const on = item.id === current;
+          const dup = !!onDuplicate && item.canDuplicate !== false;
           return (
             <li
               key={item.id}
@@ -158,7 +164,7 @@ export function PageStrip({
                     </span>
                   )}
                 </button>
-                {on && (onDuplicate || canDelete || onMove) && (
+                {on && (dup || canDelete || onMove) && (
                   <span className="absolute -top-3 left-1/2 z-10 flex -translate-x-1/2 gap-0.5">
                     {onMove && (
                       <>
@@ -190,13 +196,13 @@ export function PageStrip({
                         )}
                       </>
                     )}
-                    {onDuplicate && (
+                    {dup && (
                       <button
                         type="button"
                         className={tileBtn}
                         aria-label={`Duplicate ${item.label}`}
                         title="Duplicate"
-                        onClick={() => onDuplicate(item.id)}
+                        onClick={() => onDuplicate!(item.id)}
                       >
                         <Copy className="h-3.5 w-3.5" aria-hidden />
                       </button>

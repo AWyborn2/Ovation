@@ -12,6 +12,7 @@ import {
   Lock,
   PenTool,
   Shapes,
+  SlidersHorizontal,
   Square,
   Sticker,
   Type,
@@ -19,7 +20,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { layerOnSize } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
@@ -91,29 +92,15 @@ function pathTo(layers: FreeLayer[], id: string | null): string[] {
   return [];
 }
 
-/**
- * The layers drawer (Social Studio U16): free layers top-most first, each with
- * its type icon, name, and eye and lock buttons. Clicking a row selects it;
- * ctrl- (or cmd-) click adds or removes it, shift-click selects the run of
- * rows from the last one clicked.
- *
- * Groups and stacks open to show their children, indented (editable-elements
- * A2), and lists open to their row cells (A3); the group or list being edited
- * inside (`scope`) starts open. Selecting a child reports its group or list
- * as `parent`, so the editor can go inside it. A shift run stays within one
- * group.
- */
-export function LayersDrawer({
-  layers,
-  selection,
-  onSelect,
-  onToggleHidden,
-  onToggleLocked,
-  onClose,
-  size,
-  scope = null,
-  fieldLabels,
-}: {
+/** Where a dragged row lands: drawn just above (on top of) or just below `target`. */
+export type LayerDrop = {
+  id: string;
+  parent: string | null;
+  target: string;
+  place: "above" | "below";
+};
+
+export type LayersTreeProps = {
   layers: FreeLayer[];
   selection: string[];
   /**
@@ -123,17 +110,51 @@ export function LayersDrawer({
   onSelect: (ids: string[], mode: "replace" | "toggle" | "add", parent: string | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleLocked: (id: string) => void;
-  onClose: () => void;
   /** The size being edited: children not on it are left out, as top-level layers are. */
   size?: CardSize;
   /** The group being edited inside, if any. */
   scope?: string | null;
   /** Labels for live-field keys, so text layers read by field, not by token. */
   fieldLabels?: Record<string, string>;
-}) {
+  /** Drag a row among its own group's rows to restack it. */
+  onMove?: (drop: LayerDrop) => void;
+  /** Open a layer's own settings (it is selected too). */
+  onEdit?: (id: string, parent: string | null) => void;
+  /** Only rows that pass, or hold a row that passes, are listed; all when absent. */
+  keep?: (l: FreeLayer) => boolean;
+};
+
+/**
+ * The layers tree (Social Studio U16): free layers top-most first, each with
+ * its type icon, name, and eye and lock buttons. Clicking a row selects it;
+ * ctrl- (or cmd-) click adds or removes it, shift-click selects the run of
+ * rows from the last one clicked. With `onMove`, a row drags among its own
+ * group's rows to restack it (a list's cells keep the list's order).
+ *
+ * Groups and stacks open to show their children, indented (editable-elements
+ * A2), and lists open to their row cells (A3); the group or list being edited
+ * inside (`scope`) starts open. Selecting a child reports its group or list
+ * as `parent`, so the editor can go inside it. A shift run stays within one
+ * group.
+ */
+export function LayersTree({
+  layers,
+  selection,
+  onSelect,
+  onToggleHidden,
+  onToggleLocked,
+  size,
+  scope = null,
+  fieldLabels,
+  onMove,
+  onEdit,
+  keep,
+}: LayersTreeProps) {
   const anchor = useRef<string | null>(null);
   // Open groups; going inside a group opens it and the groups around it.
   const [opened, setOpened] = useState<Set<string>>(() => new Set(pathTo(layers, scope)));
+  const [dragging, setDragging] = useState<{ id: string; parent: string | null } | null>(null);
+  const [over, setOver] = useState<{ target: string; place: "above" | "below" } | null>(null);
   const scopeKey = pathTo(layers, scope).join(" ");
   useEffect(() => {
     if (scopeKey) setOpened((o) => new Set([...o, ...scopeKey.split(" ")]));
@@ -146,8 +167,17 @@ export function LayersDrawer({
       else next.add(id);
       return next;
     });
+  const passes = (l: FreeLayer): boolean => !keep || keep(l) || kidsOf(l).some(passes);
   const shown = (list: FreeLayer[]) =>
-    [...list].reverse().filter((l) => !size || layerOnSize(l, size));
+    [...list].reverse().filter((l) => (!size || layerOnSize(l, size)) && passes(l));
+  const endDrag = () => {
+    setDragging(null);
+    setOver(null);
+  };
+  const placeAt = (e: DragEvent<HTMLElement>): "above" | "below" => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return e.clientY < r.top + r.height / 2 ? "above" : "below";
+  };
 
   const pick = (id: string, siblings: FreeLayer[], parent: string | null, e: Mods) => {
     const from = anchor.current ? siblings.findIndex((r) => r.id === anchor.current) : -1;
@@ -174,15 +204,52 @@ export function LayersDrawer({
       const kids = kidsOf(l);
       const cell = isRowCell(l);
       const open = kids.length > 0 && isOpen(l.id);
+      const movable = !!onMove && !cell;
+      // A row takes a drop from a row dragged among the same group's rows.
+      const target = !!dragging && dragging.parent === parent && dragging.id !== l.id;
       return (
-        <li key={l.id}>
+        <li
+          key={l.id}
+          draggable={movable || undefined}
+          onDragStart={(e) => {
+            if (!movable) return;
+            e.stopPropagation();
+            setDragging({ id: l.id, parent });
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", l.id);
+          }}
+          onDragEnd={endDrag}
+          onDragOver={(e) => {
+            if (!target) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setOver({ target: l.id, place: placeAt(e) });
+          }}
+          onDrop={(e) => {
+            if (!target || !dragging || !onMove) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onMove({ id: dragging.id, parent, target: l.id, place: placeAt(e) });
+            endDrag();
+          }}
+        >
           <div
             className={cn(
-              "flex items-center gap-2 rounded-lg py-1.5 pr-2",
+              "relative flex items-center gap-2 rounded-lg py-1.5 pr-2",
               on ? "bg-[var(--ed-card)]" : "hover:bg-[var(--ed-card)]/60",
+              dragging?.id === l.id && "opacity-40",
             )}
             style={{ paddingLeft: 8 + depth * 16 }}
           >
+            {target && over?.target === l.id && (
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute left-2 right-2 h-0.5 rounded bg-[var(--ed-accent)]",
+                  over.place === "above" ? "top-0" : "bottom-0",
+                )}
+              />
+            )}
             {kids.length > 0 ? (
               <button
                 type="button"
@@ -209,6 +276,17 @@ export function LayersDrawer({
                 {l.name ?? (l.content ? contentLabel(l.content, fieldLabels) : name)}
               </span>
             </button>
+            {onEdit && (
+              <button
+                type="button"
+                aria-label={`Edit ${name}`}
+                title="Edit"
+                className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
+                onClick={() => onEdit(l.id, parent)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </button>
+            )}
             {/* A list's cell is part of every row: it's hidden or locked with its list. */}
             {!cell && (
               <>
@@ -242,6 +320,22 @@ export function LayersDrawer({
   };
 
   return (
+    <ul aria-label="Layer list" className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
+      {renderRows(layers, null, 0)}
+    </ul>
+  );
+}
+
+/**
+ * The layers drawer: the layers tree at the side of the canvas, as the older
+ * card editor shows it. The New Studio editors list layers in Position →
+ * Layers instead, in the panel beside the rail.
+ */
+export function LayersDrawer({
+  onClose,
+  ...tree
+}: Omit<LayersTreeProps, "onMove" | "onEdit" | "keep"> & { onClose: () => void }) {
+  return (
     <aside
       aria-label="Layers"
       className="absolute bottom-0 right-0 top-0 z-20 flex w-[320px] flex-col border-l border-[var(--ed-line)] bg-[var(--ed-panel)]"
@@ -257,15 +351,40 @@ export function LayersDrawer({
           <X className="h-4 w-4" />
         </button>
       </div>
-      {layers.length === 0 ? (
+      {tree.layers.length === 0 ? (
         <p className="px-4 text-sm text-[var(--ed-ink2)]">
           No added layers yet. The card's own text and images are in the Content panel.
         </p>
       ) : (
-        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
-          {renderRows(layers, null, 0)}
-        </ul>
+        <LayersTree {...tree} />
       )}
     </aside>
   );
+}
+
+/**
+ * One level of a page (its top level, or a group's children) with layer `id`
+ * restacked just above or just below its sibling `target`. Later in the list
+ * is drawn on top, so "above" puts it after the target.
+ */
+export function moveLayerNear(
+  layers: FreeLayer[],
+  id: string,
+  target: string,
+  place: "above" | "below",
+): FreeLayer[] {
+  const moving = layers.find((l) => l.id === id);
+  if (!moving || id === target || !layers.some((l) => l.id === target)) return layers;
+  const rest = layers.filter((l) => l.id !== id);
+  const at = rest.findIndex((l) => l.id === target);
+  rest.splice(place === "above" ? at + 1 : at, 0, moving);
+  return rest;
+}
+
+/** Whether two boxes share some area (touching edges don't count). */
+export function boxesOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }

@@ -32,7 +32,6 @@ import {
   slidePhotoFor,
   type SlidePhoto,
 } from "@workspace/scorecard/kind-templates";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { EditorActionsContext } from "@/pages/admin-template-editor";
 import type { SetShareContext } from "./export/share-panel";
@@ -47,7 +46,12 @@ type View = "menu" | "library" | "focused";
 const row =
   "flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-sm font-semibold hover:bg-[var(--ed-card)] disabled:opacity-40 disabled:hover:bg-transparent";
 
-export function ChangePhotoMenu({
+/**
+ * Change photo as a panel (New Studio, Nov 2026): it opens in the slot beside
+ * the editor's rail, from a photo layer's Replace or the Edit page panel, so
+ * it never covers the canvas.
+ */
+export function ChangePhotoPanel({
   draftId,
   slideKey,
   junior,
@@ -74,16 +78,15 @@ export function ChangePhotoMenu({
   /** Injectable for tests. */
   random?: () => number;
 }) {
-  const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("menu");
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const params = slideKey ? { slide: slideKey } : undefined;
   const poolQ = useGetDraftPhotoPool(draftId, params, {
-    query: { queryKey: getGetDraftPhotoPoolQueryKey(draftId, params), enabled: open },
+    query: { queryKey: getGetDraftPhotoPoolQueryKey(draftId, params), enabled: true },
   });
   const photosQ = useListClubPhotos(undefined, {
-    query: { queryKey: getListClubPhotosQueryKey(), enabled: open },
+    query: { queryKey: getListClubPhotosQueryKey(), enabled: true },
   });
   const photos = photosQ.data ?? [];
   // Junior if either side says so (fails closed).
@@ -108,7 +111,7 @@ export function ChangePhotoMenu({
   const pick = (photo: ClubPhoto) =>
     run(async () => {
       await onPick(slidePhotoChoice(photo, playerIds));
-      setOpen(false);
+      setView("menu");
     });
   const drawRandom = () => {
     const next = randomSlidePhoto(photos, {
@@ -125,111 +128,103 @@ export function ChangePhotoMenu({
       );
       return;
     }
-    // The menu stays open: pressing Random again draws another.
+    // The panel stays as it is: pressing Random again draws another.
     void run(() => onPick(slidePhotoChoice(next, playerIds)));
   };
 
   const loading = poolQ.isLoading || photosQ.isLoading;
   return (
-    <Popover
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (o) {
-          setView("menu");
-          setNote(null);
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
-        >
-          <ImageIcon className="h-3.5 w-3.5" aria-hidden /> Change photo
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="studio-editor w-80 space-y-2">
-        {lockedReason ? (
-          <p className="text-sm text-[var(--ed-ink2)]">{lockedReason}</p>
-        ) : view === "menu" ? (
-          <>
-            <p className="text-sm font-semibold">Change photo</p>
-            <p className="text-xs text-[var(--ed-ink2)]">
-              {slideKey
-                ? "For this slide only, at every size. Other slides keep their photos."
-                : "For this card, at every size."}
-              {juniorOnly ? " Junior: only the club's approved junior stock images." : ""}
-            </p>
-            <button type="button" className={row} onClick={() => setView("library")}>
-              <ImageIcon className="h-4 w-4" aria-hidden /> From library
-            </button>
-            <button type="button" className={row} disabled={busy || loading} onClick={drawRandom}>
-              <Shuffle className="h-4 w-4" aria-hidden /> Random
-            </button>
-            <button type="button" className={row} onClick={() => setView("focused")}>
-              <Crosshair className="h-4 w-4" aria-hidden /> Focused only
-            </button>
-            {own && (
-              <button
-                type="button"
-                className={row}
-                disabled={busy}
-                onClick={() =>
-                  void run(async () => {
-                    await onAuto();
-                    setOpen(false);
-                  })
-                }
-              >
-                <Undo2 className="h-4 w-4" aria-hidden /> Back to automatic photo
-              </button>
-            )}
-          </>
-        ) : (
-          <>
+    <div className="space-y-2" data-testid="change-photo">
+      {lockedReason ? (
+        <p className="text-sm text-[var(--ed-ink2)]">{lockedReason}</p>
+      ) : view === "menu" ? (
+        <>
+          <p className="text-xs text-[var(--ed-ink2)]">
+            {slideKey
+              ? "For this slide only, at every size. Other slides keep their photos."
+              : "For this card, at every size."}
+            {juniorOnly ? " Junior: only the club's approved junior stock images." : ""}
+          </p>
+          <button type="button" className={row} onClick={() => setView("library")}>
+            <ImageIcon className="h-4 w-4" aria-hidden /> From library
+          </button>
+          <button type="button" className={row} disabled={busy || loading} onClick={drawRandom}>
+            <Shuffle className="h-4 w-4" aria-hidden /> Random
+          </button>
+          <button type="button" className={row} onClick={() => setView("focused")}>
+            <Crosshair className="h-4 w-4" aria-hidden /> Focused only
+          </button>
+          {own && (
             <button
               type="button"
-              className="flex items-center gap-1 text-xs font-semibold text-[var(--ed-ink2)]"
-              aria-label="Back to the Change photo menu"
-              onClick={() => setView("menu")}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Change photo
-            </button>
-            <PhotoGrid
-              photos={view === "focused" ? focused : library}
-              loading={loading}
-              currentId={current?.id ?? null}
-              busy={busy}
-              onPick={(p) => void pick(p)}
-              empty={
-                view === "focused" ? (
-                  <p className="text-sm text-[var(--ed-ink2)]" data-testid="focused-empty">
-                    No {juniorOnly ? "approved junior stock image" : "photo"} has a focus box yet
-                    {juniorOnly ? "" : ", or a tag box for this slide's players"}. Mark one in{" "}
-                    <Link href={PHOTO_FOCUS_HREF} className="font-semibold underline">
-                      Photos → Photo focus
-                    </Link>
-                    .
-                  </p>
-                ) : (
-                  <p className="text-sm text-[var(--ed-ink2)]">
-                    {juniorOnly
-                      ? "No approved junior stock images yet. Mark some as junior stock in Photos."
-                      : "No photos in the library yet. Add some in Photos."}
-                  </p>
-                )
+              className={row}
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await onAuto();
+                })
               }
-            />
-          </>
-        )}
-        {note && (
-          <p role="alert" className="text-xs text-[var(--ed-ink2)]">
-            {note}
-          </p>
-        )}
-      </PopoverContent>
-    </Popover>
+            >
+              <Undo2 className="h-4 w-4" aria-hidden /> Back to automatic photo
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs font-semibold text-[var(--ed-ink2)]"
+            aria-label="Back to the Change photo menu"
+            onClick={() => setView("menu")}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Change photo
+          </button>
+          <PhotoGrid
+            photos={view === "focused" ? focused : library}
+            loading={loading}
+            currentId={current?.id ?? null}
+            busy={busy}
+            onPick={(p) => void pick(p)}
+            empty={
+              view === "focused" ? (
+                <p className="text-sm text-[var(--ed-ink2)]" data-testid="focused-empty">
+                  No {juniorOnly ? "approved junior stock image" : "photo"} has a focus box yet
+                  {juniorOnly ? "" : ", or a tag box for this slide's players"}. Mark one in{" "}
+                  <Link href={PHOTO_FOCUS_HREF} className="font-semibold underline">
+                    Photos → Photo focus
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <p className="text-sm text-[var(--ed-ink2)]">
+                  {juniorOnly
+                    ? "No approved junior stock images yet. Mark some as junior stock in Photos."
+                    : "No photos in the library yet. Add some in Photos."}
+                </p>
+              )
+            }
+          />
+        </>
+      )}
+      {note && (
+        <p role="alert" className="text-xs text-[var(--ed-ink2)]">
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** The top bar's Change photo: it opens the Change photo panel beside the rail. */
+export function ChangePhotoButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
+    >
+      <ImageIcon className="h-3.5 w-3.5" aria-hidden /> Change photo
+    </button>
   );
 }
 
@@ -273,13 +268,24 @@ function PhotoGrid({
   );
 }
 
+/** Whether the slide on the canvas has a photo to change (its automatic one, or its own). */
+export function slideHasPhoto(
+  set: SetShareContext,
+  design: NonNullable<EditorActionsContext["setDesign"]>,
+): boolean {
+  const slide = set.slides.find((s) => s.key === set.current) ?? set.slides[0];
+  return (
+    !!slide && (!!slidePhotoFor(design.doc.setDesign ?? {}, slide.key) || !!slide.data.photoUrl)
+  );
+}
+
 /**
  * Change photo for the slide on the canvas in the set editor: shown when the
  * slide has a photo (its automatic one, or its own). The choice is an edit to
  * the set's design, through history like any other, so Undo takes it back and
  * Save stores it (`arrangement.ownPhotos`).
  */
-export function SlidePhotoButton({
+export function SlidePhotoPanel({
   draftId,
   set,
   design,
@@ -294,7 +300,8 @@ export function SlidePhotoButton({
   if (!own && !slide.data.photoUrl) return null;
   const rule = photoRuleFor({ slide, slides: set.slides });
   return (
-    <ChangePhotoMenu
+    <ChangePhotoPanel
+      key={slide.key}
       draftId={draftId}
       slideKey={slide.key}
       junior={isJuniorRule(rule)}

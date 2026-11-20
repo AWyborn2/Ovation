@@ -5,8 +5,10 @@ import {
   AlertTriangle,
   ChevronRight,
   Database,
+  ImageUp,
   Layers3,
   Monitor,
+  Move,
   Shapes,
   SlidersHorizontal,
   Type,
@@ -50,15 +52,28 @@ import {
   EditorPanel,
   EditorRail,
   EditorTopBar,
+  PANEL_WIDTH,
+  readPagesView,
+  writePagesView,
+  type PagesView,
   type RailItem,
 } from "@/components/studio-editor/editor-shell";
 import { ElementsPanel, TextPanel } from "@/components/studio-editor/panels";
-import { EditorToolbar } from "@/components/studio-editor/toolbar";
+import {
+  EditorToolbar,
+  PageColourOptions,
+  type ToolbarTool,
+} from "@/components/studio-editor/toolbar";
+import { TokenTextInput } from "@/components/studio-editor/token-text-input";
+import { PositionPanel } from "@/components/studio-editor/position-panel";
+import { PageScroll } from "@/components/studio-editor/page-scroll";
+import { PageOverview } from "@/components/studio-editor/page-grid";
+import { useNewStudio } from "@/lib/entitlements";
 import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
 import { backgroundDepth } from "@/components/studio-editor/element-insert";
 import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
-import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
+import { moveLayerNear } from "@/components/studio-editor/layers-drawer";
 import { FieldsPanel } from "@/components/studio-editor/fields-panel";
 import {
   isJuniorRule,
@@ -71,6 +86,7 @@ import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-d
 import { LayerDesignPanel } from "@/components/studio-editor/layer-design-panel";
 import {
   cleanPosition,
+  PhotoPositionSection,
   withLayerPhotoPosition,
   type PhotoPositionControl,
 } from "@/components/studio-editor/photo-position";
@@ -92,6 +108,7 @@ import {
   nudge,
   reorderLayers,
   selectMany,
+  setBoxes,
   selectionFor,
   setElementProp,
   toggleSelection,
@@ -142,7 +159,11 @@ import {
   writeClipboard,
 } from "@/components/studio-editor/clipboard";
 import { isImageRowField } from "@/components/studio-editor/rows-panel";
-import { PageStrip, type StripItem } from "@/components/studio-editor/page-strip";
+import {
+  PageStrip,
+  type StripAddOption,
+  type StripItem,
+} from "@/components/studio-editor/page-strip";
 import { PageFromTemplateDialog } from "@/components/studio-editor/page-from-template";
 import {
   addBlankPage,
@@ -207,12 +228,28 @@ import { draftFormatSizes, olderSizesIn, openingSizeAmong } from "@/lib/offered-
 /** Below this width (a phone) templates aren't edited; tablets and up are (R23). */
 export const TEMPLATE_EDITOR_MIN_WIDTH = 768;
 
+/**
+ * The rail's own tools. Position (Arrange and Layers) is the one way in to a
+ * page's layers; a layer's own settings open from the toolbar's Edit, or from
+ * Edit beside it in Position → Layers (Nov 2026: Ash's feedback, one control
+ * instead of a Layer item and a Layers button).
+ */
 const RAIL: RailItem[] = [
   { id: "fields", label: "Fields", icon: Database },
   { id: "text", label: "Text", icon: Type },
   { id: "elements", label: "Elements", icon: Shapes },
-  { id: "layer", label: "Layer", icon: SlidersHorizontal },
+  { id: "position", label: "Position", icon: Move },
 ];
+
+/**
+ * The panels the toolbar and the page open in the slot beside the rail: a
+ * layer's settings, its photo, and the page's own settings.
+ */
+const EDIT_PANEL = "edit";
+const REPLACE_PANEL = "replace";
+const PAGE_PANEL = "page";
+/** The side panel a host gives for the photo on show (Change photo). */
+export const PHOTO_PANEL = "photo";
 
 const TEMPLATES = "/admin/social/template-library";
 
@@ -558,7 +595,25 @@ export type EditorDraftMode = {
     size: CardSize;
     input: ShareCardInput;
     data: PackCardData;
+    /** Open one of the editor's panels in the slot beside the rail. */
+    openPanel: (id: string) => void;
   }) => ReactNode;
+  /**
+   * The page's own settings in Edit page (recolour to brand, the sponsors
+   * lock), given the page on show and a whole-page edit.
+   */
+  pageSettings?: (ctx: { page: EditorDoc; setPage: (next: EditorDoc) => void }) => ReactNode;
+};
+
+/**
+ * A panel the host adds to the slot beside the rail (Change photo, a slide's
+ * Layout). `onPage` also shows it, under its title, in Edit page.
+ */
+export type EditorSidePanel = {
+  id: string;
+  title: string;
+  body: ReactNode;
+  onPage?: boolean;
 };
 
 /** What the top bar's own controls can see and do in the editor. */
@@ -566,6 +621,8 @@ export type EditorActionsContext = {
   dirty: boolean;
   /** Show `page` and select `layerId` on it, entering its group if it sits in one. */
   selectLayer: (page: string, layerId: string) => void;
+  /** Open one of the editor's panels in the slot beside the rail (a side panel's id). */
+  openPanel: (id: string) => void;
   /** A set draft's slides as they draw now (read only), for Share → Download. */
   set?: SetShareContext;
   /**
@@ -589,10 +646,16 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   draftMode,
   initialFormat,
   actions,
+  sidePanels,
 }: {
   template: T;
   viewport: { w: number; h: number };
   host: EditorHost<T>;
+  /**
+   * Panels the host adds to the slot beside the rail (Change photo as
+   * `PHOTO_PANEL`, a slide's Layout). A photo layer's Replace opens the photo one.
+   */
+  sidePanels?: (ctx: EditorActionsContext) => EditorSidePanel[];
   /** Edit a set draft's real slides instead of the template's sample pages. */
   slidesMode?: EditorSlidesMode;
   /** Edit a draft's own design with its real card (stage 1). */
@@ -722,8 +785,16 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const [selection, setSelection] = useState<string[]>([]);
   const [savingElement, setSavingElement] = useState(false);
   const [inside, setInside] = useState<string | null>(null);
+  // The one panel slot beside the rail: whatever was opened last (a rail tool,
+  // the toolbar's Replace, Edit or Position, or Edit page) replaces it.
   const [panel, setPanel] = useState<string | null>(viewport.w >= 1024 ? "fields" : null);
-  const [layersOpen, setLayersOpen] = useState(false);
+  // Thumbnails (the canvas and the strip) or Scroll (every page stacked).
+  const [pagesView, setPagesViewState] = useState<PagesView>(readPagesView);
+  const setPagesView = (v: PagesView) => {
+    setPagesViewState(v);
+    writePagesView(v);
+  };
+  const newStudio = useNewStudio();
   const [zoom, setZoom] = useState(100);
   const [stress, setStress] = useState(false);
   const [playing, setPlaying] = useState(0);
@@ -996,7 +1067,6 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           }
           setSelection([]);
           setInside(null);
-          setLayersOpen(false);
           break;
         case "nudge":
           if (s.selection.length) edit(nudge(s.doc, s.format, s.selection, action.dx, action.dy));
@@ -1187,19 +1257,755 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     }
     edit(r.doc);
     setSelection([r.id]);
-    setPanel("layer");
+    setPanel(EDIT_PANEL);
   };
 
+  // The page's pages or slides, as the strip and the Scroll view show them
+  // (one list, one set of actions and rules for both).
+  const pagesNav: PagesNav | null =
+    slidesMode && full.setDesign
+      ? {
+          label: "Slides",
+          items: realSlides.map((x): StripItem => ({
+            id: x.key,
+            label: x.label,
+            repeat: x.page.role === "repeat",
+            warn: layersOnSize(pageDoc(full, x.page.id), format).length === 0,
+            // A design page duplicates with its page; a data slide has none of its own.
+            canDuplicate: x.design,
+          })),
+          current: slide?.key ?? "",
+          onSelect: (key) => {
+            setSlideKey(key);
+            enterScope(null);
+            setAddPrompt(null);
+          },
+          thumb: (item, w) => {
+            const x = realSlides.find((r) => r.key === item.id)!;
+            return (
+              <PackCard
+                input={x.input}
+                size={format}
+                sponsorsOn={x.sponsorsOn}
+                junior={x.junior}
+                data={x.data}
+                packId={BLANK_PACK_ID}
+                adjustments={pageRenderDocument(full, x.page, x.key)}
+                page={x.page.page}
+                width={w}
+              />
+            );
+          },
+          onMove: (key, to) =>
+            setHistory((h) => {
+              const keys = realSlides.map((r) => r.key).filter((k) => k !== key);
+              keys.splice(to, 0, key);
+              // Only the order changes: each slide keeps its own layout (S9).
+              return commit(h, withSlideOrder(h.present, keys));
+            }),
+          onDuplicate: (key) => {
+            const x = realSlides.find((r) => r.key === key);
+            if (!x?.design) return;
+            const r = duplicateSetPage(history.present, x.page.id);
+            setHistory((h) => commit(h, r.doc));
+            setSlideKey(`page:${r.id}`);
+            enterScope(null);
+          },
+          onDelete: (key) => {
+            const x = realSlides.find((r) => r.key === key);
+            if (!x) return;
+            // A design page goes with its page; a data slide is left out of the
+            // post with its own layout (S9), and the other slides keep theirs.
+            setHistory((h) => commit(h, deleteSlide(h.present, x)));
+            setSlideKey(null);
+            enterScope(null);
+          },
+          addOptions: [
+            {
+              id: "blank",
+              label: "Blank page",
+              // A draft's own pages all draw its card's data (stage 2).
+              detail: draftMode
+                ? `A page drawn like ${cur.label}`
+                : `A page drawn like ${cur.label}, no data`,
+            },
+            // A page of one of the club's templates, as the template editor adds
+            // one (retest 6, item K): a design page that draws the club's brand
+            // and no card data. On a junior set it comes in junior-safe.
+            {
+              id: "template",
+              label: "From another template",
+              detail: "Copy a page of one of your templates",
+            },
+            ...deletedOnes.map(({ key, label }) => ({
+              id: `restore:${key}`,
+              label: "Restore a deleted slide",
+              // Its name, as its tile had it ("A Grade v Waroona"), not its key.
+              detail: label,
+            })),
+          ],
+          onAdd: (option) => {
+            if (option === "template") {
+              setPickingPage(true);
+              return;
+            }
+            if (option.startsWith("restore:")) {
+              const key = option.slice("restore:".length);
+              setHistory((h) => {
+                const arr = h.present.setDesign?.arrangement ?? { order: [], removed: [] };
+                return commit(
+                  h,
+                  withArrangement(h.present, {
+                    ...arr,
+                    removed: arr.removed.filter((k) => k !== key),
+                  }),
+                );
+              });
+              setSlideKey(key);
+              return;
+            }
+            const r = addBlankPage(history.present, cur, cur.id);
+            setHistory((h) => commit(h, r.doc));
+            setSlideKey(`page:${r.id}`);
+            enterScope(null);
+          },
+        }
+      : !slidesMode && (full.setDesign || pageList.length > 1)
+        ? {
+            label: full.setDesign ? `${SET_TYPE_LABELS[full.setDesign.type]} pages` : "Pages",
+            items: pageList.map((p): StripItem => ({
+              id: p.id,
+              label: p.label,
+              repeat: p.repeat,
+              warn: layersOnSize(pageDoc(full, p.id), format).length === 0,
+              note: pageDoc(full, p.id).layers?.length ? undefined : " · empty",
+            })),
+            current: cur.id,
+            onSelect: (id) => {
+              setPageId(id);
+              setSample(0);
+              enterScope(null);
+              setAddPrompt(null);
+            },
+            thumb: (item, w) => {
+              const p = pageList.find((x) => x.id === item.id)!;
+              return (
+                <PackCard
+                  input={pageInput(
+                    previewSample(p.kind as ShareCardInput["kind"], clubName),
+                    p.kind,
+                    p.page,
+                  )}
+                  size={format}
+                  sponsorsOn
+                  junior={p.page === "day"}
+                  data={data}
+                  packId={BLANK_PACK_ID}
+                  adjustments={full.setDesign ? pageRenderDocument(full, p) : asAdjustments(full)}
+                  page={p.page}
+                  width={w}
+                />
+              );
+            },
+            ...(full.setDesign
+              ? {
+                  onMove: (id: string, to: number) =>
+                    setHistory((h) => commit(h, moveSetPage(h.present, id, to))),
+                  onDuplicate: (id: string) => {
+                    const r = duplicateSetPage(history.present, id);
+                    setHistory((h) => commit(h, r.doc));
+                    setPageId(r.id);
+                    enterScope(null);
+                  },
+                  onDelete: (id: string) => {
+                    setHistory((h) => commit(h, deleteSetPage(h.present, id)));
+                    enterScope(null);
+                  },
+                  addOptions: [
+                    { id: "blank", label: "Blank page", detail: `A page drawn like ${cur.label}` },
+                    ...missingRepeatSlots(full).map((slot) => ({
+                      id: `repeat:${slot}`,
+                      label: `${SET_SLOT_LABELS[slot]} page`,
+                      detail: "Repeats for each item",
+                    })),
+                    {
+                      id: "template",
+                      label: "From another template",
+                      detail: "Copy a page of one of your templates",
+                    },
+                  ],
+                  onAdd: (option: string) => {
+                    if (option === "template") {
+                      setPickingPage(true);
+                      return;
+                    }
+                    const r = option.startsWith("repeat:")
+                      ? addRepeatPage(
+                          history.present,
+                          option.slice("repeat:".length) as Parameters<typeof addRepeatPage>[1],
+                          cur.id,
+                        )
+                      : addBlankPage(history.present, cur, cur.id);
+                    setHistory((h) => commit(h, r.doc));
+                    setPageId(r.id);
+                    enterScope(null);
+                  },
+                }
+              : {}),
+          }
+        : null;
+  // Scroll stacks every page down the canvas area; a single card has one page.
+  const scrolling = !!pagesNav && pagesView === "scroll";
+
   const native = packNativeSize(format);
-  const panelW = panel ? 340 : 0;
+  const panelW = panel ? PANEL_WIDTH : 0;
   const areaW = viewport.w - 76 - panelW - 96;
-  const areaH = viewport.h - 56 - 56 - 160;
+  // Scroll has no strip below: each page takes the full height, less its header row.
+  const areaH = scrolling ? viewport.h - 56 - 56 - 60 - 48 - 48 : viewport.h - 56 - 56 - 160;
   const fit = Math.min(areaW / native.w, areaH / native.h);
   const boardW = Math.max(160, Math.round(native.w * fit * (zoom / 100)));
   const fitStatus = fitLine(current);
   const status = host.status(baseVersion);
   const selectCls =
     "h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-xs font-semibold text-[var(--ed-ink)]";
+
+  // What the top bar's controls and the host's panels can see and do.
+  const openPanel = (id: string) => setPanel(id);
+  const ctx: EditorActionsContext = {
+    dirty,
+    selectLayer,
+    openPanel,
+    ...(slidesMode
+      ? {
+          set: {
+            slides: realSlides,
+            current: slide?.key ?? null,
+            size: format,
+            documentFor: (x: EditorSlide) => pageRenderDocument(full, x.page, x.key),
+          },
+          setDesign: {
+            doc: full,
+            edit: (fn: (doc: EditorTemplateDoc) => EditorTemplateDoc, show?: string) => {
+              setHistory((h) => commit(h, fn(h.present)));
+              if (show !== undefined) setSlideKey(show);
+              enterScope(null);
+            },
+          },
+        }
+      : {}),
+  };
+  const sides = sidePanels?.(ctx) ?? [];
+  const photoSide = sides.find((s) => s.id === PHOTO_PANEL);
+
+  // A photo layer's Replace: its photo (Change photo) and Photo position.
+  const photoLayer = focus?.kind === "photo" ? focus : null;
+  const photoPos = photoLayer ? photoPositionFor(photoLayer) : undefined;
+  const canReplace = !!photoLayer && (!!photoSide || !!photoPos);
+  // A layer's panels follow the selection: Edit page with none, and a layer
+  // picked while Edit page is open opens its Edit (the last click wins).
+  const selKey = selection.join(" ");
+  useEffect(() => {
+    setPanel((p) => {
+      if (!selKey) return p === EDIT_PANEL || p === REPLACE_PANEL ? PAGE_PANEL : p;
+      if (p === PAGE_PANEL) return EDIT_PANEL;
+      if (p === REPLACE_PANEL && !canReplace) return EDIT_PANEL;
+      return p;
+    });
+  }, [selKey, canReplace]);
+
+  const kindWord = (l: EditorLayer | null): string =>
+    !l
+      ? "layers"
+      : l.kind === "text"
+        ? "text"
+        : l.kind === "photo"
+          ? "photo"
+          : l.kind === "rows"
+            ? "list"
+            : l.kind === "element"
+              ? "element"
+              : "layer";
+  const panelTitle = (id: string): string | null => {
+    const railItem = rail.find((r) => r.id === id);
+    if (railItem) return railItem.label;
+    if (id === EDIT_PANEL) return `Edit ${kindWord(selected.length > 1 ? null : focus)}`;
+    if (id === REPLACE_PANEL) return "Change photo";
+    if (id === PAGE_PANEL) return "Edit page";
+    return sides.find((s) => s.id === id)?.title ?? null;
+  };
+  const shownTitle = panel ? panelTitle(panel) : null;
+
+  // The contextual toolbar's own buttons, by the layer's type.
+  const tools: ToolbarTool[] = selected.length
+    ? [
+        ...(canReplace
+          ? [
+              {
+                id: REPLACE_PANEL,
+                label: "Replace",
+                icon: ImageUp,
+                onClick: () => setPanel(REPLACE_PANEL),
+                active: panel === REPLACE_PANEL,
+              },
+            ]
+          : []),
+        {
+          id: EDIT_PANEL,
+          label: "Edit",
+          icon: SlidersHorizontal,
+          onClick: () => setPanel(EDIT_PANEL),
+          active: panel === EDIT_PANEL,
+        },
+        {
+          id: "position",
+          label: "Position",
+          icon: Move,
+          onClick: () => setPanel("position"),
+          active: panel === "position",
+        },
+      ]
+    : [];
+
+  /** The box of any layer on the page at the size on show, children included. */
+  const boxAt = (l: FreeLayer) => boxOf(l, format);
+  const selectedBox =
+    selection.length === 1 ? (findLayer(pageFull, selection[0]!)?.layer ?? null) : null;
+  const pxBox = single ? boxOf(single as FreeLayer, format) : null;
+
+  const layerList = (
+    <PositionPanel
+      key={`${cur.id}:${slide?.key ?? ""}`}
+      selected={selected.length}
+      count={unitCount(doc, format, selection, inside)}
+      onReorder={(move) => edit(reorderLayers(doc, selection, move))}
+      onAlign={(to) => edit(align(doc, format, selection, to, inside))}
+      onDistribute={(axis) => edit(distribute(doc, format, selection, axis, inside))}
+      onMatch={(dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside))}
+      box={
+        pxBox
+          ? {
+              x: (pxBox.x / 100) * native.w,
+              y: (pxBox.y / 100) * native.h,
+              w: (pxBox.w / 100) * native.w,
+              h: (pxBox.h / 100) * native.h,
+            }
+          : null
+      }
+      locked={!!single?.locked}
+      onBox={(px) => {
+        if (!single || !pxBox) return;
+        edit(
+          setBoxes(doc, format, {
+            [single.id]: {
+              ...pxBox,
+              x: (px.x / native.w) * 100,
+              y: (px.y / native.h) * 100,
+              w: (px.w / native.w) * 100,
+              h: (px.h / native.h) * 100,
+            },
+          }),
+        );
+      }}
+      selectedBox={selectedBox ? boxAt(selectedBox as FreeLayer) : null}
+      selectedId={selectedBox?.id ?? null}
+      boxOf={boxAt}
+      tree={{
+        layers: layersOnSize(pageFull, format),
+        size: format,
+        scope,
+        fieldLabels,
+        selection,
+        onSelect: (ids, mode, parent) => {
+          // A row in another group goes inside that group first.
+          if (parent !== scope) {
+            enterScope(parent, ids);
+            return;
+          }
+          setSelection((s) =>
+            mode === "replace"
+              ? ids
+              : mode === "toggle"
+                ? toggleSelection(doc, s, ids[0], inside)
+                : [...new Set([...s, ...ids])],
+          );
+        },
+        onEdit: (lid, parent) => {
+          if (parent !== scope) enterScope(parent, [lid]);
+          else setSelection([lid]);
+          setPanel(EDIT_PANEL);
+        },
+        onMove: ({ id: lid, parent, target, place }) => {
+          if (parent === null) {
+            editPage({
+              ...pageFull,
+              layers: moveLayerNear(layersOf(pageFull), lid, target, place),
+            });
+            return;
+          }
+          const group = findLayer(pageFull, parent)?.layer;
+          if (!group?.children) return;
+          editPage(
+            updateDeep(pageFull, parent, {
+              children: moveLayerNear(
+                group.children as FreeLayer[],
+                lid,
+                target,
+                place,
+              ) as EditorLayer[],
+            }),
+          );
+        },
+        onToggleHidden: (lid) => {
+          const l = findLayer(pageFull, lid)?.layer;
+          if (l) editPage(updateDeep(pageFull, lid, { hidden: !l.hidden }));
+        },
+        onToggleLocked: (lid) => {
+          const l = findLayer(pageFull, lid)?.layer;
+          if (l) editPage(updateDeep(pageFull, lid, { locked: !l.locked }));
+        },
+      }}
+    />
+  );
+
+  const editPanel = (
+    <div className="space-y-4">
+      {single &&
+        (single.kind === "text" || single.kind === "sticker" || single.kind === "medal") &&
+        !single.bind && (
+          <label className="block space-y-1 text-[11px] font-semibold text-[var(--ed-ink2)]">
+            <span>Text</span>
+            {single.kind === "text" && pageFields.length > 0 ? (
+              <TokenTextInput
+                value={single.content ?? ""}
+                fields={pageFields}
+                onChange={(t) =>
+                  edit(updateLayer(doc, single.id, { content: t, name: t.slice(0, 24) }))
+                }
+                className="h-8 w-full rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm text-[var(--ed-ink)]"
+              />
+            ) : (
+              <input
+                aria-label="Text"
+                value={single.content ?? ""}
+                onChange={(e) =>
+                  edit(
+                    updateLayer(doc, single.id, {
+                      content: e.target.value,
+                      name: e.target.value.slice(0, 24),
+                    }),
+                  )
+                }
+                className="h-8 w-full rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm text-[var(--ed-ink)]"
+              />
+            )}
+          </label>
+        )}
+      {single?.kind === "text" && (
+        <TextStyleBar
+          style={single.style}
+          onStyle={(patch) => edit(setTextStyle(doc, single.id, patch))}
+        />
+      )}
+      {single?.kind === "element" && (
+        <ElementPropsEditor
+          layer={single}
+          values={values}
+          onProp={(k, v) => edit(setElementProp(doc, single.id, k, v))}
+        />
+      )}
+      {single?.kind === "rows" && single.rows && (
+        <RowsPanel
+          doc={doc}
+          layer={single}
+          kind={pageKind}
+          page={page}
+          size={format}
+          clubLabel={values["club.short"]}
+          onEdit={edit}
+        />
+      )}
+      {focus ? (
+        <LayerDesignPanel
+          layer={focus}
+          kind={pageKind}
+          page={page}
+          photoRule={photoRule}
+          onPatch={(patch, done) => {
+            // A drag in the panel (the clip pad) is one change, like a canvas drag.
+            const next = updateDeep(doc, focus.id, patch);
+            if (done === false || gestureBase.current) onCanvasChange(next, done !== false);
+            else edit(next);
+          }}
+          onSelect={(cid) => setFocusId(cid)}
+          onMoveChild={(cid, delta) => edit(moveChild(doc, focus.id, cid, delta))}
+          onUnstack={() => {
+            edit(unstack(doc, focus.id));
+            setSelection([]);
+          }}
+          onPlay={() => setPlaying((n) => n + 1)}
+        />
+      ) : (
+        <p className="text-sm text-[var(--ed-ink2)]">
+          {selection.length > 1
+            ? "Select one layer to set when it shows, how it fits, its style and motion."
+            : "Select a layer to set when it shows, how it fits, its style and motion."}
+        </p>
+      )}
+      {selection.length >= 1 && (
+        <button
+          type="button"
+          onClick={stackSelection}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 py-1 text-xs font-semibold"
+        >
+          <Layers3 className="h-4 w-4" aria-hidden /> Stack these layers
+        </button>
+      )}
+      {stackNote && (
+        <p role="status" className="text-xs text-amber-300">
+          {stackNote}
+        </p>
+      )}
+    </div>
+  );
+
+  const replacePanel = (
+    <div className="space-y-4">
+      {photoSide?.body}
+      {photoPos && <PhotoPositionSection control={photoPos} />}
+    </div>
+  );
+
+  const pageTitle = "text-xs font-semibold uppercase tracking-wide text-[var(--ed-ink2)]";
+  const pagePanel = (
+    <div className="space-y-5">
+      <p className="text-sm text-[var(--ed-ink2)]">
+        Select a layer to edit it, or add one from the rail.
+      </p>
+      {scope === null ? (
+        <section aria-label="Page colour" className="space-y-1.5">
+          <h3 className={pageTitle}>Page colour</h3>
+          <PageColourOptions
+            background={pageFull.background}
+            onBackground={(colour) => {
+              const { background: _old, ...rest } = pageFull;
+              editPage(colour ? { ...rest, background: colour } : rest);
+            }}
+            swatches={(() => {
+              const t = resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID });
+              return { gold: t.accent, panel: t.panel };
+            })()}
+          />
+        </section>
+      ) : (
+        <p className="text-sm text-[var(--ed-ink2)]">
+          You&apos;re editing inside a group. Press Esc to go back to the page.
+        </p>
+      )}
+      {sides
+        .filter((s) => s.onPage)
+        .map((s) => (
+          <section key={s.id} aria-label={s.title} className="space-y-1.5">
+            <h3 className={pageTitle}>{s.title}</h3>
+            {s.body}
+          </section>
+        ))}
+      {draftMode?.pageSettings && (
+        <section aria-label="Brand" className="space-y-1.5">
+          <h3 className={pageTitle}>Brand</h3>
+          {draftMode.pageSettings({ page: pageFull, setPage: editPage })}
+        </section>
+      )}
+      <section aria-label="Size" className="space-y-1">
+        <h3 className={pageTitle}>Size</h3>
+        <p className="text-sm text-[var(--ed-ink2)]">
+          {SIZE_LABEL[format]}, {native.w} × {native.h}.
+          {(draftFormats ?? ownSizes).length > 1 ? " Change it in Format at the top." : ""}
+        </p>
+      </section>
+    </div>
+  );
+
+  const canvasNode = (
+    <EditorCanvas
+      key={`play-${playing}`}
+      doc={doc}
+      renderDoc={full.setDesign ? pageRenderDocument(full, cur, slide?.key) : asAdjustments(full)}
+      animate={playing > 0}
+      size={format}
+      width={boardW}
+      input={shownInput}
+      theme={null}
+      data={shownData}
+      junior={slide?.junior ?? false}
+      packId={BLANK_PACK_ID}
+      selection={selection}
+      onSelect={(lid) => {
+        // A click off every layer clears the selection, leaves a group and
+        // opens Edit page.
+        if (lid === null) {
+          enterScope(null);
+          setPanel(PAGE_PANEL);
+        } else setSelection(selectionFor(doc, lid, inside));
+      }}
+      onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
+      marqueeArea={canvasArea}
+      onSelectMany={(ids, additive) =>
+        setSelection((s) => selectMany(doc, s, ids, inside, additive))
+      }
+      onEnterGroup={(lid, child, at) => {
+        const l = layers.find((x) => x.id === lid);
+        if (l && isContainer(l)) {
+          // In a list, the cell under the pointer in whichever row was clicked.
+          const pick = l.kind === "rows" ? (at ? cellAt(l, format, at) : null) : child;
+          enterScope(lid, pick ? [pick] : []);
+          return;
+        }
+        setInside(l?.group ?? null);
+        setSelection([lid]);
+      }}
+      scopeId={scopeGroup?.id ?? null}
+      scopeBox={scopeGroup ? boxOf(scopeGroup as FreeLayer, format) : null}
+      measure={scopeInStack(pageFull, scope)}
+      fixed={isStack(scopeGroup)}
+      onChange={onCanvasChange}
+      onLayout={onLayout}
+      touch
+      flagged={warnings.map((w) => w.layerId).filter((x): x is string => !!x)}
+    />
+  );
+
+  const notesNode = (
+    <div className="mt-4 flex w-full max-w-2xl flex-col gap-2 text-sm">
+      {!full.setDesign && page !== primaryPage(kind) && !pageFull.layers?.length && (
+        <p className="text-[var(--ed-ink2)]">
+          The {cur.label.toLowerCase()} is empty. Add fields and elements to design it; carousels
+          use it once it has something on it.
+        </p>
+      )}
+      {full.setDesign && !pageFull.layers?.length && (
+        <p className="text-[var(--ed-ink2)]">
+          This page is empty. Add fields and elements to design it.
+        </p>
+      )}
+      {cur.repeat && slide && (
+        <p className="text-[var(--ed-ink2)]">
+          Every {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()} slide shares this
+          design: editing this one edits them all.
+        </p>
+      )}
+      {cur.repeat && !slide && (
+        <div className="flex flex-wrap items-center gap-2 text-[var(--ed-ink2)]">
+          <span>
+            This page repeats: one slide per{" "}
+            {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()}. Editing it edits them all.
+          </span>
+          <span role="group" aria-label="Sample item" className="flex gap-1">
+            {[0, 1, 2].map((n) => (
+              <button
+                key={n}
+                type="button"
+                aria-pressed={sample === n}
+                onClick={() => setSample(n)}
+                className={
+                  sample === n
+                    ? "rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-xs font-semibold text-[var(--ed-on-accent)]"
+                    : "rounded-full border border-[var(--ed-line)] px-2 py-0.5 text-xs font-semibold"
+                }
+              >
+                Sample {n + 1}
+              </button>
+            ))}
+          </span>
+        </div>
+      )}
+      {plan.slides.length > 1 && (
+        <p className="text-[var(--ed-ink2)]">
+          Showing slide 1 of {plan.slides.length}: rows that don&apos;t fit go on extra slides.
+        </p>
+      )}
+      {!slide && !latest && !stress && (
+        <p className="text-[var(--ed-ink2)]">Previewing with sample data.</p>
+      )}
+      {fitStatus && (
+        <p
+          role="status"
+          className={
+            fitStatus.tone === "bad"
+              ? "text-[var(--ed-danger)]"
+              : fitStatus.tone === "wait"
+                ? "text-amber-300"
+                : "text-[var(--ed-ink2)]"
+          }
+        >
+          {fitStatus.text}
+        </p>
+      )}
+      {pasteNote && (
+        <p role="status" className="text-amber-300">
+          {pasteNote}
+        </p>
+      )}
+      {layers.filter((l) => l.kind === "photo").length > 1 && (
+        <p role="status" className="text-[var(--ed-ink2)]">
+          Every Card photo shows the same photo.
+          {listPhotoField
+            ? " For a photo per player, select the list and set a cell to show Photo in its settings."
+            : ""}
+        </p>
+      )}
+      {shownWarnings.length > 0 && (
+        <ul role="status" aria-label="Needs a look" className="flex flex-col gap-1">
+          {shownWarnings.map((w, i) => (
+            <li key={i} className="flex items-center gap-2 text-[var(--ed-danger)]">
+              <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+              {w.reason === "overflow"
+                ? `Text doesn't fit in ${layerName(w.layerId)} on ${SIZE_LABEL[w.size as CardSize]}, even shrunk.`
+                : w.reason === "font"
+                  ? `The font ${w.detail ?? ""} couldn't load; cards would use a fallback.`
+                  : `This list needs more than 10 slides on ${SIZE_LABEL[w.size as CardSize]}; the rest won't post. Make the rows smaller.`}
+            </li>
+          ))}
+        </ul>
+      )}
+      {page === primaryPage(pageKind) &&
+        keyField &&
+        // A page of its own (Add page) shows no card's data, so it has none to lose.
+        !(full.setDesign && isOwnDesignPage(full, cur.id)) &&
+        !showsKeyField(pageFull, pageKind) && (
+          <p role="status" className="flex items-center gap-2 text-amber-300">
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+            This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t say
+            who or what they&apos;re about.
+          </p>
+        )}
+      {blocked.map((b) => (
+        <p key={b} role="alert" className="text-[var(--ed-danger)]">
+          {b}
+        </p>
+      ))}
+      {conflict && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 text-[var(--ed-danger)]">
+          <span>
+            Someone else changed this template
+            {conflict.updatedByName ? ` (${conflict.updatedByName})` : ""} after you opened it. Your
+            changes weren&apos;t saved.
+          </span>
+          <button
+            type="button"
+            onClick={reloadTheirs}
+            className="rounded-full border border-[var(--ed-line)] px-3 py-1 font-semibold text-[var(--ed-ink)]"
+          >
+            Load their version
+          </button>
+        </div>
+      )}
+      {saveError && (
+        <p role="alert" className="text-[var(--ed-danger)]">
+          {saveError}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="studio-editor flex h-screen flex-col overflow-hidden">
@@ -1242,33 +2048,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         actions={
           <>
             {slidesMode?.actions}
-            {typeof actions === "function"
-              ? actions({
-                  dirty,
-                  selectLayer,
-                  ...(slidesMode
-                    ? {
-                        set: {
-                          slides: realSlides,
-                          current: slide?.key ?? null,
-                          size: format,
-                          documentFor: (x: EditorSlide) => pageRenderDocument(full, x.page, x.key),
-                        },
-                        setDesign: {
-                          doc: full,
-                          edit: (
-                            fn: (doc: EditorTemplateDoc) => EditorTemplateDoc,
-                            show?: string,
-                          ) => {
-                            setHistory((h) => commit(h, fn(h.present)));
-                            if (show !== undefined) setSlideKey(show);
-                            enterScope(null);
-                          },
-                        },
-                      }
-                    : {}),
-                })
-              : actions}
+            {typeof actions === "function" ? actions(ctx) : actions}
             {draftMode?.actions?.({
               document: (full.setDesign
                 ? storedSetDocument(full)
@@ -1276,6 +2056,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               size: format,
               input: shownInput,
               data: shownData,
+              openPanel,
             })}
             {!slidesMode && !draftMode && isContentKind(pageKind) && (
               <label className="flex items-center gap-1.5 px-1 text-xs font-semibold text-[var(--ed-ink2)]">
@@ -1308,9 +2089,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
       />
       <div className="flex min-h-0 flex-1">
         <EditorRail items={rail} active={panel} onSelect={setPanel} />
-        {panel && rail.some((r) => r.id === panel) && (
+        {panel && shownTitle && (
           <EditorPanel
-            title={rail.find((r) => r.id === panel)!.label}
+            id={panel}
+            title={shownTitle}
+            closeIcon="x"
             onCollapse={() => setPanel(null)}
           >
             {draftMode?.panels
@@ -1349,661 +2132,216 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 onAddLayers={addTemplateLayers}
               />
             )}
-            {panel === "layer" &&
-              (focus ? (
-                <LayerDesignPanel
-                  layer={focus}
-                  kind={pageKind}
-                  page={page}
-                  photoRule={photoRule}
-                  photoPosition={photoPositionFor(focus)}
-                  onPatch={(patch, done) => {
-                    // A drag in the panel (the clip pad) is one change, like a canvas drag.
-                    const next = updateDeep(doc, focus.id, patch);
-                    if (done === false || gestureBase.current) onCanvasChange(next, done !== false);
-                    else edit(next);
-                  }}
-                  onSelect={(cid) => setFocusId(cid)}
-                  onMoveChild={(cid, delta) => edit(moveChild(doc, focus.id, cid, delta))}
-                  onUnstack={() => {
-                    edit(unstack(doc, focus.id));
-                    setSelection([]);
-                  }}
-                  onPlay={() => setPlaying((n) => n + 1)}
-                />
-              ) : (
-                <div className="space-y-3 text-sm text-[var(--ed-ink2)]">
-                  <p>Select a layer to set when it shows, how it fits, its style and motion.</p>
-                </div>
-              ))}
-            {panel === "layer" && selection.length >= 1 && (
-              <button
-                type="button"
-                onClick={stackSelection}
-                className="mt-3 flex items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 py-1 text-xs font-semibold"
-              >
-                <Layers3 className="h-4 w-4" aria-hidden /> Stack these layers
-              </button>
-            )}
-            {panel === "layer" && stackNote && (
-              <p role="status" className="mt-2 text-xs text-amber-300">
-                {stackNote}
-              </p>
-            )}
+            {panel === "position" && layerList}
+            {panel === EDIT_PANEL && editPanel}
+            {panel === REPLACE_PANEL && replacePanel}
+            {panel === PAGE_PANEL && pagePanel}
+            {sides.find((s) => s.id === panel)?.body}
           </EditorPanel>
         )}
         <main
           ref={canvasArea}
-          className="relative flex min-w-0 flex-1 flex-col items-center overflow-auto bg-[var(--ed-canvas)] p-6 [align-items:safe_center]"
+          data-testid="canvas-area"
+          className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--ed-canvas)]"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px)",
             backgroundSize: "22px 22px",
           }}
         >
-          <div className="mb-4 flex max-w-full flex-col items-center">
-            <EditorToolbar
-              selected={selected}
-              isGroup={isGroup}
-              fields={pageFields}
-              onText={(t) =>
-                single && edit(updateLayer(doc, single.id, { content: t, name: t.slice(0, 24) }))
-              }
-              onColour={(c) => {
-                if (!single) return;
-                const style =
-                  single.kind === "text"
-                    ? { ...single.style, color: c }
-                    : { ...single.style, background: c };
-                edit(updateLayer(doc, single.id, { style }));
-              }}
-              onLock={() => {
-                const lock = !selected.every((l) => l.locked);
-                edit(selected.reduce((d, l) => updateLayer(d, l.id, { locked: lock }), doc));
-              }}
-              onDuplicate={() => {
-                const r = duplicate(doc, format, selection);
-                const ids = new Set(r.ids);
-                edit({
-                  ...r.doc,
-                  layers: layersOf(r.doc).map((l) => (ids.has(l.id) ? onlyOnSize(l, format) : l)),
-                });
-                setSelection(r.ids);
-              }}
-              onDelete={() => removeSelected(selection)}
-              onGroup={() => edit(groupLayers(doc, selection).doc)}
-              onUngroup={() => edit(ungroup(doc, selection))}
-              onReorder={(move) => edit(reorderLayers(doc, selection, move))}
-              onCopy={copySelection}
-              onPaste={pasteClipboard}
-              canPaste={canPaste}
-              // A club's save is credited to it; the console has no club to credit.
-              onSaveElement={host.club ? () => setSavingElement(true) : undefined}
-              page={
-                scope === null
-                  ? {
-                      background: pageFull.background,
-                      onBackground: (colour) => {
-                        const { background: _old, ...rest } = pageFull;
-                        editPage(colour ? { ...rest, background: colour } : rest);
-                      },
-                      swatches: (() => {
-                        const t = resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID });
-                        return { gold: t.accent, panel: t.panel };
-                      })(),
-                    }
-                  : undefined
-              }
-              arrange={{
-                count: unitCount(doc, format, selection, inside),
-                onAlign: (to) => edit(align(doc, format, selection, to, inside)),
-                onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
-                onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
-              }}
-            />
-            {host.club && (
-              <SaveElementDialog
-                layers={selected}
-                context={elementSaveContext(
-                  data,
-                  resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID }),
-                )}
-                clubName={data.brand?.name || clubName || "your club"}
-                open={savingElement}
-                onClose={() => setSavingElement(false)}
+          {/* Above the canvas, never on it: the toolbar, prompts and where you are. */}
+          <div className="flex shrink-0 flex-col items-center px-6 pt-4">
+            <div className="mb-3 flex max-w-full flex-col items-center">
+              <EditorToolbar
+                selected={selected}
+                isGroup={isGroup}
+                fields={pageFields}
+                tools={tools}
+                hint={false}
+                onColour={(c) => {
+                  if (!single) return;
+                  const style =
+                    single.kind === "text"
+                      ? { ...single.style, color: c }
+                      : { ...single.style, background: c };
+                  edit(updateLayer(doc, single.id, { style }));
+                }}
+                onLock={() => {
+                  const lock = !selected.every((l) => l.locked);
+                  edit(selected.reduce((d, l) => updateLayer(d, l.id, { locked: lock }), doc));
+                }}
+                onDuplicate={() => {
+                  const r = duplicate(doc, format, selection);
+                  const ids = new Set(r.ids);
+                  edit({
+                    ...r.doc,
+                    layers: layersOf(r.doc).map((l) => (ids.has(l.id) ? onlyOnSize(l, format) : l)),
+                  });
+                  setSelection(r.ids);
+                }}
+                onDelete={() => removeSelected(selection)}
+                onGroup={() => edit(groupLayers(doc, selection).doc)}
+                onUngroup={() => edit(ungroup(doc, selection))}
+                onCopy={copySelection}
+                onPaste={pasteClipboard}
+                canPaste={canPaste}
+                // A club's save is credited to it; the console has no club to credit.
+                onSaveElement={host.club ? () => setSavingElement(true) : undefined}
               />
-            )}
-            {single?.kind === "text" && (
-              <TextStyleBar
-                style={single.style}
-                onStyle={(patch) => edit(setTextStyle(doc, single.id, patch))}
-              />
-            )}
-            {single?.kind === "element" && (
-              <ElementPropsEditor
-                layer={single}
-                values={values}
-                onProp={(k, v) => edit(setElementProp(doc, single.id, k, v))}
-              />
-            )}
-          </div>
-
-          {addPrompt && (!draftFormats || draftFormats.length > 1) && (
-            <div
-              role="dialog"
-              aria-label="Add to other sizes"
-              className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
-            >
-              <span>Add to the other sizes too?</span>
-              <button
-                type="button"
-                onClick={acceptAddPrompt}
-                className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
-              >
-                Add to all sizes
-              </button>
-              <button
-                type="button"
-                onClick={() => setAddPrompt(null)}
-                className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
-              >
-                Just {SIZE_LABEL[addPrompt.from].toLowerCase()}
-              </button>
-            </div>
-          )}
-
-          {linkPrompt && (
-            <div
-              role="dialog"
-              aria-label="Delete on other sizes"
-              className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
-            >
-              <span>The other sizes have their own copy. Delete it on every size?</span>
-              <button
-                type="button"
-                onClick={() => editPage(removeLinked(pageFull, linkPrompt))}
-                className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
-              >
-                Delete on every size
-              </button>
-              <button
-                type="button"
-                onClick={() => setLinkPrompt(null)}
-                className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
-              >
-                Just {SIZE_LABEL[format].toLowerCase()}
-              </button>
-            </div>
-          )}
-
-          {scopeGroup && (
-            <nav
-              aria-label="Editing inside"
-              className="mb-3 flex max-w-full flex-wrap items-center gap-1 text-xs text-[var(--ed-ink2)]"
-            >
-              <button
-                type="button"
-                className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
-                onClick={() => enterScope(null, [path[0]!.id])}
-              >
-                {cur.label}
-              </button>
-              {path.map((g, i) => (
-                <span key={g.id} className="flex items-center gap-1">
-                  <ChevronRight className="h-3 w-3" aria-hidden />
-                  {i < path.length - 1 ? (
-                    <button
-                      type="button"
-                      className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
-                      onClick={() => enterScope(g.id, [path[i + 1]!.id])}
-                    >
-                      {scopeName(g)}
-                    </button>
-                  ) : (
-                    <span
-                      aria-current="location"
-                      className="px-1.5 font-semibold text-[var(--ed-ink)]"
-                    >
-                      {scopeName(g)}
-                    </span>
+              {host.club && (
+                <SaveElementDialog
+                  layers={selected}
+                  context={elementSaveContext(
+                    data,
+                    resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID }),
                   )}
-                </span>
-              ))}
-              <span className="ml-2">
-                {inList
-                  ? "Editing the first row: every row follows. Esc goes up a level."
-                  : "Esc goes up a level."}
-              </span>
-            </nav>
-          )}
-
-          <EditorCanvas
-            key={`play-${playing}`}
-            doc={doc}
-            renderDoc={
-              full.setDesign ? pageRenderDocument(full, cur, slide?.key) : asAdjustments(full)
-            }
-            animate={playing > 0}
-            size={format}
-            width={boardW}
-            input={shownInput}
-            theme={null}
-            data={shownData}
-            junior={slide?.junior ?? false}
-            packId={BLANK_PACK_ID}
-            selection={selection}
-            onSelect={(lid) => {
-              // A click off every layer clears the selection and leaves a group.
-              if (lid === null) enterScope(null);
-              else setSelection(selectionFor(doc, lid, inside));
-            }}
-            onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
-            marqueeArea={canvasArea}
-            onSelectMany={(ids, additive) =>
-              setSelection((s) => selectMany(doc, s, ids, inside, additive))
-            }
-            onEnterGroup={(lid, child, at) => {
-              const l = layers.find((x) => x.id === lid);
-              if (l && isContainer(l)) {
-                // In a list, the cell under the pointer in whichever row was clicked.
-                const pick = l.kind === "rows" ? (at ? cellAt(l, format, at) : null) : child;
-                enterScope(lid, pick ? [pick] : []);
-                return;
-              }
-              setInside(l?.group ?? null);
-              setSelection([lid]);
-            }}
-            scopeId={scopeGroup?.id ?? null}
-            scopeBox={scopeGroup ? boxOf(scopeGroup as FreeLayer, format) : null}
-            measure={scopeInStack(pageFull, scope)}
-            fixed={isStack(scopeGroup)}
-            onChange={onCanvasChange}
-            onLayout={onLayout}
-            touch
-            flagged={warnings.map((w) => w.layerId).filter((x): x is string => !!x)}
-          />
-
-          <div className="mt-4 flex w-full max-w-2xl flex-col gap-2 text-sm">
-            {!full.setDesign && page !== primaryPage(kind) && !pageFull.layers?.length && (
-              <p className="text-[var(--ed-ink2)]">
-                The {cur.label.toLowerCase()} is empty. Add fields and elements to design it;
-                carousels use it once it has something on it.
-              </p>
-            )}
-            {full.setDesign && !pageFull.layers?.length && (
-              <p className="text-[var(--ed-ink2)]">
-                This page is empty. Add fields and elements to design it.
-              </p>
-            )}
-            {cur.repeat && slide && (
-              <p className="text-[var(--ed-ink2)]">
-                Every {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()} slide shares this
-                design: editing this one edits them all.
-              </p>
-            )}
-            {cur.repeat && !slide && (
-              <div className="flex flex-wrap items-center gap-2 text-[var(--ed-ink2)]">
-                <span>
-                  This page repeats: one slide per{" "}
-                  {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()}. Editing it edits them
-                  all.
-                </span>
-                <span role="group" aria-label="Sample item" className="flex gap-1">
-                  {[0, 1, 2].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-pressed={sample === n}
-                      onClick={() => setSample(n)}
-                      className={
-                        sample === n
-                          ? "rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-xs font-semibold text-[var(--ed-on-accent)]"
-                          : "rounded-full border border-[var(--ed-line)] px-2 py-0.5 text-xs font-semibold"
-                      }
-                    >
-                      Sample {n + 1}
-                    </button>
-                  ))}
-                </span>
-              </div>
-            )}
-            {plan.slides.length > 1 && (
-              <p className="text-[var(--ed-ink2)]">
-                Showing slide 1 of {plan.slides.length}: rows that don&apos;t fit go on extra
-                slides.
-              </p>
-            )}
-            {!slide && !latest && !stress && (
-              <p className="text-[var(--ed-ink2)]">Previewing with sample data.</p>
-            )}
-            {fitStatus && (
-              <p
-                role="status"
-                className={
-                  fitStatus.tone === "bad"
-                    ? "text-[var(--ed-danger)]"
-                    : fitStatus.tone === "wait"
-                      ? "text-amber-300"
-                      : "text-[var(--ed-ink2)]"
-                }
-              >
-                {fitStatus.text}
-              </p>
-            )}
-            {pasteNote && (
-              <p role="status" className="text-amber-300">
-                {pasteNote}
-              </p>
-            )}
-            {layers.filter((l) => l.kind === "photo").length > 1 && (
-              <p role="status" className="text-[var(--ed-ink2)]">
-                Every Card photo shows the same photo.
-                {listPhotoField
-                  ? " For a photo per player, select the list and set a cell to show Photo in its settings."
-                  : ""}
-              </p>
-            )}
-            {shownWarnings.length > 0 && (
-              <ul role="status" aria-label="Needs a look" className="flex flex-col gap-1">
-                {shownWarnings.map((w, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[var(--ed-danger)]">
-                    <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-                    {w.reason === "overflow"
-                      ? `Text doesn't fit in ${layerName(w.layerId)} on ${SIZE_LABEL[w.size as CardSize]}, even shrunk.`
-                      : w.reason === "font"
-                        ? `The font ${w.detail ?? ""} couldn't load; cards would use a fallback.`
-                        : `This list needs more than 10 slides on ${SIZE_LABEL[w.size as CardSize]}; the rest won't post. Make the rows smaller.`}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {page === primaryPage(pageKind) &&
-              keyField &&
-              // A page of its own (Add page) shows no card's data, so it has none to lose.
-              !(full.setDesign && isOwnDesignPage(full, cur.id)) &&
-              !showsKeyField(pageFull, pageKind) && (
-                <p role="status" className="flex items-center gap-2 text-amber-300">
-                  <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-                  This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t
-                  say who or what they&apos;re about.
-                </p>
+                  clubName={data.brand?.name || clubName || "your club"}
+                  open={savingElement}
+                  onClose={() => setSavingElement(false)}
+                />
               )}
-            {blocked.map((b) => (
-              <p key={b} role="alert" className="text-[var(--ed-danger)]">
-                {b}
-              </p>
-            ))}
-            {conflict && (
+            </div>
+
+            {addPrompt && (!draftFormats || draftFormats.length > 1) && (
               <div
-                role="alert"
-                className="flex flex-wrap items-center gap-3 text-[var(--ed-danger)]"
+                role="dialog"
+                aria-label="Add to other sizes"
+                className="mb-3 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
               >
-                <span>
-                  Someone else changed this template
-                  {conflict.updatedByName ? ` (${conflict.updatedByName})` : ""} after you opened
-                  it. Your changes weren&apos;t saved.
-                </span>
+                <span>Add to the other sizes too?</span>
                 <button
                   type="button"
-                  onClick={reloadTheirs}
-                  className="rounded-full border border-[var(--ed-line)] px-3 py-1 font-semibold text-[var(--ed-ink)]"
+                  onClick={acceptAddPrompt}
+                  className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
                 >
-                  Load their version
+                  Add to all sizes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddPrompt(null)}
+                  className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
+                >
+                  Just {SIZE_LABEL[addPrompt.from].toLowerCase()}
                 </button>
               </div>
             )}
-            {saveError && (
-              <p role="alert" className="text-[var(--ed-danger)]">
-                {saveError}
-              </p>
+
+            {linkPrompt && (
+              <div
+                role="dialog"
+                aria-label="Delete on other sizes"
+                className="mb-3 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
+              >
+                <span>The other sizes have their own copy. Delete it on every size?</span>
+                <button
+                  type="button"
+                  onClick={() => editPage(removeLinked(pageFull, linkPrompt))}
+                  className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
+                >
+                  Delete on every size
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLinkPrompt(null)}
+                  className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
+                >
+                  Just {SIZE_LABEL[format].toLowerCase()}
+                </button>
+              </div>
+            )}
+
+            {scopeGroup && (
+              <nav
+                aria-label="Editing inside"
+                className="mb-3 flex max-w-full flex-wrap items-center gap-1 text-xs text-[var(--ed-ink2)]"
+              >
+                <button
+                  type="button"
+                  className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
+                  onClick={() => enterScope(null, [path[0]!.id])}
+                >
+                  {cur.label}
+                </button>
+                {path.map((g, i) => (
+                  <span key={g.id} className="flex items-center gap-1">
+                    <ChevronRight className="h-3 w-3" aria-hidden />
+                    {i < path.length - 1 ? (
+                      <button
+                        type="button"
+                        className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
+                        onClick={() => enterScope(g.id, [path[i + 1]!.id])}
+                      >
+                        {scopeName(g)}
+                      </button>
+                    ) : (
+                      <span
+                        aria-current="location"
+                        className="px-1.5 font-semibold text-[var(--ed-ink)]"
+                      >
+                        {scopeName(g)}
+                      </span>
+                    )}
+                  </span>
+                ))}
+                <span className="ml-2">
+                  {inList
+                    ? "Editing the first row: every row follows. Esc goes up a level."
+                    : "Esc goes up a level."}
+                </span>
+              </nav>
             )}
           </div>
 
-          {single?.kind === "rows" && single.rows && (
-            // Docked at the foot of the canvas area, after the canvas, so
-            // opening it never moves the card being edited (dev retest 3).
-            <div className="sticky bottom-0 z-20 mt-auto w-full max-w-3xl pt-3">
-              <div className="max-h-[45vh] overflow-auto rounded-xl shadow-xl">
-                <RowsPanel
-                  doc={doc}
-                  layer={single}
-                  kind={pageKind}
-                  page={page}
-                  size={format}
-                  clubLabel={values["club.short"]}
-                  onEdit={edit}
-                />
-              </div>
-            </div>
-          )}
-
-          {layersOpen && (
-            <LayersDrawer
-              layers={layersOnSize(pageFull, format)}
-              size={format}
-              scope={scope}
-              fieldLabels={fieldLabels}
-              selection={selection}
-              onSelect={(ids, mode, parent) => {
-                // A row in another group goes inside that group first.
-                if (parent !== scope) {
-                  enterScope(parent, ids);
-                  return;
+          <div
+            data-testid="canvas-scroll"
+            className="flex min-h-0 flex-1 flex-col items-center overflow-auto px-6 pb-6 [align-items:safe_center]"
+          >
+            {scrolling && pagesNav ? (
+              <PageScroll
+                label={pagesNav.label}
+                items={pagesNav.items}
+                current={pagesNav.current}
+                onSelect={pagesNav.onSelect}
+                onMove={pagesNav.onMove}
+                onDuplicate={pagesNav.onDuplicate}
+                onDelete={pagesNav.onDelete}
+                addOptions={pagesNav.addOptions}
+                onAdd={pagesNav.onAdd}
+                page={(item, on) =>
+                  on ? (
+                    <div className="flex flex-col items-center">
+                      {canvasNode}
+                      {notesNode}
+                    </div>
+                  ) : (
+                    <div style={{ width: boardW }} data-testid={`scroll-preview-${item.id}`}>
+                      {pagesNav.thumb(item, boardW)}
+                    </div>
+                  )
                 }
-                setSelection((s) =>
-                  mode === "replace"
-                    ? ids
-                    : mode === "toggle"
-                      ? toggleSelection(doc, s, ids[0], inside)
-                      : [...new Set([...s, ...ids])],
-                );
-              }}
-              onToggleHidden={(lid) => {
-                const l = findLayer(pageFull, lid)?.layer;
-                if (l) editPage(updateDeep(pageFull, lid, { hidden: !l.hidden }));
-              }}
-              onToggleLocked={(lid) => {
-                const l = findLayer(pageFull, lid)?.layer;
-                if (l) editPage(updateDeep(pageFull, lid, { locked: !l.locked }));
-              }}
-              onClose={() => setLayersOpen(false)}
-            />
-          )}
+              />
+            ) : (
+              <>
+                {canvasNode}
+                {notesNode}
+              </>
+            )}
+          </div>
         </main>
       </div>
-      {slidesMode && full.setDesign && (
+      {pagesNav && !scrolling && (
         <PageStrip
-          label="Slides"
-          items={realSlides.map((x): StripItem => ({
-            id: x.key,
-            label: x.label,
-            repeat: x.page.role === "repeat",
-            warn: layersOnSize(pageDoc(full, x.page.id), format).length === 0,
-          }))}
-          current={slide?.key ?? ""}
-          onSelect={(key) => {
-            setSlideKey(key);
-            enterScope(null);
-            setAddPrompt(null);
-          }}
+          label={pagesNav.label}
+          items={pagesNav.items}
+          current={pagesNav.current}
+          onSelect={pagesNav.onSelect}
           aspect={native.w / native.h}
-          thumb={(item, w) => {
-            const x = realSlides.find((r) => r.key === item.id)!;
-            return (
-              <PackCard
-                input={x.input}
-                size={format}
-                sponsorsOn={x.sponsorsOn}
-                junior={x.junior}
-                data={x.data}
-                packId={BLANK_PACK_ID}
-                adjustments={pageRenderDocument(full, x.page, x.key)}
-                page={x.page.page}
-                width={w}
-              />
-            );
-          }}
-          onMove={(key, to) =>
-            setHistory((h) => {
-              const keys = realSlides.map((r) => r.key).filter((k) => k !== key);
-              keys.splice(to, 0, key);
-              // Only the order changes: each slide keeps its own layout (S9).
-              return commit(h, withSlideOrder(h.present, keys));
-            })
-          }
-          {...(slide?.design
-            ? {
-                onDuplicate: (key: string) => {
-                  const x = realSlides.find((r) => r.key === key);
-                  if (!x) return;
-                  const r = duplicateSetPage(history.present, x.page.id);
-                  setHistory((h) => commit(h, r.doc));
-                  setSlideKey(`page:${r.id}`);
-                },
-              }
-            : {})}
-          onDelete={(key) => {
-            const x = realSlides.find((r) => r.key === key);
-            if (!x) return;
-            // A design page goes with its page; a data slide is left out of the
-            // post with its own layout (S9), and the other slides keep theirs.
-            setHistory((h) => commit(h, deleteSlide(h.present, x)));
-            setSlideKey(null);
-            enterScope(null);
-          }}
-          addOptions={[
-            {
-              id: "blank",
-              label: "Blank page",
-              // A draft's own pages all draw its card's data (stage 2).
-              detail: draftMode
-                ? `A page drawn like ${cur.label}`
-                : `A page drawn like ${cur.label}, no data`,
-            },
-            // A page of one of the club's templates, as the template editor adds
-            // one (retest 6, item K): a design page that draws the club's brand
-            // and no card data. On a junior set it comes in junior-safe.
-            {
-              id: "template",
-              label: "From another template",
-              detail: "Copy a page of one of your templates",
-            },
-            ...deletedOnes.map(({ key, label }) => ({
-              id: `restore:${key}`,
-              label: "Restore a deleted slide",
-              // Its name, as its tile had it ("A Grade v Waroona"), not its key.
-              detail: label,
-            })),
-          ]}
-          onAdd={(option) => {
-            if (option === "template") {
-              setPickingPage(true);
-              return;
-            }
-            if (option.startsWith("restore:")) {
-              const key = option.slice("restore:".length);
-              setHistory((h) => {
-                const arr = h.present.setDesign?.arrangement ?? { order: [], removed: [] };
-                return commit(
-                  h,
-                  withArrangement(h.present, {
-                    ...arr,
-                    removed: arr.removed.filter((k) => k !== key),
-                  }),
-                );
-              });
-              setSlideKey(key);
-              return;
-            }
-            const r = addBlankPage(history.present, cur, cur.id);
-            setHistory((h) => commit(h, r.doc));
-            setSlideKey(`page:${r.id}`);
-            enterScope(null);
-          }}
-        />
-      )}
-      {!slidesMode && (full.setDesign || pageList.length > 1) && (
-        <PageStrip
-          label={full.setDesign ? `${SET_TYPE_LABELS[full.setDesign.type]} pages` : "Pages"}
-          items={pageList.map((p): StripItem => ({
-            id: p.id,
-            label: p.label,
-            repeat: p.repeat,
-            warn: layersOnSize(pageDoc(full, p.id), format).length === 0,
-            note: pageDoc(full, p.id).layers?.length ? undefined : " · empty",
-          }))}
-          current={cur.id}
-          onSelect={(id) => {
-            setPageId(id);
-            setSample(0);
-            enterScope(null);
-            setAddPrompt(null);
-          }}
-          aspect={native.w / native.h}
-          thumb={(item, w) => {
-            const p = pageList.find((x) => x.id === item.id)!;
-            return (
-              <PackCard
-                input={pageInput(
-                  previewSample(p.kind as ShareCardInput["kind"], clubName),
-                  p.kind,
-                  p.page,
-                )}
-                size={format}
-                sponsorsOn
-                junior={p.page === "day"}
-                data={data}
-                packId={BLANK_PACK_ID}
-                adjustments={full.setDesign ? pageRenderDocument(full, p) : asAdjustments(full)}
-                page={p.page}
-                width={w}
-              />
-            );
-          }}
-          {...(full.setDesign
-            ? {
-                onMove: (id: string, to: number) =>
-                  setHistory((h) => commit(h, moveSetPage(h.present, id, to))),
-                onDuplicate: (id: string) => {
-                  const r = duplicateSetPage(history.present, id);
-                  setHistory((h) => commit(h, r.doc));
-                  setPageId(r.id);
-                  enterScope(null);
-                },
-                onDelete: (id: string) => {
-                  setHistory((h) => commit(h, deleteSetPage(h.present, id)));
-                  enterScope(null);
-                },
-                addOptions: [
-                  { id: "blank", label: "Blank page", detail: `A page drawn like ${cur.label}` },
-                  ...missingRepeatSlots(full).map((slot) => ({
-                    id: `repeat:${slot}`,
-                    label: `${SET_SLOT_LABELS[slot]} page`,
-                    detail: "Repeats for each item",
-                  })),
-                  {
-                    id: "template",
-                    label: "From another template",
-                    detail: "Copy a page of one of your templates",
-                  },
-                ],
-                onAdd: (option: string) => {
-                  if (option === "template") {
-                    setPickingPage(true);
-                    return;
-                  }
-                  const r = option.startsWith("repeat:")
-                    ? addRepeatPage(
-                        history.present,
-                        option.slice("repeat:".length) as Parameters<typeof addRepeatPage>[1],
-                        cur.id,
-                      )
-                    : addBlankPage(history.present, cur, cur.id);
-                  setHistory((h) => commit(h, r.doc));
-                  setPageId(r.id);
-                  enterScope(null);
-                },
-              }
-            : {})}
+          thumb={pagesNav.thumb}
+          onMove={pagesNav.onMove}
+          onDuplicate={pagesNav.onDuplicate}
+          onDelete={pagesNav.onDelete}
+          addOptions={pagesNav.addOptions}
+          onAdd={pagesNav.onAdd}
+          overview={false}
         />
       )}
       {full.setDesign && (
@@ -2035,12 +2373,54 @@ export function TemplateEditorV2<T extends EditorTemplate>({
       <EditorBottomBar
         zoom={zoom}
         onZoom={setZoom}
-        layersOpen={layersOpen}
-        onToggleLayers={() => setLayersOpen((o) => !o)}
+        {...(pagesNav
+          ? {
+              pagesView,
+              onPagesView: setPagesView,
+              pageCount: newStudio ? (
+                <PageOverview
+                  className=""
+                  items={pagesNav.items}
+                  current={pagesNav.current}
+                  onSelect={pagesNav.onSelect}
+                  thumb={pagesNav.thumb}
+                  aspect={native.w / native.h}
+                  onMove={pagesNav.onMove}
+                  onDelete={pagesNav.onDelete}
+                  label={pagesNav.label}
+                />
+              ) : (
+                <span
+                  className="text-xs font-semibold tabular-nums text-[var(--ed-ink2)]"
+                  aria-live="polite"
+                >
+                  {Math.max(
+                    0,
+                    pagesNav.items.findIndex((i) => i.id === pagesNav.current),
+                  ) + 1}{" "}
+                  / {pagesNav.items.length}
+                </span>
+              ),
+            }
+          : {})}
       />
     </div>
   );
 }
+
+/** The pages of a design, as the strip and the Scroll view show and change them. */
+type PagesNav = {
+  label: string;
+  items: StripItem[];
+  current: string;
+  onSelect: (id: string) => void;
+  thumb: (item: StripItem, width: number) => ReactNode;
+  onMove?: (id: string, to: number) => void;
+  onDuplicate?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  addOptions?: StripAddOption[];
+  onAdd?: (option: string) => void;
+};
 
 /**
  * Every card kind's sample values in one map, first kind first: the template
