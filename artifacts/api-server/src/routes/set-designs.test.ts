@@ -142,7 +142,7 @@ afterAll(async () => {
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId, otherTenantId]));
 });
 
-const api = (method: "get" | "put" | "post", path: string, tenant = tenantId) =>
+const api = (method: "get" | "put" | "post" | "patch", path: string, tenant = tenantId) =>
   request(app)[method](`/api${path}`).set("Cookie", cookie).set("x-tenant-id", String(tenant));
 
 /** A frozen-input slide (saved before its kind moved onto content). */
@@ -246,6 +246,27 @@ describe("a queued carousel's set design", () => {
     const again = await api("get", `/social-drafts/${id}/set-design`);
     expect(again.body.stored).toBe(true);
     expect(again.body.size).toBe("portrait");
+  });
+
+  it("round 10 (set 1025): a Format change alone saves the set's own size, and it reopens there", async () => {
+    const id = await queuedCarousel();
+    const res = await api("patch", `/social-drafts/${id}`).send({ designSize: "story" });
+    expect(res.status).toBe(200);
+    expect(res.body.designSize).toBe("story");
+    // The size it posts and downloads at follows, with the slides untouched.
+    expect(res.body.cardInput.weekendCarousel.size).toBe("story");
+    expect(res.body.cardInput.weekendCarousel.slides).toHaveLength(4);
+    expect(readQueuedCarousel(res.body.cardInput)?.size).toBe("story");
+    const again = await api("get", `/social-drafts/${id}/set-design`);
+    expect(again.body.size).toBe("story");
+    // A later Save of the set keeps it.
+    const saved = await api("put", `/social-drafts/${id}/set-design`).send({
+      document: again.body.document,
+      size: "story",
+    });
+    expect(saved.status).toBe(200);
+    expect(saved.body.designSize).toBe("story");
+    expect(saved.body.cardInput.weekendCarousel.size).toBe("story");
   });
 
   it("keeps slide 2's own layout from Edit this slide: no slide added (studio-create S8)", async () => {

@@ -9,7 +9,7 @@
  * the result.
  */
 import { useMemo, useRef } from "react";
-import { Link, useParams, useSearch } from "wouter";
+import { Link, useLocation, useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Monitor } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ import {
   getGetTenantPlanQueryKey,
   getListSocialDraftsQueryKey,
   saveDraftSetDesign,
+  updateSocialDraft,
   useGetDraftSetDesign,
   useGetSocialDraft,
   useGetTenantPlan,
@@ -39,6 +40,7 @@ import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { canEditSlideAlone, setDraftSlides } from "@/lib/set-draft";
 import { BLANK_PACK_ID, type FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
+import { editorOpeningSize } from "@/lib/draft-design-size";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
   TemplateEditorV2,
@@ -152,7 +154,36 @@ function SlideEditor({
   // The set as last saved here, and the page that draws the slide in it.
   const set = useRef(opened);
   const drawnBy = useRef(slide?.page.id ?? "");
-  const size = (design.size ?? "square") as CardSize;
+  // It opens at the link's size, else the set's saved size (a queued
+  // carousel's own size follows it), as the set editor does.
+  const search = useSearch();
+  const [location, navigate] = useLocation();
+  const size = useMemo<CardSize>(
+    () => editorOpeningSize(search, draft),
+    // Read once: the editor keeps its own Format from here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  // The size on show: the set saves at it (round 10).
+  const shown = useRef<CardSize>(size);
+  // Changing Format saves it on the set straight away, as the set editor and a
+  // single card's editor do, and the address follows.
+  const saveFormat = (next: CardSize) => {
+    shown.current = next;
+    const params = new URLSearchParams(search);
+    params.set("format", next);
+    navigate(`${location}?${params.toString()}`, { replace: true });
+    updateSocialDraft(draft.id, { designSize: next }).then(
+      () => {
+        void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
+        void qc.invalidateQueries({ queryKey: getGetDraftSetDesignQueryKey(draft.id) });
+        void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+      },
+      () => {
+        // Not saved: the set keeps the size it had.
+      },
+    );
+  };
   const template: EditorTemplate | null = useMemo(
     () =>
       slide
@@ -217,7 +248,7 @@ function SlideEditor({
       const saved: SetDocument = palettes.length ? { ...next, palettes } : next;
       await saveDraftSetDesign(draft.id, {
         document: saved,
-        ...(design.layout === "carousel" && design.size ? { size: design.size } : {}),
+        ...(design.layout === "carousel" ? { size: shown.current } : {}),
       } as Parameters<typeof saveDraftSetDesign>[1]);
       set.current = saved;
       drawnBy.current =
@@ -247,6 +278,7 @@ function SlideEditor({
         data: slide.data,
         // The set draws the slide whole; so does its editor.
         wholeSlide: true,
+        onFormat: saveFormat,
         // Older sizes only where the set was made in them (round 9 B8).
         olderSizes: draft.olderSizes ?? [],
         actions: ({ document, size: shownSize, input, data }) => (

@@ -7,7 +7,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route } from "wouter";
 import AdminSetDraftEditor from "@/pages/admin-set-draft-editor";
-import { renderAt } from "@/test/render";
+import { renderWithHistory } from "@/test/render";
 import {
   matchDayFixtureContent,
   matchDaySponsorsContent,
@@ -70,6 +70,8 @@ const DRAFT = {
 };
 
 type Req = { method: string; url: string; body: unknown };
+/** The editor's address as it stands (path and query). */
+let currentUrl: () => string = () => "";
 
 function open({
   newStudio = false,
@@ -85,7 +87,10 @@ function open({
   },
   library = [] as unknown[],
   clubTemplates = [] as unknown[],
+  path = "/admin/social/set/42",
 }: {
+  /** The address it opens at (a reload of `?format=`). */
+  path?: string;
   newStudio?: boolean;
   draft?: Record<string, unknown>;
   design?: Record<string, unknown>;
@@ -104,7 +109,9 @@ function open({
       const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
       requests.push({ method, url, body });
       let payload: unknown = [];
-      if (/social-drafts\/42\/set-design$/.test(url))
+      if (method === "PATCH" && /social-drafts\/42$/.test(url))
+        payload = { ...draft, ...(body as Record<string, unknown>) };
+      else if (/social-drafts\/42\/set-design$/.test(url))
         payload =
           method === "PUT"
             ? { ...draft, adjustments: (body as { document: unknown }).document }
@@ -126,12 +133,13 @@ function open({
       });
     }),
   );
-  renderAt(
+  const shown = renderWithHistory(
     <Route path="/admin/social/set/:id">
       <AdminSetDraftEditor />
     </Route>,
-    "/admin/social/set/42",
+    path,
   );
+  currentUrl = shown.url;
   return requests;
 }
 
@@ -359,6 +367,57 @@ describe("a queued carousel holding orphaned slide layouts (dev retest 3, draft 
       }
     ).document;
     expect(saved.pages.map((p) => p.id)).toEqual(["cover", "fixture", "sponsors"]);
+  });
+
+  // Round 10 (set 1025): picking Story redrew the set and said "All changes
+  // saved", but nothing was saved, and a reload opened it at Portrait.
+  const carouselAt = (size: string) => ({
+    draft: {
+      ...CAROUSEL,
+      designSize: size,
+      cardInput: {
+        ...CAROUSEL.cardInput,
+        weekendCarousel: { ...CAROUSEL.cardInput.weekendCarousel, size },
+      },
+    },
+    design: {
+      draftId: 42,
+      setType: "matchDay",
+      layout: "carousel",
+      document: SET,
+      templateRef: CAROUSEL.templateRef,
+      size,
+      stored: true,
+    },
+  });
+  const format = async () =>
+    ((await screen.findByRole("combobox", { name: "Format" })) as HTMLSelectElement).value;
+
+  it("round 10: a size change on a queued carousel saves straight away, with no other edit", async () => {
+    const requests = open(carouselAt("portrait"));
+    expect(await format()).toBe("portrait");
+    fireEvent.change(screen.getByRole("combobox", { name: "Format" }), {
+      target: { value: "story" },
+    });
+    await waitFor(() => expect(requests.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = requests.find((r) => r.method === "PATCH")!;
+    expect(patch.url).toMatch(/social-drafts\/42$/);
+    // The size alone (the server keeps the carousel's own size in step).
+    expect(patch.body).toEqual({ designSize: "story" });
+    // No Save needed, and the slides and design aren't saved with it.
+    expect(requests.some((r) => r.method === "PUT")).toBe(false);
+    // The address follows, so a reload opens it at Story.
+    await waitFor(() => expect(currentUrl()).toMatch(/[?&]format=story/));
+  });
+
+  it("round 10: reopened, the carousel opens at the size saved", async () => {
+    open(carouselAt("story"));
+    expect(await format()).toBe("story");
+  });
+
+  it("round 10: a reload of its address opens at the link's size", async () => {
+    open({ ...carouselAt("story"), path: "/admin/social/set/42?format=story" });
+    expect(await format()).toBe("story");
   });
 
   it("offers a deleted slide back by its name, not its key (item 11a)", async () => {

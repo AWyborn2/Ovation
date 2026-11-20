@@ -341,7 +341,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "gradeLeader", hash: "08ad39f122fea6fcb249bc41966fa5958759a38811d4383cce32b3b832e55d9a", file: look3_7 },
       { kind: "juniorHighlights", hash: "19172c6db77b55279cc9525b30ba145293eb914a8279da8be1e155c57549edae", file: look3_8 },
       { kind: "ladder", hash: "6aa50756740c371c593e14ec83da8dadec2cd87d1cf27940b885201ffc0939e7", file: look3_9 },
-      { kind: "matchDay", hash: "2e6e428ff232881b349496b079028d18352f966a478739f4c9dfce846f43242f", file: look3_10 },
+      { kind: "matchDay", hash: "8cbd5630fc338dbdeb87990d4f2e0212d6799117cf5a899295307e013839de0f", file: look3_10 },
       { kind: "matchSummary", hash: "4a3087c4c8db687eb86c958fb05d469c96bade6619e6ef88ec2d298fa5b69e67", file: look3_11 },
       { kind: "milestone", hash: "0b1a33ea971d309cad7faac198fdf44e8794c3b3cce4db038f95332134ba3b7b", file: look3_12 },
       { kind: "newSigning", hash: "0af1cf35940948ef0da0a39a33e70c8cd87d31c12e2d34246102330de73feb9f", file: look3_13 },
