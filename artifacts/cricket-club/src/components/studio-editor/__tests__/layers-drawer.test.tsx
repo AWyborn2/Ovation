@@ -145,8 +145,14 @@ describe("layers drawer", () => {
       target: { value: "square" },
     });
     await waitFor(() => expect(document.querySelector('[data-testid^="layer-"]')).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
-    const list = await screen.findByRole("complementary", { name: "Layers" });
+    // Position → Layers, from the rail: the page's layers beside the rail.
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Editor tools" })).getByRole("button", {
+        name: "Position",
+      }),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Layers" }));
+    const list = await screen.findByRole("tabpanel", { name: "Layers" });
     // The drawer lists the layers on the size being edited (square).
     const card = doc.pages![primaryPage(kind)]!.layers.filter((l) => layerOnSize(l, "square"));
     expect(within(list).getAllByRole("listitem")).toHaveLength(card.length);

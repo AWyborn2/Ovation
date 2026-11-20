@@ -1,3 +1,4 @@
+import { TOP_BAR_BUTTON } from "./editor-shell";
 import { Link } from "wouter";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,11 +9,7 @@ import { cn } from "@/lib/utils";
  * post. It never approves or posts on its own. Unsaved changes are saved first.
  */
 export function SendToReview({ draftId, dirty }: { draftId: number; dirty: boolean }) {
-  const cls = cn(
-    "flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold",
-    "bg-[var(--ed-accent)] text-[var(--ed-on-accent)]",
-    dirty && "pointer-events-none opacity-40",
-  );
+  const cls = cn(TOP_BAR_BUTTON, dirty && "pointer-events-none opacity-40");
   return (
     <Link
       href={`/admin/social/queue?draft=${draftId}`}

@@ -5,7 +5,7 @@
  * and drag to reorder. A repeating page shows as a small stack: it is drawn
  * once per team, fixture, result or day, and editing it edits them all.
  */
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripVertical, Plus, Repeat2, Trash2 } from "lucide-react";
 import {
   DockPopover as Popover,
@@ -25,6 +25,8 @@ export type StripItem = {
   note?: string;
   /** Flags the item (a page with nothing on this size). */
   warn?: boolean;
+  /** False: Duplicate isn't offered for this item (a set draft's data slide). */
+  canDuplicate?: boolean;
 };
 
 export type StripAddOption = { id: string; label: string; detail?: string };
@@ -45,6 +47,9 @@ export function PageStrip({
   addOptions,
   onAdd,
   label = "Pages",
+  overview: withOverview = true,
+  onAddOpen,
+  centred = false,
 }: {
   items: StripItem[];
   current: string;
@@ -60,14 +65,35 @@ export function PageStrip({
   addOptions?: StripAddOption[];
   onAdd?: (option: string) => void;
   label?: string;
+  /** False: the host shows the "N / M" counter and grid itself (the editor's bottom bar). */
+  overview?: boolean;
+  /**
+   * The host shows the add options itself (the New Studio editors, in the
+   * panel beside the rail): the + button calls this instead of opening a menu.
+   */
+  onAddOpen?: () => void;
+  /**
+   * Centred under the canvas (the New Studio editors): the strip sits in the
+   * middle and scrolls sideways when it overflows, keeping the page being
+   * edited in view.
+   */
+  centred?: boolean;
 }) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  // A tile's controls show on the page being edited, or on the tile under the
+  // pointer (or holding focus).
+  const [hovered, setHovered] = useState<string | null>(null);
+  const tiles = useRef(new Map<string, HTMLElement>());
+  // The page being edited stays in view as it changes (a long set scrolls).
+  useEffect(() => {
+    tiles.current.get(current)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [current]);
   const h = Math.round(thumbWidth / aspect);
   const canDelete = !!onDelete && items.length > 1;
   // New Studio (preview): an "N / M" counter and a grid of every page.
-  const overview = useNewStudio();
+  const overview = useNewStudio() && withOverview;
 
   const drop = (to: number) => {
     if (dragging && onMove) {
@@ -81,17 +107,35 @@ export function PageStrip({
   return (
     <nav
       aria-label={label}
-      className="flex shrink-0 items-end gap-3 overflow-x-auto border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4 py-2"
+      data-testid="page-strip"
+      className={cn(
+        "flex shrink-0 items-end gap-3 overflow-x-auto border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4 py-2",
+        // `safe`: an overflowing strip starts at its first page, not cut off on the left.
+        centred && "[justify-content:safe_center]",
+      )}
       onDragOver={(e) => onMove && e.preventDefault()}
       onDrop={() => drop(items.length)}
     >
       <ol className="flex items-end gap-3" aria-label={label}>
         {items.map((item, i) => {
           const on = item.id === current;
+          const dup = !!onDuplicate && item.canDuplicate !== false;
           return (
             <li
               key={item.id}
+              ref={(el) => {
+                if (el) tiles.current.set(item.id, el);
+                else tiles.current.delete(item.id);
+              }}
               className="flex flex-col items-center gap-1"
+              style={centred ? { width: Math.max(thumbWidth + 12, 96) } : undefined}
+              onMouseEnter={() => setHovered(item.id)}
+              onMouseLeave={() => setHovered((h) => (h === item.id ? null : h))}
+              onFocus={() => setHovered(item.id)}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                  setHovered((h) => (h === item.id ? null : h));
+              }}
               draggable={!!onMove}
               onDragStart={(e) => {
                 setDragging(item.id);
@@ -162,7 +206,7 @@ export function PageStrip({
                     </span>
                   )}
                 </button>
-                {on && (onDuplicate || canDelete || onMove) && (
+                {(on || hovered === item.id) && (dup || canDelete || onMove) && (
                   <span className="absolute -top-3 left-1/2 z-10 flex -translate-x-1/2 gap-0.5">
                     {onMove && (
                       <>
@@ -194,13 +238,13 @@ export function PageStrip({
                         )}
                       </>
                     )}
-                    {onDuplicate && (
+                    {dup && (
                       <button
                         type="button"
                         className={tileBtn}
                         aria-label={`Duplicate ${item.label}`}
                         title="Duplicate"
-                        onClick={() => onDuplicate(item.id)}
+                        onClick={() => onDuplicate!(item.id)}
                       >
                         <Copy className="h-3.5 w-3.5" aria-hidden />
                       </button>
@@ -221,7 +265,7 @@ export function PageStrip({
               </div>
               <span
                 className={cn(
-                  "max-w-[110px] truncate text-[11px] font-semibold",
+                  "max-w-full truncate text-center text-[11px] font-semibold",
                   on ? "text-[var(--ed-ink)]" : "text-[var(--ed-ink2)]",
                   item.warn && "text-amber-300",
                 )}
@@ -233,7 +277,18 @@ export function PageStrip({
           );
         })}
       </ol>
-      {onAdd && addOptions && addOptions.length > 0 && (
+      {onAdd && addOptions && addOptions.length > 0 && onAddOpen && (
+        <button
+          type="button"
+          aria-label="Add a page"
+          onClick={onAddOpen}
+          className="mb-5 grid shrink-0 place-items-center rounded-lg border border-dashed border-[var(--ed-line)] text-[var(--ed-ink2)] hover:bg-[var(--ed-card)]"
+          style={{ width: thumbWidth * 0.6, height: h }}
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+        </button>
+      )}
+      {onAdd && addOptions && addOptions.length > 0 && !onAddOpen && (
         <Popover open={adding} onOpenChange={setAdding}>
           <PopoverTrigger asChild>
             <button

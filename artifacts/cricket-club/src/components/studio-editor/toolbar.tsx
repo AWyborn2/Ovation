@@ -13,13 +13,13 @@ import {
   Trash2,
   Ungroup,
   Unlock,
+  type LucideIcon,
 } from "lucide-react";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { ReorderMove } from "./document";
 import type { Alignment, MatchDimension, MatchReference } from "./arrange";
 import { ArrangeMenu } from "./arrange-menu";
 import { TokenTextInput, type TokenField } from "./token-text-input";
-import { DockedMenu } from "./dock";
 import { cn } from "@/lib/utils";
 
 const btn =
@@ -57,10 +57,13 @@ export function EditorToolbar({
   page,
   arrange,
   fields,
+  tools,
+  hint = true,
 }: {
   selected: FreeLayer[];
   isGroup: boolean;
-  onText: (text: string) => void;
+  /** The text box for a text, sticker or medal layer; left out, the toolbar has none. */
+  onText?: (text: string) => void;
   onColour: (colour: string) => void;
   onLock: () => void;
   onDuplicate: () => void;
@@ -87,6 +90,13 @@ export function EditorToolbar({
   };
   /** The card's live fields: the text box then also searches them to insert a `{{token}}`. */
   fields?: TokenField[];
+  /**
+   * The New Studio's own buttons, first in the bar: each opens its panel in
+   * the slot beside the rail (Replace for a photo, Edit, Position).
+   */
+  tools?: ToolbarTool[];
+  /** With nothing selected, say how to start (the older editor). */
+  hint?: boolean;
 }) {
   const pasteBtn = onPaste && (
     <button
@@ -101,6 +111,8 @@ export function EditorToolbar({
     </button>
   );
   if (selected.length === 0) {
+    if (!hint)
+      return <div className="flex h-11 items-center gap-2 px-3">{canPaste && pasteBtn}</div>;
     return (
       <div className="flex h-11 items-center gap-2 px-3 text-sm text-[var(--ed-ink2)]">
         {page && <PageColour {...page} />}
@@ -117,6 +129,22 @@ export function EditorToolbar({
       aria-label="Layer tools"
       className="flex min-h-11 max-w-full flex-wrap items-center gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-1.5 py-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
     >
+      {tools && tools.length > 0 && (
+        <>
+          {tools.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={cn(btn, t.active && "bg-[var(--ed-card)] text-[var(--ed-accent)]")}
+              aria-pressed={t.active}
+              onClick={t.onClick}
+            >
+              <t.icon className="h-4 w-4" aria-hidden /> {t.label}
+            </button>
+          ))}
+          <span className="mx-1 h-6 w-px bg-[var(--ed-line)]" aria-hidden />
+        </>
+      )}
       {single ? (
         <>
           {single.bind && (
@@ -124,7 +152,8 @@ export function EditorToolbar({
               Live · {single.name?.replace(/^Live · /, "") ?? single.bind}
             </span>
           )}
-          {(single.kind === "text" || single.kind === "sticker" || single.kind === "medal") &&
+          {onText &&
+            (single.kind === "text" || single.kind === "sticker" || single.kind === "medal") &&
             !single.bind &&
             (fields && fields.length > 0 && single.kind === "text" ? (
               <TokenTextInput
@@ -285,7 +314,17 @@ export function EditorToolbar({
   );
 }
 
-type PageColourProps = {
+/** A New Studio toolbar button: it opens its panel beside the rail. */
+export type ToolbarTool = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  /** Its panel is the one open. */
+  active?: boolean;
+};
+
+export type PageColourProps = {
   /** The page's colour; absent is the club's stage colour. */
   background?: string;
   onBackground: (colour: string | undefined) => void;
@@ -297,9 +336,9 @@ type PageColourProps = {
  * The page colour (editor issue 1, 26 Oct 2026): white, black, the club's
  * colours, the stage colour the card had before, or any colour picked.
  */
-function PageColour({ background, onBackground, swatches }: PageColourProps) {
-  const [open, setOpen] = useState(false);
-  const options: { label: string; value: string | undefined; show: string }[] = [
+/** The page colours offered: white, black, the club's colours and its stage colour. */
+function pageColourOptions(swatches: PageColourProps["swatches"]) {
+  return [
     { label: "White", value: "#FFFFFF", show: "#FFFFFF" },
     { label: "Black", value: "#000000", show: "#000000" },
     { label: "Club colour", value: "var(--gold)", show: swatches.gold },
@@ -309,8 +348,59 @@ function PageColour({ background, onBackground, swatches }: PageColourProps) {
       value: undefined,
       show: `linear-gradient(135deg, ${swatches.panel}, #111111)`,
     },
-  ];
+  ] as { label: string; value: string | undefined; show: string }[];
+}
+
+/**
+ * The page colours as a list (New Studio's Edit page panel): every option on
+ * show, no menu to open, so nothing opens over the canvas.
+ */
+export function PageColourOptions({
+  background,
+  onBackground,
+  swatches,
+  onPicked,
+}: PageColourProps & { onPicked?: () => void }) {
+  const options = pageColourOptions(swatches);
   const hex = background && background.startsWith("#") ? background.slice(0, 7) : "#ffffff";
+  return (
+    <div role="group" aria-label="Page colours" className="flex flex-col gap-1">
+      {options.map((o) => (
+        <button
+          key={o.label}
+          type="button"
+          aria-pressed={o.value === background}
+          onClick={() => {
+            onBackground(o.value);
+            onPicked?.();
+          }}
+          className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-sm text-[var(--ed-ink)] hover:bg-[var(--ed-card)] aria-pressed:bg-[var(--ed-card)]"
+        >
+          <span
+            aria-hidden
+            className="h-5 w-5 shrink-0 rounded border border-[var(--ed-line)]"
+            style={{ background: o.show }}
+          />
+          {o.label}
+        </button>
+      ))}
+      <label className="flex items-center gap-2 px-2 py-1 text-sm text-[var(--ed-ink)]">
+        <input
+          type="color"
+          aria-label="Any colour"
+          value={hex}
+          onChange={(e) => onBackground(e.target.value.toUpperCase())}
+          className="h-5 w-5 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent p-0"
+        />
+        Any colour
+      </label>
+    </div>
+  );
+}
+
+function PageColour({ background, onBackground, swatches }: PageColourProps) {
+  const [open, setOpen] = useState(false);
+  const options = pageColourOptions(swatches);
   const current =
     options.find((o) => o.value === background)?.show ?? background ?? options[4]!.show;
   return (
@@ -330,43 +420,16 @@ function PageColour({ background, onBackground, swatches }: PageColourProps) {
         />
         Page colour
       </button>
-      <DockedMenu
-        open={open}
-        role="group"
-        aria-label="Page colours"
-        className="mt-1 flex flex-col gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2"
-        floatClassName="absolute left-0 top-10 z-20 mt-0 w-56 shadow-xl"
-      >
-        {options.map((o) => (
-          <button
-            key={o.label}
-            type="button"
-            aria-pressed={o.value === background}
-            onClick={() => {
-              onBackground(o.value);
-              setOpen(false);
-            }}
-            className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-sm text-[var(--ed-ink)] hover:bg-[var(--ed-card)] aria-pressed:bg-[var(--ed-card)]"
-          >
-            <span
-              aria-hidden
-              className="h-5 w-5 shrink-0 rounded border border-[var(--ed-line)]"
-              style={{ background: o.show }}
-            />
-            {o.label}
-          </button>
-        ))}
-        <label className="flex items-center gap-2 px-2 py-1 text-sm text-[var(--ed-ink)]">
-          <input
-            type="color"
-            aria-label="Any colour"
-            value={hex}
-            onChange={(e) => onBackground(e.target.value.toUpperCase())}
-            className="h-5 w-5 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent p-0"
+      {open && (
+        <div className="absolute left-0 top-10 z-20 w-56 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2 shadow-xl">
+          <PageColourOptions
+            background={background}
+            onBackground={onBackground}
+            swatches={swatches}
+            onPicked={() => setOpen(false)}
           />
-          Any colour
-        </label>
-      </DockedMenu>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@
  * beside the editor's, and saving stores the one design on the draft.
  */
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
-import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { Route } from "wouter";
 import AdminStudioEditor from "@/pages/admin-studio-editor";
 import { renderAt } from "@/test/render";
@@ -88,7 +88,15 @@ describe("a templated draft in the editor", () => {
   it("opens its own design in the full editor and saves the one design", async () => {
     const requests = open();
     // The template's own list is a layer, and the draft's content panels sit in the rail.
-    fireEvent.click(await screen.findByRole("button", { name: "Layers" }));
+    await screen.findByRole("navigation", { name: "Editor tools" });
+    // Position → Layers, from the rail: the page's layers beside the rail.
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Editor tools" })).getByRole("button", {
+        name: "Position",
+      }),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Layers" }));
+
     expect(await screen.findByText("Results")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cricket" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Live stats" })).toBeTruthy();

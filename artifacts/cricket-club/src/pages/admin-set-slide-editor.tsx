@@ -33,7 +33,7 @@ import {
   type SetDocument,
   type SlidePhoto,
 } from "@workspace/scorecard/kind-templates";
-import { ChangePhotoMenu } from "@/components/studio-editor/change-photo";
+import { ChangePhotoButton, ChangePhotoPanel } from "@/components/studio-editor/change-photo";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import { downloadSafeInput } from "@/components/studio-editor/export/share-download";
@@ -51,6 +51,7 @@ import type { CardSize } from "@/lib/share-card";
 import { editorOpeningSize } from "@/lib/draft-design-size";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
+  PHOTO_PANEL,
   TemplateEditorV2,
   useViewport,
   type EditorHost,
@@ -294,8 +295,32 @@ function SlideEditor({
     ),
   };
 
+  // Change photo: this slide's photo, in the panel beside the rail.
+  const hasPhoto = !!photo || !!slide.data.photoUrl;
   return (
     <TemplateEditorV2
+      sidePanels={() =>
+        hasPhoto
+          ? [
+              {
+                id: PHOTO_PANEL,
+                title: "Change photo",
+                onPage: true,
+                body: (
+                  <ChangePhotoPanel
+                    draftId={draft.id}
+                    slideKey={slide.key}
+                    junior={isJuniorRule(photoRuleFor({ slide, slides }))}
+                    currentUrl={slide.data.photoUrl ?? null}
+                    own={!!photo}
+                    onPick={savePhoto}
+                    onAuto={() => savePhoto(null)}
+                  />
+                ),
+              },
+            ]
+          : []
+      }
       template={template}
       viewport={viewport}
       host={host}
@@ -308,19 +333,10 @@ function SlideEditor({
         onFormat: saveFormat,
         // Older sizes only where the set was made in them (round 9 B8).
         olderSizes: draft.olderSizes ?? [],
-        actions: ({ document, size: shownSize, input, data }) => (
+        pageSettings: content.pageSettings,
+        actions: ({ document, size: shownSize, input, data, openPanel }) => (
           <>
-            {(photo || slide.data.photoUrl) && (
-              <ChangePhotoMenu
-                draftId={draft.id}
-                slideKey={slide.key}
-                junior={isJuniorRule(photoRuleFor({ slide, slides }))}
-                currentUrl={slide.data.photoUrl ?? null}
-                own={!!photo}
-                onPick={savePhoto}
-                onAuto={() => savePhoto(null)}
-              />
-            )}
+            {hasPhoto && <ChangePhotoButton onClick={() => openPanel(PHOTO_PANEL)} />}
             <DownloadMenu
               card={{
                 // A junior slide shows a photo only behind the server's marker.

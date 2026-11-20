@@ -30,6 +30,7 @@ export function PageOverview({
   onMove,
   onDelete,
   label,
+  className = "mb-5 pl-2",
 }: {
   items: StripItem[];
   current: string;
@@ -39,6 +40,8 @@ export function PageOverview({
   onMove?: (id: string, to: number) => void;
   onDelete?: (id: string) => void;
   label: string;
+  /** Where it sits (the strip's foot by default). */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const at = items.findIndex((i) => i.id === current);
@@ -46,7 +49,7 @@ export function PageOverview({
   const canDelete = !!onDelete && items.length > 1;
 
   return (
-    <div className="mb-5 flex shrink-0 items-center gap-2 pl-2">
+    <div className={cn("flex shrink-0 items-center gap-2", className)}>
       <span className="text-xs font-semibold tabular-nums text-[var(--ed-ink2)]" aria-live="polite">
         {at >= 0 ? at + 1 : 0} / {items.length}
       </span>

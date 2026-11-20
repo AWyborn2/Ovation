@@ -71,6 +71,8 @@ export type DraftContent = {
   /** Lists and this draft again, after a save. */
   refresh: () => void;
   panels: NonNullable<EditorDraftMode["panels"]>;
+  /** Recolour to brand and the sponsor-strip lock, for the editor's Edit page panel. */
+  pageSettings: NonNullable<EditorDraftMode["pageSettings"]>;
 };
 
 export function useDraftContent(draft: SocialDraft): DraftContent {
@@ -223,7 +225,35 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       ),
     });
 
-  return { input, data, bundle, theme, refresh, panels };
+  const pageSettings: DraftContent["pageSettings"] = ({ page, setPage }) => (
+    <div className="space-y-2">
+      <button
+        type="button"
+        className="w-full rounded-lg bg-[var(--ed-accent)] px-2 py-2 text-xs font-bold text-[var(--ed-on-accent)]"
+        onClick={() => setPage(recolourToBrand(page, palette))}
+      >
+        Recolour to brand
+      </button>
+      <label className="flex items-center justify-between gap-3 rounded-xl bg-[var(--ed-card)] p-3 text-sm">
+        <span>
+          <span className="block font-semibold">Lock sponsor strip</span>
+          <span className="block text-xs text-[var(--ed-ink2)]">
+            Keeps every sponsor on this card.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          role="switch"
+          aria-label="Lock sponsor strip"
+          checked={!!page.sponsorLock}
+          onChange={(e) => setPage(setSponsorLock(page, e.target.checked))}
+          className="h-5 w-5 accent-[var(--ed-accent)]"
+        />
+      </label>
+    </div>
+  );
+
+  return { input, data, bundle, theme, refresh, panels, pageSettings };
 }
 
 /**

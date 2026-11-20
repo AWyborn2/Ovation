@@ -2,8 +2,9 @@
  * Nothing covers the creative (Nov 2026): in the New Studio editors no
  * settings panel, menu or toolbar ever sits over the card or slide being
  * edited. The list settings, the layers, a text box's style and every menu
- * that would float over the canvas go in the dock, a column of its own beside
- * the canvas, and the canvas fits the space left, whole, at 100% zoom.
+ * that would float over the canvas open in the one panel beside the rail
+ * (Ash's amendment: nothing opens on the right), and the canvas fits the
+ * space left, whole, at 100% zoom. The dock's layout maths is kept below.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
@@ -138,44 +139,65 @@ function openSetEditor() {
   );
 }
 
-const dockEl = () => screen.getByTestId("editor-dock");
-const stageEl = () => screen.getByTestId("editor-stage");
+const slotEl = () => screen.getByTestId("editor-panel");
+const areaEl = () => screen.getByTestId("canvas-area");
 
 describe("in the set editor", () => {
-  it("shows a sponsor grid's list settings in the dock, beside the canvas, not over it", async () => {
+  it("shows a sponsor grid's list settings in the panel beside the rail, not over the canvas", async () => {
     openSetEditor();
     const strip = await screen.findByRole("navigation", { name: "Slides" });
     fireEvent.click(within(strip).getByRole("button", { name: /^3\. Sponsors/ }));
-    expect(dockEl().hidden).toBe(true);
     const grid = document.querySelector<HTMLElement>('[data-testid="layer-sponsors-tiles"]')!;
     expect(grid).toBeTruthy();
     fireEvent.pointerDown(grid, { clientX: 10, clientY: 10, pointerId: 1 });
     fireEvent.pointerUp(window, { clientX: 10, clientY: 10, pointerId: 1 });
-
+    // Nothing opens by itself over the canvas: the toolbar's Edit opens the settings.
+    expect(screen.queryByRole("region", { name: "List settings" })).toBeNull();
+    fireEvent.click(
+      within(screen.getByRole("toolbar", { name: "Layer tools" })).getByRole("button", {
+        name: "Edit",
+      }),
+    );
     const settings = await screen.findByRole("region", { name: "List settings" });
-    expect(dockEl().hidden).toBe(false);
-    expect(dockEl().contains(settings)).toBe(true);
-    // The canvas is in the stage; the stage and the dock are separate columns.
+    expect(slotEl().contains(settings)).toBe(true);
+    // The canvas is in the canvas area; the panel and the canvas area are separate columns.
     const board = screen.getByTestId("editor-artboard");
-    expect(stageEl().contains(board)).toBe(true);
-    expect(stageEl().contains(settings)).toBe(false);
-    expect(dockEl().contains(board)).toBe(false);
+    expect(areaEl().contains(board)).toBe(true);
+    expect(areaEl().contains(settings)).toBe(false);
+    expect(slotEl().contains(board)).toBe(false);
+    expect(screen.queryByTestId("editor-dock")).toBeNull();
     // Every control is still there.
     for (const name of ["Row height", "Row gap", "Columns"])
       expect(within(settings).getByLabelText(name)).toBeTruthy();
   });
 
-  it("opens the Layout menu and the layers in the dock", async () => {
+  it("opens the Layout and the layers in the panel beside the rail, never as a floating menu", async () => {
     openSetEditor();
     await screen.findByRole("navigation", { name: "Slides" });
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
-    const menu = await screen.findByRole("dialog");
-    expect(dockEl().contains(menu)).toBe(true);
-    expect(stageEl().contains(menu)).toBe(false);
-    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(slotEl().getAttribute("data-panel")).toBe("layout");
+    expect(
+      within(slotEl()).getByRole("button", { name: "New layout for this slide" }),
+    ).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.querySelector("[data-radix-popper-content-wrapper]")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
-    expect(dockEl().contains(screen.getByRole("complementary", { name: "Layers" }))).toBe(true);
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Editor tools" })).getByRole("button", {
+        name: "Position",
+      }),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Layers" }));
+    expect(slotEl().contains(screen.getByRole("tabpanel", { name: "Layers" }))).toBe(true);
+    expect(areaEl().contains(slotEl())).toBe(false);
+  });
+
+  it("opens the strip's Add a page in the panel beside the rail", async () => {
+    openSetEditor();
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    fireEvent.click(within(strip).getByRole("button", { name: "Add a page" }));
+    expect(slotEl().getAttribute("data-panel")).toBe("add-page");
+    expect(within(slotEl()).getByRole("button", { name: /Blank page/ })).toBeTruthy();
+    expect(document.querySelector("[data-radix-popper-content-wrapper]")).toBeNull();
   });
 });

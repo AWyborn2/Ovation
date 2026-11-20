@@ -5,10 +5,11 @@
  * switch the whole set to another look, change the size; saving keeps the
  * data snapshot and stores the design, and the queue shows the change.
  */
+import { TOP_BAR_BUTTON } from "@/components/studio-editor/editor-shell";
 import { useMemo, useRef, useState } from "react";
 import { useLocation, useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Monitor, Palette } from "lucide-react";
+import { LayoutTemplate, Monitor, Palette } from "lucide-react";
 import {
   getGetDraftSetDesignQueryKey,
   getGetSocialDraftQueryKey,
@@ -64,14 +65,19 @@ import { setDraftSlides } from "@/lib/set-draft";
 import { useNewStudio } from "@/lib/entitlements";
 import { SharePanel } from "@/components/studio-editor/export/share-panel";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
-import { SlideLayoutPanel } from "@/components/studio-editor/slide-layout";
+import { SlideLayoutPanel, slideLayoutApplies } from "@/components/studio-editor/slide-layout";
 import { EditSlideButton } from "@/components/studio-editor/edit-slide-button";
-import { SlidePhotoButton } from "@/components/studio-editor/change-photo";
+import {
+  ChangePhotoButton,
+  SlidePhotoPanel,
+  slideHasPhoto,
+} from "@/components/studio-editor/change-photo";
 import { keepAddedPages, storedSetDocument } from "@/components/studio-editor/set-doc";
 import type { CardSize } from "@/lib/share-card";
 import { editorOpeningSize } from "@/lib/draft-design-size";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
+  PHOTO_PANEL,
   TemplateEditorV2,
   useViewport,
   type EditorHost,
@@ -80,6 +86,8 @@ import {
 import type { EditorTemplateDoc } from "@/components/studio-editor/set-doc";
 
 const QUEUE = "/admin/social/queue";
+/** The panel beside the rail for the slide on show's own layout (S9). */
+const LAYOUT_PANEL = "layout";
 
 const errorOf = (err: unknown): string | null => {
   const data = (err as { data?: { error?: unknown } } | null)?.data;
@@ -265,23 +273,55 @@ function SetDraftEditor({
         template={template}
         viewport={viewport}
         host={host}
-        actions={({ set, setDesign, dirty }) => {
+        sidePanels={({ set, setDesign }) => {
+          if (!set || !setDesign) return [];
+          // Change photo: the slide on the canvas, this slide only. Layout: its
+          // own layout (S9, New Studio). Both open beside the rail, and show in
+          // Edit page too.
+          const natural = (key: string) => naturalPage(setDesign.doc, key);
+          return [
+            ...(slideHasPhoto(set, setDesign)
+              ? [
+                  {
+                    id: PHOTO_PANEL,
+                    title: "Change photo",
+                    onPage: true,
+                    body: <SlidePhotoPanel draftId={draft.id} set={set} design={setDesign} />,
+                  },
+                ]
+              : []),
+            ...(newStudio && slideLayoutApplies(set, setDesign, natural)
+              ? [
+                  {
+                    id: LAYOUT_PANEL,
+                    title: "Layout",
+                    onPage: true,
+                    body: <SlideLayoutPanel set={set} design={setDesign} naturalPageId={natural} />,
+                  },
+                ]
+              : []),
+          ];
+        }}
+        actions={({ set, setDesign, dirty, openPanel }) => {
           live.current = setDesign?.doc ?? null;
-          // Change photo: the slide on the canvas, this slide only.
           const photo =
-            set && setDesign ? (
-              <SlidePhotoButton draftId={draft.id} set={set} design={setDesign} />
+            set && setDesign && slideHasPhoto(set, setDesign) ? (
+              <ChangePhotoButton onClick={() => openPanel(PHOTO_PANEL)} />
             ) : null;
           return newStudio ? (
             <>
               {photo}
-              {set && setDesign && (
-                <SlideLayoutPanel
-                  set={set}
-                  design={setDesign}
-                  naturalPageId={(key) => naturalPage(setDesign.doc, key)}
-                />
-              )}
+              {set &&
+                setDesign &&
+                slideLayoutApplies(set, setDesign, (key) => naturalPage(setDesign.doc, key)) && (
+                  <button
+                    type="button"
+                    onClick={() => openPanel(LAYOUT_PANEL)}
+                    className={TOP_BAR_BUTTON}
+                  >
+                    <LayoutTemplate className="h-4 w-4" aria-hidden /> Layout
+                  </button>
+                )}
               {set && <EditSlideButton draftId={draft.id} set={set} dirty={dirty} />}
               {set && <SharePanel set={set} name={template.name} />}
               <SendToReview draftId={draft.id} dirty={dirty} />
@@ -307,12 +347,8 @@ function SetDraftEditor({
           olderSizes: draft.olderSizes ?? [],
           // A free set of pages has no look's set to switch to.
           actions: pages ? undefined : (
-            <button
-              type="button"
-              onClick={() => setLookOpen(true)}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
-            >
-              <Palette className="h-3.5 w-3.5" aria-hidden /> Change look
+            <button type="button" onClick={() => setLookOpen(true)} className={TOP_BAR_BUTTON}>
+              <Palette className="h-4 w-4" aria-hidden /> Change look
             </button>
           ),
         }}

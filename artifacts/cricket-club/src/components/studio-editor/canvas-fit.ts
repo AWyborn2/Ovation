@@ -17,12 +17,13 @@ export { DOCK_WIDTH };
 /** Space round the canvas in its stage (px), each side and below. */
 export const STAGE_PAD = 24;
 /**
- * The toolbar strip above the canvas (px): its top padding, the toolbar (two
- * rows: a text box's toolbar wraps to two in the narrower editors) and the gap
- * under it. The strip is at least this tall, so the toolbar changing as the
- * selection changes never moves or resizes the canvas.
+ * The toolbar strip above the canvas (px): its top padding, the toolbar (one
+ * row since its settings moved to the panel beside the rail, PR #698) and the
+ * gap under it. The strip is at least this tall, so the toolbar changing as
+ * the selection changes never moves or resizes the canvas. A band as tall is
+ * kept under the canvas, so the canvas sits in the middle of its area.
  */
-export const TOOLBAR_STRIP = 120;
+export const TOOLBAR_STRIP = 64;
 
 export type Box = { x: number; y: number; w: number; h: number };
 export type Size = { w: number; h: number };
@@ -53,7 +54,7 @@ export function estimateCanvasArea({
 export function canvasRoom(area: Size): Size {
   return {
     w: Math.max(0, area.w - 2 * STAGE_PAD),
-    h: Math.max(0, area.h - TOOLBAR_STRIP - STAGE_PAD),
+    h: Math.max(0, area.h - 2 * TOOLBAR_STRIP),
   };
 }
 
@@ -99,7 +100,7 @@ export function editorLayout({
   const room = canvasRoom(size);
   const canvas: Box = {
     x: area.x + STAGE_PAD + Math.max(0, (room.w - w) / 2),
-    y: area.y + TOOLBAR_STRIP,
+    y: area.y + TOOLBAR_STRIP + Math.max(0, (room.h - h) / 2),
     w,
     h,
   };

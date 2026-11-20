@@ -10,6 +10,7 @@
  * set" turns the design into pages (stage 2), with the look's matching pages
  * to start from (D9).
  */
+import { TOP_BAR_BUTTON } from "@/components/studio-editor/editor-shell";
 import { useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { Layers, Monitor } from "lucide-react";
@@ -19,7 +20,7 @@ import { StatusPill } from "@/components/admin-ui";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { DraftSetDialog } from "@/components/studio-editor/draft-set-dialog";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
-import { ChangePhotoMenu } from "@/components/studio-editor/change-photo";
+import { ChangePhotoButton, ChangePhotoPanel } from "@/components/studio-editor/change-photo";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
 import { useNewStudio } from "@/lib/entitlements";
 import {
@@ -36,6 +37,7 @@ import { cardBaseFilename, type CardSize } from "@/lib/share-card";
 import { editorOpeningSize } from "@/lib/draft-design-size";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
+  PHOTO_PANEL,
   TemplateEditorV2,
   useViewport,
   type EditorDraftMode,
@@ -72,7 +74,7 @@ export function DraftDesignEditor({
   // The design as it stood when "Make a carousel set" was pressed.
   const [setFrom, setSetFrom] = useState<Record<string, unknown> | null>(null);
   const viewport = useViewport();
-  const { input, data, bundle, theme, refresh, panels } = useDraftContent(draft);
+  const { input, data, bundle, theme, refresh, panels, pageSettings } = useDraftContent(draft);
 
   // Where it opens (Stage 2): the link's size, else the size it was last
   // designed at, else a carousel's size, else Square for an older draft (as
@@ -149,49 +151,55 @@ export function DraftDesignEditor({
     ),
   };
 
+  // Change photo (a photo layer's Replace, Edit page, or the top bar's button):
+  // the card's own photo, in the panel beside the rail.
+  const hasPhoto = !!draft.photoUrl || draft.photoSource === "manual";
+  const photoPanel = (
+    <ChangePhotoPanel
+      draftId={draft.id}
+      slideKey={null}
+      junior={junior}
+      currentUrl={draft.photoUrl ?? null}
+      own={draft.photoSource === "manual"}
+      // A junior card's photo is the one the club cleared for it (ADR-007).
+      lockedReason={
+        junior
+          ? "This is a junior card: it shows only the photo the club has cleared for this player, so it can't be changed here."
+          : undefined
+      }
+      onPick={async (choice) => {
+        await updateSocialDraft(draft.id, {
+          photoUrl: choice.url,
+          photoPlayerId: choice.playerId ?? null,
+        });
+        refresh();
+      }}
+      onAuto={async () => {
+        await updateSocialDraft(draft.id, { photoAuto: true });
+        refresh();
+      }}
+    />
+  );
+
   const draftMode: EditorDraftMode = {
     input: input as unknown as Record<string, unknown>,
     data,
     blank: isBlankDesignDraft(draft),
     panels,
+    pageSettings,
     onFormat: saveFormat,
     // Older sizes only where the card was made in them (round 9 B8).
     olderSizes: draft.olderSizes ?? [],
-    actions: ({ document, size, input: shown, data: shownData }) => (
+    actions: ({ document, size, input: shown, data: shownData, openPanel }) => (
       <>
-        {(draft.photoUrl || draft.photoSource === "manual") && (
-          <ChangePhotoMenu
-            draftId={draft.id}
-            slideKey={null}
-            junior={junior}
-            currentUrl={draft.photoUrl ?? null}
-            own={draft.photoSource === "manual"}
-            // A junior card's photo is the one the club cleared for it (ADR-007).
-            lockedReason={
-              junior
-                ? "This is a junior card: it shows only the photo the club has cleared for this player, so it can't be changed here."
-                : undefined
-            }
-            onPick={async (choice) => {
-              await updateSocialDraft(draft.id, {
-                photoUrl: choice.url,
-                photoPlayerId: choice.playerId ?? null,
-              });
-              refresh();
-            }}
-            onAuto={async () => {
-              await updateSocialDraft(draft.id, { photoAuto: true });
-              refresh();
-            }}
-          />
-        )}
+        {hasPhoto && <ChangePhotoButton onClick={() => openPanel(PHOTO_PANEL)} />}
         <button
           type="button"
           disabled={making}
           onClick={() => setSetFrom(document)}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:opacity-50"
+          className={TOP_BAR_BUTTON}
         >
-          <Layers className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
+          <Layers className="h-4 w-4" aria-hidden /> Make a carousel set
         </button>
         <DownloadMenu
           card={{
@@ -226,6 +234,11 @@ export function DraftDesignEditor({
         host={host}
         draftMode={draftMode}
         initialFormat={initialFormat}
+        sidePanels={() =>
+          hasPhoto
+            ? [{ id: PHOTO_PANEL, title: "Change photo", body: photoPanel, onPage: true }]
+            : []
+        }
         actions={
           newStudio ? ({ dirty }) => <SendToReview draftId={draft.id} dirty={dirty} /> : undefined
         }
