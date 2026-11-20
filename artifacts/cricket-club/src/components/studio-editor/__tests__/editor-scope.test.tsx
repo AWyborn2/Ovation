@@ -298,8 +298,14 @@ describe("editing inside a group", () => {
   it("opens groups in the Layers tree and selects a child from there", async () => {
     const requests = open();
     await waitFor(() => expect(overlay("score")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
-    const drawer = await screen.findByRole("complementary", { name: "Layers" });
+    // Position → Layers, from the rail: the page's layers beside the rail.
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Editor tools" })).getByRole("button", {
+        name: "Position",
+      }),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Layers" }));
+    const drawer = await screen.findByRole("tabpanel", { name: "Layers" });
     expect(within(drawer).queryByRole("button", { name: "Hide runs" })).toBeNull();
     fireEvent.click(within(drawer).getByRole("button", { name: "Open score" }));
     const inScore = within(drawer).getByRole("group", { name: "In score" });
@@ -319,8 +325,14 @@ describe("editing inside a group", () => {
   it("selects a list's cell from the Layers tree and edits the row template", async () => {
     const requests = open();
     await waitFor(() => expect(overlay("list")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
-    const drawer = await screen.findByRole("complementary", { name: "Layers" });
+    // Position → Layers, from the rail: the page's layers beside the rail.
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Editor tools" })).getByRole("button", {
+        name: "Position",
+      }),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Layers" }));
+    const drawer = await screen.findByRole("tabpanel", { name: "Layers" });
     fireEvent.click(within(drawer).getByRole("button", { name: "Open Ladder" }));
     const inList = within(drawer).getByRole("group", { name: "In Ladder" });
     // Cells have no eye or lock: they show and lock with their list.

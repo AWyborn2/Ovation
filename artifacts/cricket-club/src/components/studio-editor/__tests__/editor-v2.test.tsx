@@ -110,6 +110,14 @@ const putBody = async (requests: Req[]) => {
 const selectLayer = (id: string, mods: Record<string, boolean> = {}) =>
   fireEvent.pointerDown(document.querySelector(`[data-testid="layer-${id}"]`)!, mods);
 
+/** The toolbar's Edit: the selected layer's settings, in the panel beside the rail. */
+const openEdit = () =>
+  fireEvent.click(
+    within(screen.getByRole("toolbar", { name: "Layer tools" })).getByRole("button", {
+      name: "Edit",
+    }),
+  );
+
 describe("editor v2", () => {
   it("edits a page the template doesn't have yet, and saves format v2", async () => {
     const requests = open();
@@ -158,7 +166,7 @@ describe("editor v2", () => {
     const requests = open();
     await screen.findByRole("navigation", { name: "Pages" });
     selectLayer("venue");
-    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+    openEdit();
     const panel = await screen.findByTestId("layer-design-panel");
     fireEvent.change(within(panel).getByRole("combobox", { name: "Show when photo" }), {
       target: { value: "no" },
@@ -179,7 +187,7 @@ describe("editor v2", () => {
     open();
     await screen.findByRole("navigation", { name: "Pages" });
     selectLayer("venue");
-    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+    openEdit();
     const panel = await screen.findByTestId("layer-design-panel");
     fireEvent.change(within(panel).getByRole("combobox", { name: "Clip shape" }), {
       target: { value: "slash" },
@@ -214,7 +222,7 @@ describe("editor v2", () => {
     await screen.findByRole("navigation", { name: "Pages" });
     selectLayer("grade");
     selectLayer("venue", { shiftKey: true });
-    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+    openEdit();
     fireEvent.click(await screen.findByRole("button", { name: /Stack these layers/ }));
     const panel = await screen.findByTestId("layer-design-panel");
     const list = within(panel).getByRole("list", { name: "Stack layers" });
@@ -239,7 +247,7 @@ describe("editor v2", () => {
     });
     expect(await screen.findByRole("link", { name: "Update available" })).toBeTruthy();
     selectLayer("grade");
-    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+    openEdit();
     fireEvent.change(
       within(await screen.findByTestId("layer-design-panel")).getByRole("combobox", {
         name: "Blend",

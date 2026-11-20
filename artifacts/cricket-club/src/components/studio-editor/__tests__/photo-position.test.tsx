@@ -6,7 +6,7 @@
  * moves it onto the slide's own layout.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { SetDocument, TemplateLayerV2 } from "@workspace/scorecard/kind-templates";
 import { TemplateEditorV2, type EditorTemplate } from "@/pages/admin-template-editor";
 import { previewSample } from "@/lib/kind-templates/samples";
@@ -91,9 +91,12 @@ async function selectPhoto() {
   await waitFor(() => expect(overlay("ph")).toBeTruthy());
   fireEvent.pointerDown(overlay("ph")!);
   fireEvent.pointerUp(overlay("ph")!);
-  // The Layer panel, unless it is open already.
-  if (!screen.queryByText(/Select a layer to set when it shows/))
-    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+  // The toolbar's Replace: the photo and its Photo position, beside the rail.
+  fireEvent.click(
+    within(screen.getByRole("toolbar", { name: "Layer tools" })).getByRole("button", {
+      name: "Replace",
+    }),
+  );
   await screen.findByRole("region", { name: "Photo position" });
 }
 
@@ -165,7 +168,10 @@ describe("Photo position in the draft editor", () => {
     await waitFor(() => expect(overlay("tx")).toBeTruthy());
     fireEvent.pointerDown(overlay("tx")!);
     fireEvent.pointerUp(overlay("tx")!);
-    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+    // A text layer has no Replace; its Edit has no Photo position.
+    const bar = screen.getByRole("toolbar", { name: "Layer tools" });
+    expect(within(bar).queryByRole("button", { name: "Replace" })).toBeNull();
+    fireEvent.click(within(bar).getByRole("button", { name: "Edit" }));
     await screen.findByRole("region", { name: "Show when" });
     expect(screen.queryByRole("region", { name: "Photo position" })).toBeNull();
   });

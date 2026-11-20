@@ -125,6 +125,23 @@ const selectLayer = (id: string) =>
 const format = (value: string) =>
   fireEvent.change(screen.getByRole("combobox", { name: "Format" }), { target: { value } });
 const saved = (requests: Req[]) => requests.filter((r) => r.method === "PUT");
+/** The toolbar's Edit: the selected layer's settings, in the panel beside the rail. */
+const openEdit = () =>
+  fireEvent.click(
+    within(screen.getByRole("toolbar", { name: "Layer tools" })).getByRole("button", {
+      name: "Edit",
+    }),
+  );
+/** Position → Layers, from the rail: the page's layers, in the panel beside the rail. */
+const openLayers = () => {
+  fireEvent.click(
+    within(screen.getByRole("navigation", { name: "Editor tools" })).getByRole("button", {
+      name: "Position",
+    }),
+  );
+  fireEvent.click(screen.getByRole("tab", { name: "Layers" }));
+  return screen.getByRole("tabpanel", { name: "Layers" });
+};
 
 describe("template editor", () => {
   it("sends a card kind with no default to the library", async () => {
@@ -181,6 +198,7 @@ describe("template editor", () => {
     const requests = open();
     await screen.findByRole("combobox", { name: "Format" });
     selectLayer("title");
+    openEdit();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Letter spacing" }), {
       target: { value: "0.12" },
     });
@@ -191,6 +209,8 @@ describe("template editor", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Font weight" }), {
       target: { value: "900" },
     });
+    // Fields, from the rail, replaces Edit in the panel; the title stays selected.
+    fireEvent.click(screen.getByRole("button", { name: "Fields" }));
     fireEvent.click(screen.getByRole("button", { name: "Insert Runs" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(saved(requests)).toHaveLength(1));
@@ -228,6 +248,7 @@ describe("template editor", () => {
     });
     await screen.findByRole("combobox", { name: "Format" });
     selectLayer("title");
+    openEdit();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Font size" }), {
       target: { value: "9" },
     });
@@ -249,6 +270,7 @@ describe("template editor", () => {
     await screen.findByRole("combobox", { name: "Format" });
     format("portrait");
     selectLayer("title");
+    openEdit();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Font size" }), {
       target: { value: "9" },
     });
@@ -278,6 +300,7 @@ describe("template editor", () => {
     });
     await screen.findByRole("combobox", { name: "Format" });
     selectLayer("title");
+    openEdit();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Font size" }), {
       target: { value: "9" },
     });
@@ -290,6 +313,7 @@ describe("template editor", () => {
     const requests = open({ waiting: 3 });
     await screen.findByRole("combobox", { name: "Format" });
     selectLayer("title");
+    openEdit();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Font size" }), {
       target: { value: "9" },
     });
@@ -317,6 +341,7 @@ describe("template editor", () => {
     const requests = open({ waiting: 0 });
     await screen.findByRole("combobox", { name: "Format" });
     selectLayer("title");
+    openEdit();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Font size" }), {
       target: { value: "9" },
     });
@@ -420,7 +445,11 @@ describe("template editor: copy, multi-select and arrange", () => {
     click(layerEl("title"));
     click(layerEl("badge"), { ctrlKey: true });
     expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
-    fireEvent.click(screen.getByRole("button", { name: "Arrange" }));
+    fireEvent.click(
+      within(screen.getByRole("toolbar", { name: "Layer tools" })).getByRole("button", {
+        name: "Position",
+      }),
+    );
     fireEvent.click(await screen.findByRole("button", { name: "Match size" }));
     const layers = await savedLayers(requests);
     const badge = layers.find((l) => l.id === "badge")!;
@@ -497,8 +526,7 @@ describe("template editor: copy, multi-select and arrange", () => {
   it("multi-selects in the Layers drawer with ctrl-click and shift-click", async () => {
     open({ template: template({ document: TWO_DOC }) });
     await screen.findByRole("combobox", { name: "Format" });
-    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
-    const drawer = screen.getByRole("complementary", { name: "Layers" });
+    const drawer = openLayers();
     fireEvent.click(within(drawer).getByRole("button", { name: "Badge" }));
     fireEvent.click(within(drawer).getByRole("button", { name: "Title" }), { ctrlKey: true });
     expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
