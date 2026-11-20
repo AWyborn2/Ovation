@@ -69,6 +69,11 @@ import { RowsPanel } from "@/components/studio-editor/rows-panel";
 import { TextStyleBar } from "@/components/studio-editor/text-style-bar";
 import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-dialog";
 import { LayerDesignPanel } from "@/components/studio-editor/layer-design-panel";
+import {
+  cleanPosition,
+  withLayerPhotoPosition,
+  type PhotoPositionControl,
+} from "@/components/studio-editor/photo-position";
 import { useLayerPhotoPreview } from "@/components/studio-editor/use-layer-photo-preview";
 import {
   commit,
@@ -156,10 +161,12 @@ import {
   moveSetPage,
   openSetTemplate,
   pageRenderDocument,
+  slidePhotoPosition,
   storedSetDocument,
   SET_SLOT_LABELS,
   withArrangement,
   withSlideOrder,
+  withSlidePhotoPosition,
   type EditorPage,
   type EditorSlide,
   type EditorTemplateDoc,
@@ -1031,6 +1038,59 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reads live state through stateRef
   }, [edit]);
 
+  // Photo position (New Studio): a draft's photo layer moved inside its frame,
+  // at the size on show. A set slide drawn by a page other slides share
+  // (a team, fixture or result page) keeps its own in the set's arrangement,
+  // so only that slide moves; any other page draws one slide, so the layer
+  // holds it. A template being designed has none (every card's photo differs).
+  const photoPositionFor = (layer: EditorLayer): PhotoPositionControl | undefined => {
+    if (layer.kind !== "photo" || !editingDraft) return undefined;
+    const size = format;
+    const own = layer.photoPosition?.[size] ?? null;
+    const shared =
+      !!slidesMode &&
+      !!slide &&
+      !!full.setDesign &&
+      (slide.page.role === "repeat" ||
+        realSlides.filter((x) => x.page.id === slide.page.id).length > 1);
+    if (shared && slide) {
+      const key = slide.key;
+      return {
+        size,
+        scope: "slide",
+        value: slidePhotoPosition(full, key, layer.id, size) ?? own,
+        onChange: (next, done) =>
+          editFull(
+            (d) =>
+              withSlidePhotoPosition(d, key, layer.id, size, next ? cleanPosition(next) : null),
+            done !== false,
+          ),
+      };
+    }
+    return {
+      size,
+      scope: slide || draftMode?.wholeSlide ? "slide" : "card",
+      value: own,
+      onChange: (next, done) => {
+        const patch = { photoPosition: withLayerPhotoPosition(layer, size, next) };
+        const nextDoc = updateDeep(doc, layer.id, patch);
+        if (done === false || gestureBase.current) onCanvasChange(nextDoc, done !== false);
+        else edit(nextDoc);
+      },
+    };
+  };
+  /** A whole-document edit; `done: false` is part of a drag, recorded as one change at its end. */
+  const editFull = (fn: (d: EditorTemplateDoc) => EditorTemplateDoc, done: boolean) => {
+    if (!done) {
+      if (!gestureBase.current) gestureBase.current = history.present;
+      setHistory((h) => replace(h, fn(h.present)));
+      return;
+    }
+    const base = gestureBase.current;
+    gestureBase.current = null;
+    setHistory((h) => (base ? commitFrom(h, base, fn(h.present)) : commit(h, fn(h.present))));
+  };
+
   const onSave = async () => {
     if (full.setDesign) {
       // A set saves every page, and each needs something on it: say which
@@ -1192,7 +1252,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                           slides: realSlides,
                           current: slide?.key ?? null,
                           size: format,
-                          documentFor: (x: EditorSlide) => pageRenderDocument(full, x.page),
+                          documentFor: (x: EditorSlide) => pageRenderDocument(full, x.page, x.key),
                         },
                         setDesign: {
                           doc: full,
@@ -1296,6 +1356,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                   kind={pageKind}
                   page={page}
                   photoRule={photoRule}
+                  photoPosition={photoPositionFor(focus)}
                   onPatch={(patch, done) => {
                     // A drag in the panel (the clip pad) is one change, like a canvas drag.
                     const next = updateDeep(doc, focus.id, patch);
@@ -1518,7 +1579,9 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           <EditorCanvas
             key={`play-${playing}`}
             doc={doc}
-            renderDoc={full.setDesign ? pageRenderDocument(full, cur) : asAdjustments(full)}
+            renderDoc={
+              full.setDesign ? pageRenderDocument(full, cur, slide?.key) : asAdjustments(full)
+            }
             animate={playing > 0}
             size={format}
             width={boardW}
@@ -1773,7 +1836,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 junior={x.junior}
                 data={x.data}
                 packId={BLANK_PACK_ID}
-                adjustments={pageRenderDocument(full, x.page)}
+                adjustments={pageRenderDocument(full, x.page, x.key)}
                 page={x.page.page}
                 width={w}
               />

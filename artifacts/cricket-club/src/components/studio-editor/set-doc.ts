@@ -22,13 +22,15 @@ import {
   setPageRenderDocument,
   setRepeatSlots,
   SET_SLOT_LABELS,
+  withPhotoPositions,
   type PageKey,
   type SetDocument,
   type SetPage,
   type SetRepeatSlot,
   type SetType,
 } from "@workspace/scorecard/kind-templates";
-import type { CardAdjustments, FreeLayer, PackCardData } from "@/lib/pack-render";
+import type { CardAdjustments, FreeLayer, PackCardData, PhotoPosition } from "@/lib/pack-render";
+import type { CardSize } from "@/lib/share-card";
 import type { ShareCardInput } from "@/lib/share-card";
 import { newId } from "./document";
 import { PAGE_LABEL, type OpenedTemplate, type TemplateDoc } from "./template-doc";
@@ -149,15 +151,25 @@ export function firstPageId(doc: EditorTemplateDoc, kind: string): string {
   return doc.setDesign ? (doc.setDesign.pages[0]?.id ?? "") : primaryPage(kind);
 }
 
-/** What draws one page: the page's layers as its kind's document. */
+/**
+ * What draws one page: the page's layers as its kind's document. For a set
+ * draft's slide (`slideKey`), with that slide's own Photo positions on its
+ * photo layers (`SetArrangement.photoFor`), as every other renderer draws it.
+ */
 export function pageRenderDocument(
   doc: EditorTemplateDoc,
   page: Pick<EditorPage, "id" | "kind" | "page">,
+  slideKey?: string,
 ): CardAdjustments {
   if (!doc.setDesign) return doc as unknown as CardAdjustments;
-  const body = (
+  const stored = (
     doc.pages as Record<string, { layers: FreeLayer[]; background?: string } | undefined>
   )[page.id];
+  const positions = slideKey ? doc.setDesign.arrangement?.photoFor?.[slideKey] : undefined;
+  const body =
+    stored && positions
+      ? { ...stored, layers: withPhotoPositions(stored.layers, positions) }
+      : stored;
   return setPageRenderDocument(
     { palettes: doc.palettes as SetDocument["palettes"], sponsorLock: doc.sponsorLock },
     {
@@ -323,6 +335,63 @@ export function withArrangement(
   return { ...doc, setDesign: { ...doc.setDesign!, arrangement } };
 }
 
+// ── A slide's own Photo position (New Studio) ──────────────────────────────
+
+/** A slide's own Photo position for one photo layer at one size, or null. */
+export function slidePhotoPosition(
+  doc: EditorTemplateDoc,
+  key: string,
+  layerId: string,
+  size: CardSize,
+): PhotoPosition | null {
+  return doc.setDesign?.arrangement?.photoFor?.[key]?.[layerId]?.[size] ?? null;
+}
+
+/**
+ * The set with slide `key`'s Photo position for one photo layer at one size
+ * set (`null` clears it, so that size draws as before). Only that slide, at
+ * only that size, moves: the page and every other slide keep theirs.
+ */
+export function withSlidePhotoPosition(
+  doc: EditorTemplateDoc,
+  key: string,
+  layerId: string,
+  size: CardSize,
+  position: PhotoPosition | null,
+): EditorTemplateDoc {
+  const arr: NonNullable<EditorSet["arrangement"]> = doc.setDesign?.arrangement ?? NO_ARRANGEMENT;
+  const all = { ...(arr.photoFor ?? {}) };
+  const slide = { ...(all[key] ?? {}) };
+  const sizes = { ...(slide[layerId] ?? {}) };
+  if (position) sizes[size] = position;
+  else delete sizes[size];
+  if (Object.keys(sizes).length) slide[layerId] = sizes;
+  else delete slide[layerId];
+  if (Object.keys(slide).length) all[key] = slide;
+  else delete all[key];
+  const { photoFor: _old, ...rest } = arr;
+  return withArrangement(doc, Object.keys(all).length ? { ...rest, photoFor: all } : rest);
+}
+
+/** The arrangement without slide `key`'s Photo positions (its layers hold them now). */
+function withoutSlidePhotos(doc: EditorTemplateDoc, key: string): EditorTemplateDoc {
+  const arr = doc.setDesign?.arrangement;
+  if (!arr?.photoFor?.[key]) return doc;
+  const { [key]: _gone, ...others } = arr.photoFor;
+  const { photoFor: _old, ...rest } = arr;
+  return withArrangement(doc, Object.keys(others).length ? { ...rest, photoFor: others } : rest);
+}
+
+/** Layers without any Photo position: a design that goes on every slide carries none. */
+function withoutPhotoPositions(layers: readonly FreeLayer[]): FreeLayer[] {
+  return layers.map((l) => {
+    const { photoPosition: _p, ...rest } = l;
+    const out = rest as FreeLayer & { children?: FreeLayer[] };
+    if (Array.isArray(out.children)) out.children = withoutPhotoPositions(out.children);
+    return out;
+  });
+}
+
 /** One real slide of a set draft, as the editor's slides mode shows it (part 3). */
 export type EditorSlide = {
   key: string;
@@ -434,10 +503,16 @@ export function newSlideLayout(
 ): { doc: EditorTemplateDoc; id: string } {
   const from = doc.setDesign!.pages.find((p) => p.id === fromId)!;
   const body = (doc.pages as Record<string, PageBody | undefined>)[fromId];
+  // The slide's own Photo positions go onto its layout's photo layers, which
+  // draw only this slide.
+  const positions = doc.setDesign!.arrangement?.photoFor?.[key];
+  const layers = positions
+    ? withPhotoPositions(body?.layers ?? [], positions)
+    : (body?.layers ?? []);
   const r = addSetPage(
-    doc,
+    withoutSlidePhotos(doc, key),
     { role: "fixed", slot: "page", kind: from.kind, page: from.page, name: layoutName(name) },
-    body?.layers ?? [],
+    layers,
   );
   const pages = { ...(r.doc.pages as Record<string, PageBody | undefined>) };
   if (body?.background) pages[r.id] = { ...pages[r.id]!, background: body.background };
@@ -461,7 +536,11 @@ export function applyLayoutToAll(
   let next = doc;
   if (pageId !== naturalId && bodies[pageId]) {
     const { layers, background } = bodies[pageId]!;
-    const body: PageBody = { layers: copyLayers(layers), ...(background ? { background } : {}) };
+    // A layout's Photo position was for its one slide's photo, not every slide's.
+    const body: PageBody = {
+      layers: copyLayers(withoutPhotoPositions(layers)),
+      ...(background ? { background } : {}),
+    };
     next = { ...doc, pages: { ...bodies, [naturalId]: body } as TemplateDoc["pages"] };
   }
   const layouts = next.setDesign!.pages;
@@ -490,7 +569,9 @@ export function withSlideDesign(
 ): SetDocument | null {
   // A layout page no slide maps to any more is shed on the way (see
   // `strandedLayoutPageIds`).
-  const doc = openSetTemplate(withoutStrandedLayouts(set)).doc;
+  // The slide editor opened the slide with its own Photo positions on its
+  // layers (`slidePhotoPage`), so its layout holds them from here.
+  const doc = withoutSlidePhotos(openSetTemplate(withoutStrandedLayouts(set)).doc, key);
   const pageFor = doc.setDesign?.arrangement?.pageFor ?? {};
   const alone =
     pageFor[key] === drawnBy &&

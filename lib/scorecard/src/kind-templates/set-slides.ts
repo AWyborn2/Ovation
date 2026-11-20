@@ -27,6 +27,7 @@ import {
   setPageRenderDocument,
   setPageLabel,
   slideLayoutPage,
+  slidePhotoPage,
   SET_TYPE_LABELS,
   type SetDocument,
   type SetPage,
@@ -217,8 +218,12 @@ export function expandSetSlides(
       label: setPageLabel(page),
     });
   }
-  // A slide with its own layout keeps its input, drawn by that page (S9).
-  const laid = out.map((s) => ({ ...s, page: slideLayoutPage(doc, s.key, s.page) }));
+  // A slide with its own layout keeps its input, drawn by that page (S9),
+  // with its own Photo positions on it.
+  const laid = out.map((s) => ({
+    ...s,
+    page: slidePhotoPage(doc, s.key, slideLayoutPage(doc, s.key, s.page)),
+  }));
   // A junior set is junior on every slide (KTD6, C4): no slide draws senior.
   const slides = ctx.junior
     ? laid.map((s) => ({ ...s, input: { ...s.input, junior: true } }))
@@ -309,8 +314,9 @@ export function mapCarouselSlides(
     const source = page.slot === "page" && slot === "page" && cover ? cover.input : s.input;
     out.push({
       key: s.id,
-      // Its own layout, if it has one (S9): the same kind page, so the input fits.
-      page: slideLayoutPage(doc, s.id, page),
+      // Its own layout, if it has one (S9): the same kind page, so the input
+      // fits; with the slide's own Photo positions on it.
+      page: slidePhotoPage(doc, s.id, slideLayoutPage(doc, s.id, page)),
       input: slideInputFor(page, source, { items, sponsors: ctx.sponsors }),
       label: s.label ?? setPageLabel(page),
       ...(page.role === "repeat" ? { item: n } : {}),
