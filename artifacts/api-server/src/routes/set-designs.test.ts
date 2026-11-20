@@ -312,6 +312,88 @@ describe("a queued carousel's set design", () => {
     expect(resaved.body.adjustments.arrangement.pageFor).toEqual({ "fx-1": "own" });
   });
 
+  it("keeps slide 2's own Photo position through save and reload, at its size only", async () => {
+    const id = await queuedCarousel();
+    const { body } = await api("get", `/social-drafts/${id}/set-design`);
+    const doc = body.document as SetDocument;
+    const photo = {
+      id: "ph",
+      kind: "photo" as const,
+      geometry: { square: box, portrait: box, story: box, landscape: box },
+    };
+    const position = { focalX: 0.8, focalY: 0.25, zoom: 1.4 };
+    const edited: SetDocument = {
+      ...doc,
+      pages: doc.pages.map((p) =>
+        p.id === "fixture" ? { ...p, layers: [...p.layers, photo as never] } : p,
+      ),
+      arrangement: {
+        order: [],
+        removed: [],
+        photoFor: { "fx-1": { ph: { portrait: position } } },
+      },
+    };
+    const res = await api("put", `/social-drafts/${id}/set-design`).send({ document: edited });
+    expect(res.status).toBe(200);
+    expect(res.body.adjustments.arrangement.photoFor).toEqual({
+      "fx-1": { ph: { portrait: position } },
+    });
+    // Reopened, only slide 2's photo layer carries it, and only for Portrait.
+    const again = await api("get", `/social-drafts/${id}/set-design`);
+    const stored = again.body.document as SetDocument;
+    const carousel = readQueuedCarousel(res.body.cardInput)!;
+    const drawn = mapCarouselSlides(stored, carousel.slides).slides;
+    const photoOf = (key: string) =>
+      drawn.find((s) => s.key === key)!.page.layers.find((l) => l.id === "ph") as
+        { photoPosition?: unknown } | undefined;
+    expect(photoOf("fx-1")?.photoPosition).toEqual({ portrait: position });
+    expect(photoOf("fx-2")?.photoPosition).toBeUndefined();
+    // Saving again keeps it.
+    const resaved = await api("put", `/social-drafts/${id}/set-design`).send({ document: stored });
+    expect(resaved.body.adjustments.arrangement.photoFor).toEqual({
+      "fx-1": { ph: { portrait: position } },
+    });
+  });
+
+  it("refuses a Photo position out of range or on a layer that isn't a photo", async () => {
+    const id = await queuedCarousel();
+    const { body } = await api("get", `/social-drafts/${id}/set-design`);
+    const doc = body.document as SetDocument;
+    const bad = (arrangement: unknown) =>
+      api("put", `/social-drafts/${id}/set-design`).send({ document: { ...doc, arrangement } });
+    const far = await bad({
+      order: [],
+      removed: [],
+      photoFor: { "fx-1": { ph: { portrait: { focalX: 2, focalY: 0.5, zoom: 1 } } } },
+    });
+    expect(far.status).toBe(400);
+    const zoomed = await bad({
+      order: [],
+      removed: [],
+      photoFor: { "fx-1": { ph: { story: { focalX: 0.5, focalY: 0.5, zoom: 9 } } } },
+    });
+    expect(zoomed.status).toBe(400);
+    const notPhoto = await api("put", `/social-drafts/${id}/set-design`).send({
+      document: {
+        ...doc,
+        pages: doc.pages.map((p) =>
+          p.id === "fixture"
+            ? {
+                ...p,
+                layers: [
+                  {
+                    ...shape("s1"),
+                    photoPosition: { portrait: { focalX: 0.5, focalY: 0.5, zoom: 1 } },
+                  },
+                ],
+              }
+            : p,
+        ),
+      },
+    });
+    expect(notPhoto.status).toBe(400);
+  });
+
   it("saves a big set's own layouts (a 2 to 3 MB body), and still refuses one over the cap (413)", async () => {
     // Twelve slides: a cover, ten games and sponsors.
     const games = Array.from({ length: 10 }, (_, i) =>
@@ -543,6 +625,34 @@ describe("a Round Team Lists draft's set design", () => {
     expect(res.body.packId).toBe("blank");
     // The data is untouched.
     expect(res.body.cardInput.teams).toHaveLength(2);
+  });
+
+  it("keeps one team slide's Photo position through save and reload (New Studio)", async () => {
+    const id = await roundDraft();
+    const { body } = await api("get", `/social-drafts/${id}/set-design`);
+    const doc = body.document as SetDocument;
+    const photo = {
+      id: "ph",
+      kind: "photo" as const,
+      geometry: { square: box, portrait: box, story: box, landscape: box },
+    };
+    const position = { focalX: 0.2, focalY: 0.6, zoom: 0.75 };
+    const arrangement = {
+      order: [],
+      removed: [],
+      photoFor: { "detail:senior:B Grade": { ph: { story: position } } },
+    };
+    const res = await api("put", `/social-drafts/${id}/set-design`).send({
+      document: {
+        ...doc,
+        pages: doc.pages.map((p) => (p.id === "team" ? { ...p, layers: [...p.layers, photo] } : p)),
+        arrangement,
+      },
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.adjustments.arrangement).toEqual(arrangement);
+    const again = await api("get", `/social-drafts/${id}/set-design`);
+    expect((again.body.document as SetDocument).arrangement).toEqual(arrangement);
   });
 
   it("isn't offered for a card that isn't a set", async () => {

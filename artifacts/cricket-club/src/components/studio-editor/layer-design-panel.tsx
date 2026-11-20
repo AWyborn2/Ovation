@@ -5,6 +5,7 @@
  * - Stack: a group's direction, gap and alignment, its children's order, and
  *   making or undoing a stack (depth limited to `MAX_STACK_DEPTH`).
  * - Photo source: where a photo layer's photo comes from (`photo-source-picker.tsx`).
+ * - Photo position: where the photo sits in its frame on a draft (`photo-position.tsx`).
  * - Show when: the field, photo, sponsors and junior conditions.
  * - Text fit: lines, smallest size and ellipsis.
  * - Style: a colour or gradient fill (`gradient-editor.tsx`), a text fill, a
@@ -39,6 +40,7 @@ import { ClipEditor } from "./clip-editor";
 import { btn, ColourField, field, label, NumberField, Section } from "./design-controls";
 import { GradientEditor } from "./gradient-editor";
 import { PhotoSourcePicker } from "./photo-source-picker";
+import { PhotoPositionSection, type PhotoPositionControl } from "./photo-position";
 import type { PhotoRule } from "./junior-photos";
 import { ShadowListEditor } from "./shadow-editor";
 import { DEFAULT_GRADIENT, isGradient } from "./gradient-ops";
@@ -95,6 +97,11 @@ export type LayerDesignPanelProps = {
   onPlay: () => void;
   /** What the page on show may show as its photo (a junior card or set's rule). */
   photoRule?: PhotoRule;
+  /**
+   * A draft's Photo position for this photo layer at the size on show; absent
+   * (designing a template) shows no Photo position section.
+   */
+  photoPosition?: PhotoPositionControl;
 };
 
 export function LayerDesignPanel({
@@ -107,6 +114,7 @@ export function LayerDesignPanel({
   onUnstack,
   onPlay,
   photoRule,
+  photoPosition,
 }: LayerDesignPanelProps) {
   const style = (layer.style ?? {}) as TemplateStyleV2;
   const setStyle = (patch: Partial<TemplateStyleV2>, done?: boolean) =>
@@ -273,6 +281,8 @@ export function LayerDesignPanel({
           />
         </Section>
       )}
+
+      {layer.kind === "photo" && photoPosition && <PhotoPositionSection control={photoPosition} />}
 
       <Section title="Show when">
         <label className={label}>
