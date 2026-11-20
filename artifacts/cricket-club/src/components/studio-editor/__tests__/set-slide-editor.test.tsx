@@ -8,7 +8,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { Route } from "wouter";
 import AdminSetDraftEditor from "@/pages/admin-set-draft-editor";
 import AdminSetSlideEditor from "@/pages/admin-set-slide-editor";
-import { renderAt } from "@/test/render";
+import { renderAt, renderWithHistory } from "@/test/render";
 
 beforeAll(() => {
   if (!("PointerEvent" in window)) {
@@ -90,6 +90,8 @@ function stub(newStudio: boolean, doc: unknown = DOC, draft: unknown = DRAFT) {
                 size: null,
                 stored: true,
               };
+      else if (method === "PATCH" && /social-drafts\/42$/.test(url))
+        payload = { ...(draft as object), ...(body as object) };
       else if (/social-drafts\/42$/.test(url)) payload = draft;
       else if (/tenant-plan/.test(url))
         payload = { plan: "club", newStudio, entitlements: { socialStudio: true } };
@@ -197,5 +199,42 @@ describe("Edit this slide (studio-create S8)", () => {
     expect(screen.getByRole("link", { name: "Back to the set" }).getAttribute("href")).toBe(
       "/admin/social/set/42",
     );
+  });
+
+  // Round 10: the slide editor saves its Format as the set editor does.
+  const format = async () =>
+    ((await screen.findByRole("combobox", { name: "Format" })) as HTMLSelectElement).value;
+
+  it("round 10: opens at the set's saved size", async () => {
+    stub(true, DOC, { ...DRAFT, designSize: "story" });
+    renderAt(
+      <Route path="/admin/social/set/:id/slide">
+        <AdminSetSlideEditor />
+      </Route>,
+      `/admin/social/set/42/slide?key=${encodeURIComponent(KEY)}`,
+    );
+    expect(await format()).toBe("story");
+  });
+
+  it("round 10: a size change saves straight away and the address keeps the slide", async () => {
+    const requests = stub(true, DOC, { ...DRAFT, designSize: "portrait" });
+    const shown = renderWithHistory(
+      <Route path="/admin/social/set/:id/slide">
+        <AdminSetSlideEditor />
+      </Route>,
+      `/admin/social/set/42/slide?key=${encodeURIComponent(KEY)}`,
+    );
+    expect(await format()).toBe("portrait");
+    fireEvent.change(screen.getByRole("combobox", { name: "Format" }), {
+      target: { value: "story" },
+    });
+    await waitFor(() => expect(requests.some((r) => r.method === "PATCH")).toBe(true));
+    const patch = requests.find((r) => r.method === "PATCH")!;
+    expect(patch.url).toMatch(/social-drafts\/42$/);
+    expect(patch.body).toEqual({ designSize: "story" });
+    expect(requests.some((r) => r.method === "PUT")).toBe(false);
+    const url = new URL(shown.url(), "http://x");
+    expect(url.searchParams.get("format")).toBe("story");
+    expect(url.searchParams.get("key")).toBe(KEY);
   });
 });

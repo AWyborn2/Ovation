@@ -6,7 +6,7 @@
  * data snapshot and stores the design, and the queue shows the change.
  */
 import { useMemo, useRef, useState } from "react";
-import { useParams } from "wouter";
+import { useLocation, useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Monitor, Palette } from "lucide-react";
 import {
@@ -176,9 +176,12 @@ function SetDraftEditor({
   const pages = design.layout === "pages";
   const content = useDraftContent(draft);
   const brand = pages ? content.data : club;
-  // A queued carousel opens at its own size (saved with the set); a list or a
-  // card made into pages at the size it was last designed at (Stage 2), else square.
-  const [size, setSize] = useState<CardSize>(() => editorOpeningSize("", draft));
+  // It opens at the link's size, else the size it was last designed at
+  // (Stage 2), else a queued carousel's own size; the editor then opens only
+  // at a size the design draws.
+  const search = useSearch();
+  const [location, navigate] = useLocation();
+  const [size, setSize] = useState<CardSize>(() => editorOpeningSize(search, draft));
   const [current, setCurrent] = useState(draft);
   const [lookOpen, setLookOpen] = useState(false);
   // New Studio (preview): Share → Download beside the editor's own controls.
@@ -216,11 +219,14 @@ function SetDraftEditor({
     void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
   };
+  // Changing Format saves it straight away, as a single card's editor does
+  // (round 10, set 1025: a set's Story was lost on reload unless something
+  // else was saved with it). A queued carousel's own size
+  // (weekendCarousel.size) follows on the server, and the address follows
+  // too, so a reload or the queue opens it at that size.
   const pickSize = (next: CardSize) => {
     setSize(next);
-    // Pages and lists save Format as a single card's editor does; a queued
-    // carousel keeps saving its size with the set (weekendCarousel.size).
-    if (design.layout === "carousel") return;
+    navigate(`${location}?format=${next}`, { replace: true });
     updateSocialDraft(draft.id, { designSize: next }).then(refresh, () => {
       // Not saved: the draft keeps the size it had.
     });
