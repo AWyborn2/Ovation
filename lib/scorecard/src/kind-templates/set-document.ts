@@ -33,6 +33,7 @@ import type {
 } from "./format";
 import { FORMAT_VERSION, isDocumentV2 } from "./format";
 import { kindHasPage, primaryPage, templateKindFor } from "./pages";
+import type { SlidePhoto } from "./slide-photo";
 
 /** The set types a set template is made for. */
 export const SET_TYPES = ["teamLists", "results", "matchDay", "matchSummary", "free"] as const;
@@ -128,6 +129,12 @@ export type SetArrangement = {
    * draws as before.
    */
   photoFor?: Record<string, SlidePhotoPositions>;
+  /**
+   * A slide's own photo ("Change photo", `slide-photo.ts`): slide key → the
+   * library photo it shows instead of its automatic one, for every size.
+   * Optional; clearing an entry puts that slide back on its automatic photo.
+   */
+  ownPhotos?: Record<string, SlidePhoto>;
 };
 
 /** One slide's Photo positions: photo layer id → size → position. */

@@ -12,6 +12,7 @@
  * A junior set is junior on every slide (C4).
  */
 import {
+  applySlidePhoto,
   arrangeSlides,
   expandSetSlides,
   isSetDocument,
@@ -20,6 +21,7 @@ import {
   primaryPage,
   setPageRenderDocument,
   slideInputFor,
+  slidePhotos,
   type SetDocument,
   type SetPage,
 } from "@workspace/scorecard/kind-templates";
@@ -73,11 +75,40 @@ export function setDraftLayout(draft: SetDraftSource): "carousel" | "list" | "pa
 const sponsorRows = (data: PackCardData) =>
   (data.sponsors ?? []).map((s) => ({ name: s.name, logoUrl: s.logoUrl ?? "" }));
 
+/** What drawing a set draft's slides needs beside its data. */
+export type SetDraftSlideOptions = {
+  /**
+   * The club's approved junior stock photo ids: the only photos a junior
+   * slide's own photo ("Change photo") may be. Absent, a junior slide keeps
+   * its automatic photo (fails closed, ADR-007).
+   */
+  juniorStock?: ReadonlySet<number>;
+};
+
 /**
  * A set draft's slides in posting order. `brand` is the club's card data (the
- * Studio's), used where a slide stores none.
+ * Studio's), used where a slide stores none. A slide with its own photo
+ * ("Change photo", `arrangement.ownPhotos`) draws with it, as the server's
+ * render does (`applySlidePhoto`).
  */
 export function setDraftSlides(
+  draft: SetDraftSource,
+  doc: SetDocument,
+  brand: PackCardData,
+  opts: SetDraftSlideOptions = {},
+): SetDraftSlide[] {
+  const own = slidePhotos(doc);
+  const withOwnPhoto = (slide: SetDraftSlide): SetDraftSlide => {
+    const choice = own[slide.key];
+    if (!choice) return slide;
+    const drawn = applySlidePhoto(slide, choice, opts.juniorStock);
+    return { ...slide, input: drawn.input, data: drawn.data };
+  };
+  return setDraftSlidesAutomatic(draft, doc, brand).map(withOwnPhoto);
+}
+
+/** A set draft's slides with their automatic photos. */
+function setDraftSlidesAutomatic(
   draft: SetDraftSource,
   doc: SetDocument,
   brand: PackCardData,

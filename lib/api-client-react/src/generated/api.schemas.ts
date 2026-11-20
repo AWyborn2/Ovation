@@ -9346,6 +9346,8 @@ export interface UpdateSocialDraftRequest {
      * @nullable
      */
   photoPlayerId?: number | null;
+  /** true: back to the automatic photo (Change photo → Back to automatic photo). The draft's photo is picked again as a new draft's would be, and stays automatic. Not with photoUrl. A junior card's photo is the server's already, so it is refused there. */
+  photoAuto?: boolean;
   /** Editor overlay (see CardAdjustments); null clears every edit. */
   adjustments?: CardAdjustments | null;
   /** A Team List card's own player order (build decision 16), stored on the draft's card input as playerOrderOverride; null follows the order the card was made with (the club's default). It never changes the club's default. Team List drafts only. */
@@ -9529,6 +9531,15 @@ export interface DraftSetDesign {
   size: DraftSetDesignSize;
   /** Whether the draft already holds this set design (false when assembled for this read). */
   stored?: boolean;
+}
+
+export interface DraftPhotoPool {
+  /** Only the club's approved junior stock images may go on it. */
+  junior: boolean;
+  /** The library photos the automatic pick draws from (Random). */
+  photoIds: number[];
+  /** The slide's linked senior players (their tag boxes frame a photo). */
+  playerIds: number[];
 }
 
 /**
@@ -13629,6 +13640,14 @@ export type DeleteClubPhotos200 = {
 
 export type GetFixtureForecastParams = {
 fixtureId: number;
+};
+
+export type GetDraftPhotoPoolParams = {
+/**
+ * A set draft's slide key; absent for the draft's own photo.
+ * @maxLength 200
+ */
+slide?: string;
 };
 
 export type GetSocialCalendarParams = {

@@ -66,6 +66,7 @@ import { SharePanel } from "@/components/studio-editor/export/share-panel";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
 import { SlideLayoutPanel } from "@/components/studio-editor/slide-layout";
 import { EditSlideButton } from "@/components/studio-editor/edit-slide-button";
+import { SlidePhotoButton } from "@/components/studio-editor/change-photo";
 import { keepAddedPages, storedSetDocument } from "@/components/studio-editor/set-doc";
 import type { CardSize } from "@/lib/share-card";
 import { editorOpeningSize } from "@/lib/draft-design-size";
@@ -145,6 +146,7 @@ export default function AdminSetDraftEditor() {
       key={JSON.stringify(designQ.data.templateRef) + String(designQ.dataUpdatedAt)}
       draft={safe?.draft ?? draftQ.data}
       design={safe?.design ?? designQ.data}
+      juniorStock={guard.juniorStock}
       viewport={viewport}
       onReload={async () => {
         await Promise.all([draftQ.refetch(), designQ.refetch()]);
@@ -156,11 +158,14 @@ export default function AdminSetDraftEditor() {
 function SetDraftEditor({
   draft,
   design,
+  juniorStock,
   viewport,
   onReload,
 }: {
   draft: SocialDraft;
   design: DraftSetDesign;
+  /** The club's approved junior stock: the only own photo a junior slide draws. */
+  juniorStock: ReadonlySet<number>;
   viewport: { w: number; h: number };
   onReload: () => Promise<void>;
 }) {
@@ -256,8 +261,14 @@ function SetDraftEditor({
         host={host}
         actions={({ set, setDesign, dirty }) => {
           live.current = setDesign?.doc ?? null;
+          // Change photo: the slide on the canvas, this slide only.
+          const photo =
+            set && setDesign ? (
+              <SlidePhotoButton draftId={draft.id} set={set} design={setDesign} />
+            ) : null;
           return newStudio ? (
             <>
+              {photo}
               {set && setDesign && (
                 <SlideLayoutPanel
                   set={set}
@@ -269,7 +280,9 @@ function SetDraftEditor({
               {set && <SharePanel set={set} name={template.name} />}
               <SendToReview draftId={draft.id} dirty={dirty} />
             </>
-          ) : null;
+          ) : (
+            photo
+          );
         }}
         draftMode={
           pages
@@ -281,7 +294,7 @@ function SetDraftEditor({
             : undefined
         }
         slidesMode={{
-          slides: (doc) => setDraftSlides(current, doc, brand),
+          slides: (doc) => setDraftSlides(current, doc, brand, { juniorStock }),
           size,
           onSize: pickSize,
           // Older sizes only where the set was made in them (round 9 B8).
@@ -308,7 +321,14 @@ function SetDraftEditor({
           // the admin added are their own, so they stay (dev retest 3, item 12).
           const now = live.current ? storedSetDocument(live.current) : saved.current;
           const kept = now.arrangement;
-          const arrangement = kept ? { order: kept.order, removed: kept.removed } : undefined;
+          // A slide's own photo is the slide's, not the look's: it stays.
+          const arrangement = kept
+            ? {
+                order: kept.order,
+                removed: kept.removed,
+                ...(kept.ownPhotos ? { ownPhotos: kept.ownPhotos } : {}),
+              }
+            : undefined;
           const relooked: SetDocument = arrangement ? { ...document, arrangement } : document;
           const next = keepAddedPages(relooked, now, oldLook).doc;
           await saveDraftSetDesign(draft.id, {

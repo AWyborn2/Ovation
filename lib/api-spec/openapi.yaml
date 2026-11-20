@@ -8556,6 +8556,37 @@ paths:
         "409":
           description: The draft is posted or dismissed
 
+  /social-drafts/{id}/photo-pool:
+    get:
+      operationId: getDraftPhotoPool
+      tags: [socialCards]
+      summary: The photos a draft's (or one set slide's) automatic photo is drawn from
+      description: >-
+        For Change photo in the editors. A junior card or slide: the club's
+        approved junior stock images only (ADR-007). Otherwise the automatic
+        pick's pool: the slide's players' tagged library photos (a Team List's
+        selected side, or the card's own player), else photos of its grade.
+        Also the slide's linked players, whose tag boxes frame a photo.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: slide
+          in: query
+          required: false
+          description: A set draft's slide key; absent for the draft's own photo.
+          schema: { type: string, maxLength: 200 }
+      responses:
+        "200":
+          description: The pool
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftPhotoPool"
+        "404":
+          description: Not found
+
   /social-drafts/{id}/set-design:
     get:
       operationId: getDraftSetDesign
@@ -25406,6 +25437,13 @@ components:
         photoPlayerId:
           type: ["integer", "null"]
           description: "With photoUrl: the tagged player whose area on that library photo the card crops to (a player area tile). Omitted or null = the photo's own focus box."
+        photoAuto:
+          type: boolean
+          description: >-
+            true: back to the automatic photo (Change photo → Back to automatic
+            photo). The draft's photo is picked again as a new draft's would be,
+            and stays automatic. Not with photoUrl. A junior card's photo is the
+            server's already, so it is refused there.
         adjustments:
           description: "Editor overlay (see CardAdjustments); null clears every edit."
           anyOf:
@@ -25590,6 +25628,22 @@ components:
         stored:
           type: boolean
           description: Whether the draft already holds this set design (false when assembled for this read).
+
+    DraftPhotoPool:
+      type: object
+      required: [junior, photoIds, playerIds]
+      properties:
+        junior:
+          type: boolean
+          description: Only the club's approved junior stock images may go on it.
+        photoIds:
+          type: array
+          description: The library photos the automatic pick draws from (Random).
+          items: { type: integer }
+        playerIds:
+          type: array
+          description: The slide's linked senior players (their tag boxes frame a photo).
+          items: { type: integer }
 
     SaveDraftSetDesignRequest:
       type: object

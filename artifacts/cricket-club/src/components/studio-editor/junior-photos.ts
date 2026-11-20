@@ -138,6 +138,10 @@ export function useJuniorPhotoGuard() {
       const safe = juniorSafeDesignWith(draft, draft.adjustments, rule);
       return safe.removed ? { ...draft, adjustments: safe.design } : draft;
     };
-    return { ready: photosQ.isSuccess || photosQ.isError, safeDesign, safeDraft };
-  }, [rule, photosQ.isSuccess, photosQ.isError]);
+    // The approved junior stock by id: the only photos a junior slide's own
+    // photo ("Change photo") draws with. Empty until the list is in (fails closed).
+    const juniorStock: ReadonlySet<number> = new Set(juniorStockOnly(photos).map((p) => p.id));
+    return { ready: photosQ.isSuccess || photosQ.isError, safeDesign, safeDraft, juniorStock };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `photos` follows the query's data
+  }, [rule, photosQ.isSuccess, photosQ.isError, photosQ.data]);
 }

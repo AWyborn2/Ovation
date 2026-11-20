@@ -14004,6 +14004,29 @@ export const ApproveSocialDraftResponse = zod.object({
 
 
 /**
+ * For Change photo in the editors. A junior card or slide: the club's approved junior stock images only (ADR-007). Otherwise the automatic pick's pool: the slide's players' tagged library photos (a Team List's selected side, or the card's own player), else photos of its grade. Also the slide's linked players, whose tag boxes frame a photo.
+ * @summary The photos a draft's (or one set slide's) automatic photo is drawn from
+ */
+export const GetDraftPhotoPoolParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const getDraftPhotoPoolQuerySlideMax = 200;
+
+
+
+export const GetDraftPhotoPoolQueryParams = zod.object({
+  "slide": zod.coerce.string().max(getDraftPhotoPoolQuerySlideMax).optional().describe('A set draft\'s slide key; absent for the draft\'s own photo.')
+})
+
+export const GetDraftPhotoPoolResponse = zod.object({
+  "junior": zod.boolean().describe('Only the club\'s approved junior stock images may go on it.'),
+  "photoIds": zod.array(zod.number()).describe('The library photos the automatic pick draws from (Random).'),
+  "playerIds": zod.array(zod.number()).describe('The slide\'s linked senior players (their tag boxes frame a photo).')
+})
+
+
+/**
  * A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as its set design: one document whose pages draw every slide. A draft saved before set designs gets one assembled from its own design and the same look's set template; nothing is stored until it is saved.
  * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
  */
@@ -14253,6 +14276,7 @@ export const UpdateSocialDraftBody = zod.object({
   "caption": zod.string().optional(),
   "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.'),
   "photoPlayerId": zod.number().nullish().describe('With photoUrl: the tagged player whose area on that library photo the card crops to (a player area tile). Omitted or null = the photo\'s own focus box.'),
+  "photoAuto": zod.boolean().optional().describe('true: back to the automatic photo (Change photo → Back to automatic photo). The draft\'s photo is picked again as a new draft\'s would be, and stays automatic. Not with photoUrl. A junior card\'s photo is the server\'s already, so it is refused there.'),
   "adjustments": zod.union([zod.object({
   "fields": zod.record(zod.string(), zod.string()).optional(),
   "hidden": zod.array(zod.string()).optional(),

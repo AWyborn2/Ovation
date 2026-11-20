@@ -21,6 +21,8 @@ export interface UpdateSocialDraftRequest {
      * @nullable
      */
   photoPlayerId?: number | null;
+  /** true: back to the automatic photo (Change photo → Back to automatic photo). The draft's photo is picked again as a new draft's would be, and stays automatic. Not with photoUrl. A junior card's photo is the server's already, so it is refused there. */
+  photoAuto?: boolean;
   /** Editor overlay (see CardAdjustments); null clears every edit. */
   adjustments?: CardAdjustments | null;
   /** A Team List card's own player order (build decision 16), stored on the draft's card input as playerOrderOverride; null follows the order the card was made with (the club's default). It never changes the club's default. Team List drafts only. */

@@ -25,5 +25,6 @@ export * from "./worst-case";
 export * from "./worst-case-names";
 export * from "./set-document";
 export * from "./set-slides";
+export * from "./slide-photo";
 export * from "./photo-frame";
 export * from "./publishable";
