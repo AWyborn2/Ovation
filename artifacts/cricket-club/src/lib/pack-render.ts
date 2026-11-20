@@ -76,4 +76,5 @@ export {
   type LayerAnimation,
   type LayerBox,
   type PhotoAdjust,
+  type PhotoPosition,
 } from "./pack-render/adjustments";

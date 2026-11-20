@@ -282,8 +282,9 @@ export function isGameSlide(s: { id: string; input: Record<string, unknown> }): 
 
 /**
  * A queued carousel's stored design: its pages, and of its arrangement only
- * `pageFor` (a slide's own layout), kept for slides and pages the set still
- * holds. The slide order and deletions live in the payload's slides.
+ * `pageFor` (a slide's own layout) and `photoFor` (a slide's own Photo
+ * positions), kept for slides and pages the set still holds. The slide order
+ * and deletions live in the payload's slides.
  */
 export function carouselSetDesign(
   doc: SetDocument,
@@ -301,8 +302,15 @@ export function carouselSetDesign(
   const layouts = layoutPageIds(doc);
   const kept = design.pages.filter((p) => !layouts.has(p.id) || used.has(p.id));
   const shed = kept.length > 0 && kept.length < design.pages.length ? { pages: kept } : {};
-  return Object.keys(pageFor).length
-    ? { ...design, ...shed, arrangement: { order: [], removed: [], pageFor } }
+  const photoFor = Object.fromEntries(
+    Object.entries(arrangement?.photoFor ?? {}).filter(([k]) => ids.has(k)),
+  );
+  const own = {
+    ...(Object.keys(pageFor).length ? { pageFor } : {}),
+    ...(Object.keys(photoFor).length ? { photoFor } : {}),
+  };
+  return Object.keys(own).length
+    ? { ...design, ...shed, arrangement: { order: [], removed: [], ...own } }
     : { ...design, ...shed };
 }
 

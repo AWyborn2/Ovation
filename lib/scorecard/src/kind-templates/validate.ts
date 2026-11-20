@@ -39,6 +39,7 @@ import {
   MOTION_LOOP_PRESETS,
   OVERLAY_KINDS,
   PAGE_KEYS,
+  PHOTO_POSITION_ZOOM,
   PHOTO_SOURCE_PLAYER_PICKS,
   STACK_ALIGNS,
   STACK_DIRECTIONS,
@@ -176,6 +177,7 @@ const LAYER_KEYS = new Set([
   "element",
   "rows",
   "photo",
+  "photoPosition",
   "style",
   "animation",
   "sizes",
@@ -266,6 +268,21 @@ function knownKeys(errors: Errors, where: string, v: Record<string, unknown>, ke
     if (!keys.has(k)) errors.push(`${where} has an unknown setting "${k.slice(0, 30)}".`);
   }
 }
+
+/** A photo layer's Photo position per size: focal point 0–1, zoom in `PHOTO_POSITION_ZOOM`. */
+function photoPositions(errors: Errors, where: string, v: unknown): void {
+  sizeRecord(errors, where, v, (at, p) => {
+    if (!isObject(p)) {
+      errors.push(`${at} must be a photo position.`);
+      return;
+    }
+    knownKeys(errors, at, p, PHOTO_POSITION_KEYS);
+    numberIn(errors, `${at}.focalX`, p.focalX, 0, 1);
+    numberIn(errors, `${at}.focalY`, p.focalY, 0, 1);
+    numberIn(errors, `${at}.zoom`, p.zoom, PHOTO_POSITION_ZOOM[0], PHOTO_POSITION_ZOOM[1]);
+  });
+}
+const PHOTO_POSITION_KEYS = new Set(["focalX", "focalY", "zoom"]);
 
 function sizeRecord(
   errors: Errors,
@@ -690,6 +707,11 @@ function checkLayerBody(
       numberIn(errors, `${at}.focalY`, p.focalY, 0, 100);
       numberIn(errors, `${at}.zoom`, p.zoom, 0.1, 10);
     });
+  }
+  if (layer.photoPosition !== undefined) {
+    if (layer.kind !== "photo")
+      errors.push(`${where} isn't a photo, so it can't have a photo position.`);
+    else photoPositions(errors, `${where}.photoPosition`, layer.photoPosition);
   }
   checkStyle(errors, `${where}.style`, layer.style, scope.v2);
   if (layer.animation !== undefined) {
@@ -1140,7 +1162,7 @@ export function setDocumentErrors(doc: unknown, type: SetType): string[] {
     if (!isObject(a) || !keys(a.order) || !keys(a.removed))
       errors.push("The set's slide order must list slide keys.");
     else {
-      knownKeys(errors, "The slide order", a, new Set(["order", "removed", "pageFor"]));
+      knownKeys(errors, "The slide order", a, new Set(["order", "removed", "pageFor", "photoFor"]));
       // A slide's own layout (S9): slide key → a page id.
       if (
         a.pageFor !== undefined &&
@@ -1154,6 +1176,25 @@ export function setDocumentErrors(doc: unknown, type: SetType): string[] {
         )
       )
         errors.push("The set's slide layouts must name a page for each slide.");
+      // A slide's own Photo positions: slide key → photo layer id → size → position.
+      if (a.photoFor !== undefined) {
+        if (
+          !isObject(a.photoFor) ||
+          Object.keys(a.photoFor).length > 200 ||
+          !Object.entries(a.photoFor).every(
+            ([k, v]) =>
+              SLIDE_KEY.test(k) &&
+              isObject(v) &&
+              Object.keys(v).length <= 50 &&
+              Object.keys(v).every((id) => ID.test(id)),
+          )
+        )
+          errors.push("The set's photo positions must name a slide and a photo layer.");
+        else
+          for (const [k, byLayer] of Object.entries(a.photoFor))
+            for (const [id, bySize] of Object.entries(byLayer as Record<string, unknown>))
+              photoPositions(errors, `The photo position of ${k.slice(0, 40)} (${id})`, bySize);
+      }
     }
   }
   if (!Array.isArray(doc.pages) || doc.pages.length === 0)

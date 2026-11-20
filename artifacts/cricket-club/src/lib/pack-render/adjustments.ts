@@ -78,6 +78,9 @@ import type { MatchColours } from "@workspace/scorecard/match-palette";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
 
+/** Where an admin moved a photo in its frame: focal point 0–1, zoom (`TemplatePhotoPosition`). */
+export type PhotoPosition = { focalX: number; focalY: number; zoom: number };
+
 /** A free layer's box, in percent of the artboard; rotation in degrees. */
 export type LayerBox = { x: number; y: number; w: number; h: number; rotate?: number };
 
@@ -136,6 +139,12 @@ export type FreeLayer = {
   rows?: RowsSpec;
   /** The photo's focal point and zoom per size (`kind: "photo"`). */
   photo?: Partial<Record<CardSize, PhotoAdjust>>;
+  /**
+   * The admin's Photo position per size (`kind: "photo"`, New Studio): focal
+   * point 0–1 and zoom, as the photo placement sliders take them. Never
+   * inherited by another size; a size without one draws as before.
+   */
+  photoPosition?: Partial<Record<CardSize, PhotoPosition>>;
   style?: TemplateTextStyle;
   animation?: LayerAnimation;
   /** The sizes this layer is on; absent means every size (kind templates). */
@@ -737,6 +746,19 @@ function sliderPhoto(t: FreeLayerContext["photoTransform"]): PhotoAdjust | null 
   return { focalX: pct(t.focalX), focalY: pct(t.focalY), zoom };
 }
 
+/**
+ * A photo layer's own Photo position at `size` as a photo adjust (percent
+ * focal point); null when the admin set none at this size. Never another
+ * size's: Portrait and Story are positioned separately.
+ */
+export function positionPhoto(layer: FreeLayer, size: CardSize): PhotoAdjust | null {
+  const p = layer.photoPosition?.[size];
+  if (!p || typeof p !== "object") return null;
+  const unit = (v: unknown) => Math.max(0, Math.min(1, num(v, 0.5)));
+  const pct = (v: unknown) => Math.round(unit(v) * 1000) / 10;
+  return { focalX: pct(p.focalX), focalY: pct(p.focalY), zoom: num(p.zoom, 1) };
+}
+
 /** A photo's focus box as a layer's photo adjust for this frame; null without one. */
 function focusPhoto(
   focus: PhotoFocus | null | undefined,
@@ -758,10 +780,12 @@ function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): s
   const own = ctx.layerPhotos?.[photoLayerKey(layer)];
   const url = own?.url || ctx.photoUrl;
   if (!url) return null;
-  // A hand-set position wins (the card's sliders, which move the card's photo
-  // only, then the layer's own, which only an edit sets: no bundled design
-  // positions its photo); then the photo's focus box; then centred.
-  const t = (own ? null : sliderPhoto(ctx.photoTransform)) ??
+  // A hand-set position wins (the admin's Photo position for this size, then
+  // the card's sliders, which move the card's photo only, then the layer's
+  // own, which only an edit sets: no bundled design positions its photo);
+  // then the photo's focus box; then centred.
+  const t = positionPhoto(layer, size) ??
+    (own ? null : sliderPhoto(ctx.photoTransform)) ??
     resolveGeometry(layer.photo, undefined, size)?.value ??
     focusPhoto(own ? own.focus : ctx.photoFocus, ctx) ?? {
       focalX: 50,

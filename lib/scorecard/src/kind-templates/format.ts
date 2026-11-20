@@ -330,6 +330,17 @@ export type TemplateTimeline = { durationMs?: number; holdMs?: number; loop?: bo
 /** A photo's focal point (percent) and zoom, per size. */
 export type TemplatePhotoAdjust = { focalX: number; focalY: number; zoom: number };
 
+/**
+ * Where an admin moved a photo inside its frame on one card (Photo position,
+ * New Studio): the focal point in fractions (0–1) of the photo's width and
+ * height and the zoom, as the share dialog's photo placement sliders take
+ * them. Per size, never inherited by another size: a size without one keeps
+ * the photo's focus box, then its tag box, as before.
+ */
+export type TemplatePhotoPosition = { focalX: number; focalY: number; zoom: number };
+/** The zoom range Photo position allows (the photo placement sliders' range). */
+export const PHOTO_POSITION_ZOOM = [0.5, 3] as const;
+
 /** What every v2 layer has. */
 export type LayerCommon = {
   id: string;
@@ -437,6 +448,8 @@ export type LayerPhotos = Record<string, LayerPhoto>;
 export type PhotoLayerV2 = LayerCommon & {
   kind: "photo";
   photo?: Partial<Record<TemplateSize, TemplatePhotoAdjust>>;
+  /** The admin's Photo position per size (`TemplatePhotoPosition`). */
+  photoPosition?: Partial<Record<TemplateSize, TemplatePhotoPosition>>;
   source?: PhotoLayerSource;
 };
 

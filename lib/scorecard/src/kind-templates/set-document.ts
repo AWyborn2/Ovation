@@ -23,7 +23,14 @@
  * bundles (`assembleSetDocument`), so a set looks exactly like the cards it is
  * made of. A free set binds no data and is never posted by automation (C3).
  */
-import type { DerivedPalette, PageKey, TemplateDocumentV2, TemplateLayerV2 } from "./format";
+import type { TemplateSize } from "./document";
+import type {
+  DerivedPalette,
+  PageKey,
+  TemplateDocumentV2,
+  TemplateLayerV2,
+  TemplatePhotoPosition,
+} from "./format";
 import { FORMAT_VERSION, isDocumentV2 } from "./format";
 import { kindHasPage, primaryPage, templateKindFor } from "./pages";
 
@@ -113,7 +120,21 @@ export type SetArrangement = {
    * slot's page.
    */
   pageFor?: Record<string, string>;
+  /**
+   * A slide's own Photo position (New Studio): slide key → photo layer id →
+   * size → where the photo sits in that layer's frame. Only that slide, at
+   * only that size, draws its photo there (`slidePhotoPage`); every other
+   * slide drawn by the same page keeps its own. Optional; a set without it
+   * draws as before.
+   */
+  photoFor?: Record<string, SlidePhotoPositions>;
 };
+
+/** One slide's Photo positions: photo layer id → size → position. */
+export type SlidePhotoPositions = Record<
+  string,
+  Partial<Record<TemplateSize, TemplatePhotoPosition>>
+>;
 
 /** A set document: its pages in slide order. */
 export type SetDocument = {
@@ -231,6 +252,45 @@ export function slideLayoutPage(
   return own && own.slot === "page" && own.kind === page.kind && own.page === page.page
     ? own
     : page;
+}
+
+/**
+ * Layers with a slide's Photo positions written onto their photo layers
+ * (`photoPosition`, size by size, over any the layer holds), children of
+ * groups and stacks included. Layers without one are returned as they are.
+ */
+export function withPhotoPositions<L>(layers: readonly L[], positions: SlidePhotoPositions): L[] {
+  return layers.map((raw) => {
+    const layer = raw as unknown as {
+      id?: unknown;
+      kind?: unknown;
+      children?: unknown;
+      photoPosition?: Partial<Record<TemplateSize, TemplatePhotoPosition>>;
+    };
+    let out = layer;
+    const own = typeof layer.id === "string" ? positions[layer.id] : undefined;
+    if (layer.kind === "photo" && own && Object.keys(own).length > 0)
+      out = { ...out, photoPosition: { ...layer.photoPosition, ...own } };
+    if (Array.isArray(layer.children))
+      out = { ...out, children: withPhotoPositions(layer.children, positions) };
+    return out as unknown as L;
+  });
+}
+
+/**
+ * The page that draws slide `key`, with that slide's own Photo positions
+ * (`SetArrangement.photoFor`) on its photo layers: what every renderer of the
+ * slide draws (the editor, Download, the queue and the posted card). A slide
+ * without any gets its page as it is.
+ */
+export function slidePhotoPage(
+  doc: Pick<SetDocument, "arrangement">,
+  key: string,
+  page: SetPage,
+): SetPage {
+  const positions = doc.arrangement?.photoFor?.[key];
+  if (!positions || Object.keys(positions).length === 0) return page;
+  return { ...page, layers: withPhotoPositions(page.layers, positions) };
 }
 
 /** The most pages a set may hold: a Meta carousel posts at most 10 slides, with room to spare. */
