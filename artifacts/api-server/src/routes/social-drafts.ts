@@ -995,6 +995,19 @@ router.patch(
         return;
       }
     }
+    // A queued carousel posts and downloads at its own size
+    // (`weekendCarousel.size`): its Format keeps that size in step, so the set
+    // reopens, downloads and posts at the size picked (round 10, set 1025).
+    const carouselSized: Record<string, unknown> | null =
+      designSize !== undefined && readQueuedCarousel(cardInput)
+        ? {
+            ...cardInput,
+            weekendCarousel: {
+              ...(cardInput.weekendCarousel as Record<string, unknown>),
+              size: designSize,
+            },
+          }
+        : null;
     // Switching Format alone is not an edit: the card draws the same, so it
     // keeps its revisions, its place in the queue and any auto-promotion.
     if (
@@ -1006,7 +1019,7 @@ router.patch(
     ) {
       const [row] = await db
         .update(socialDraftsTable)
-        .set({ designSize })
+        .set({ designSize, ...(carouselSized ? { cardInput: carouselSized } : {}) })
         .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
         .returning();
       res.json(await presentSized(row));
@@ -1016,6 +1029,7 @@ router.patch(
       // A manual action: stop any pending auto-promotion (KTD4).
       autoReadyAt: null,
       ...(designSize !== undefined ? { designSize } : {}),
+      ...(carouselSized ? { cardInput: carouselSized } : {}),
     };
     if (caption !== undefined) {
       patch.caption = caption;
@@ -1037,7 +1051,7 @@ router.patch(
     if (playerOrder !== undefined) {
       // Stored on the card input, where the renderer reads it; null follows the
       // order the card was made with (the club's). Data refreshes keep it.
-      const { playerOrderOverride: _previous, ...rest } = cardInput;
+      const { playerOrderOverride: _previous, ...rest } = carouselSized ?? cardInput;
       void _previous;
       patch.cardInput = playerOrder === null ? rest : { ...rest, playerOrderOverride: playerOrder };
     }
