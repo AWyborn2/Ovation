@@ -7,7 +7,11 @@
  */
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripVertical, Plus, Repeat2, Trash2 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DockPopover as Popover,
+  DockPopoverContent as PopoverContent,
+  DockPopoverTrigger as PopoverTrigger,
+} from "./dock";
 import { cn } from "@/lib/utils";
 import { useNewStudio } from "@/lib/entitlements";
 import { PageOverview } from "./page-grid";
@@ -44,6 +48,7 @@ export function PageStrip({
   onAdd,
   label = "Pages",
   overview: withOverview = true,
+  onAddOpen,
 }: {
   items: StripItem[];
   current: string;
@@ -61,6 +66,11 @@ export function PageStrip({
   label?: string;
   /** False: the host shows the "N / M" counter and grid itself (the editor's bottom bar). */
   overview?: boolean;
+  /**
+   * The host shows the add options itself (the New Studio editors, in the
+   * panel beside the rail): the + button calls this instead of opening a menu.
+   */
+  onAddOpen?: () => void;
 }) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
@@ -235,7 +245,18 @@ export function PageStrip({
           );
         })}
       </ol>
-      {onAdd && addOptions && addOptions.length > 0 && (
+      {onAdd && addOptions && addOptions.length > 0 && onAddOpen && (
+        <button
+          type="button"
+          aria-label="Add a page"
+          onClick={onAddOpen}
+          className="mb-5 grid shrink-0 place-items-center rounded-lg border border-dashed border-[var(--ed-line)] text-[var(--ed-ink2)] hover:bg-[var(--ed-card)]"
+          style={{ width: thumbWidth * 0.6, height: h }}
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+        </button>
+      )}
+      {onAdd && addOptions && addOptions.length > 0 && !onAddOpen && (
         <Popover open={adding} onOpenChange={setAdding}>
           <PopoverTrigger asChild>
             <button

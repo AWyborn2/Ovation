@@ -52,7 +52,6 @@ import {
   EditorPanel,
   EditorRail,
   EditorTopBar,
-  PANEL_WIDTH,
   readPagesView,
   writePagesView,
   type PagesView,
@@ -69,6 +68,12 @@ import { PositionPanel } from "@/components/studio-editor/position-panel";
 import { PageScroll } from "@/components/studio-editor/page-scroll";
 import { PageOverview } from "@/components/studio-editor/page-grid";
 import { useNewStudio } from "@/lib/entitlements";
+import { InDock } from "@/components/studio-editor/dock";
+import {
+  boardWidth,
+  estimateCanvasArea,
+  TOOLBAR_STRIP,
+} from "@/components/studio-editor/canvas-fit";
 import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
 import { backgroundDepth } from "@/components/studio-editor/element-insert";
 import { elementSaveContext } from "@/components/studio-editor/element-save";
@@ -248,6 +253,10 @@ const RAIL: RailItem[] = [
 const EDIT_PANEL = "edit";
 const REPLACE_PANEL = "replace";
 const PAGE_PANEL = "page";
+/** The strip's Add a page, as a panel (its menu would open over the canvas). */
+const ADD_PAGE_PANEL = "add-page";
+/** A page's header row in the Scroll view (px), taken from the room the canvas fits. */
+const SCROLL_PAGE_HEADER = 44;
 /** The side panel a host gives for the photo on show (Change photo). */
 export const PHOTO_PANEL = "photo";
 
@@ -994,6 +1003,24 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   };
 
   const canvasArea = useRef<HTMLElement>(null);
+  // The canvas area's size as laid out, so the canvas fits what the panel and
+  // the slide strip leave it (editor/no-overlay-panels).
+  const [measuredArea, setMeasuredArea] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = canvasArea.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      setMeasuredArea((prev) =>
+        !w || !h ? null : prev && prev.w === w && prev.h === h ? prev : { w, h },
+      );
+    };
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const stateRef = useRef({ doc, pageFull, page, scope, inList, selection, format, inside });
   stateRef.current = { doc, pageFull, page, scope, inList, selection, format, inside };
   /** Delete layers from this size, offering to delete their linked copies on the other sizes. */
@@ -1458,12 +1485,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const scrolling = !!pagesNav && pagesView === "scroll";
 
   const native = packNativeSize(format);
-  const panelW = panel ? PANEL_WIDTH : 0;
-  const areaW = viewport.w - 76 - panelW - 96;
-  // Scroll has no strip below: each page takes the full height, less its header row.
-  const areaH = scrolling ? viewport.h - 56 - 56 - 60 - 48 - 48 : viewport.h - 56 - 56 - 160;
-  const fit = Math.min(areaW / native.w, areaH / native.h);
-  const boardW = Math.max(160, Math.round(native.w * fit * (zoom / 100)));
+  // The canvas fits the area the panel and the slide strip leave it, as
+  // measured; until it's measured, as worked out from the viewport. Nothing
+  // docks on the right: every panel opens in the one slot beside the rail.
+  const area =
+    measuredArea ??
+    estimateCanvasArea({ viewport, panelOpen: !!panel, dockOpen: false, stripHeight: 0 });
+  // In Scroll each page also has its header row above it.
+  const boardW = boardWidth(
+    scrolling ? { w: area.w, h: area.h - SCROLL_PAGE_HEADER } : area,
+    native,
+    zoom,
+  );
   const fitStatus = fitLine(current);
   const status = host.status(baseVersion);
   const selectCls =
@@ -1531,6 +1564,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     if (id === EDIT_PANEL) return `Edit ${kindWord(selected.length > 1 ? null : focus)}`;
     if (id === REPLACE_PANEL) return "Change photo";
     if (id === PAGE_PANEL) return "Edit page";
+    if (id === ADD_PAGE_PANEL) return pagesNav?.addOptions?.length ? "Add a page" : null;
     return sides.find((s) => s.id === id)?.title ?? null;
   };
   const shownTitle = panel ? panelTitle(panel) : null;
@@ -2096,47 +2130,71 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             closeIcon="x"
             onCollapse={() => setPanel(null)}
           >
-            {draftMode?.panels
-              ?.find((p) => p.id === panel)
-              ?.render({
-                size: format,
-                add: addTemplateLayers,
-                values,
-                page: pageFull,
-                setPage: editPage,
-              })}
-            {panel === "fields" && (
-              <FieldsPanel
-                kind={pageKind}
-                page={page}
-                size={format}
-                values={values}
-                textSelected={single?.kind === "text"}
-                photoRule={photoRule}
-                onInsert={(key) =>
-                  single &&
-                  edit(
-                    updateLayer(doc, single.id, {
-                      content: insertToken(single.content ?? "", key),
-                    }),
-                  )
-                }
-                onAdd={(l) => addTemplateLayers([l])}
-              />
-            )}
-            {panel === "text" && <TextPanel size={format} onAdd={(l) => addTemplateLayers([l])} />}
-            {panel === "elements" && (
-              <ElementsPanel
-                size={format}
-                onAdd={(l) => addTemplateLayers([l])}
-                onAddLayers={addTemplateLayers}
-              />
-            )}
-            {panel === "position" && layerList}
-            {panel === EDIT_PANEL && editPanel}
-            {panel === REPLACE_PANEL && replacePanel}
-            {panel === PAGE_PANEL && pagePanel}
-            {sides.find((s) => s.id === panel)?.body}
+            <InDock>
+              {draftMode?.panels
+                ?.find((p) => p.id === panel)
+                ?.render({
+                  size: format,
+                  add: addTemplateLayers,
+                  values,
+                  page: pageFull,
+                  setPage: editPage,
+                })}
+              {panel === "fields" && (
+                <FieldsPanel
+                  kind={pageKind}
+                  page={page}
+                  size={format}
+                  values={values}
+                  textSelected={single?.kind === "text"}
+                  photoRule={photoRule}
+                  onInsert={(key) =>
+                    single &&
+                    edit(
+                      updateLayer(doc, single.id, {
+                        content: insertToken(single.content ?? "", key),
+                      }),
+                    )
+                  }
+                  onAdd={(l) => addTemplateLayers([l])}
+                />
+              )}
+              {panel === "text" && (
+                <TextPanel size={format} onAdd={(l) => addTemplateLayers([l])} />
+              )}
+              {panel === "elements" && (
+                <ElementsPanel
+                  size={format}
+                  onAdd={(l) => addTemplateLayers([l])}
+                  onAddLayers={addTemplateLayers}
+                />
+              )}
+              {panel === "position" && layerList}
+              {panel === EDIT_PANEL && editPanel}
+              {panel === REPLACE_PANEL && replacePanel}
+              {panel === PAGE_PANEL && pagePanel}
+              {sides.find((s) => s.id === panel)?.body}
+              {panel === ADD_PAGE_PANEL && pagesNav?.addOptions && pagesNav.onAdd && (
+                <div role="group" aria-label="Add a page" className="space-y-1">
+                  {pagesNav.addOptions.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      className="block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
+                      onClick={() => {
+                        setPanel(null);
+                        pagesNav.onAdd!(o.id);
+                      }}
+                    >
+                      <span className="font-semibold">{o.label}</span>
+                      {o.detail && (
+                        <span className="block text-xs text-[var(--ed-ink2)]">{o.detail}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </InDock>
           </EditorPanel>
         )}
         <main
@@ -2148,8 +2206,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             backgroundSize: "22px 22px",
           }}
         >
-          {/* Above the canvas, never on it: the toolbar, prompts and where you are. */}
-          <div className="flex shrink-0 flex-col items-center px-6 pt-4">
+          {/* Above the canvas, never on it: the toolbar, prompts and where you are.
+            At least the strip's height, so a change of selection never moves the canvas. */}
+          <div
+            className="flex shrink-0 flex-col items-center px-6 pt-4"
+            style={{ minHeight: TOOLBAR_STRIP }}
+          >
             <div className="mb-3 flex max-w-full flex-col items-center">
               <EditorToolbar
                 selected={selected}
@@ -2341,6 +2403,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           onDelete={pagesNav.onDelete}
           addOptions={pagesNav.addOptions}
           onAdd={pagesNav.onAdd}
+          onAddOpen={() => setPanel(ADD_PAGE_PANEL)}
           overview={false}
         />
       )}

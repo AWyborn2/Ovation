@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from "react";
 import { fieldToken } from "./template-ops";
+import { DockedMenu } from "./dock";
 
 export type TokenField = { key: string; label: string };
 
@@ -143,13 +144,12 @@ export function TokenTextInput({
         }}
         className={className}
       />
-      {open && (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label="Fields"
-          className="absolute left-0 top-full z-50 mt-1 max-h-64 w-64 overflow-auto rounded-lg border border-[var(--ed-line)] bg-[var(--ed-panel)] py-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
-        >
+      <DockedMenu
+        open={open}
+        className="mt-1 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-panel)]"
+        floatClassName="absolute left-0 top-full z-50 w-64 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
+      >
+        <ul id={listId} role="listbox" aria-label="Fields" className="max-h-64 overflow-auto py-1">
           {matches.map((f, i) => (
             <li
               key={f.key}
@@ -169,7 +169,7 @@ export function TokenTextInput({
             </li>
           ))}
         </ul>
-      )}
+      </DockedMenu>
     </div>
   );
 }

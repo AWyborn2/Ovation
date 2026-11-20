@@ -11,7 +11,11 @@ import {
   LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DockPopover as Popover,
+  DockPopoverContent as PopoverContent,
+  DockPopoverTrigger as PopoverTrigger,
+} from "./dock";
 import { cn } from "@/lib/utils";
 import type { Alignment, MatchDimension, MatchReference } from "./arrange";
 
