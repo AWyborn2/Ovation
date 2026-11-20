@@ -8,7 +8,7 @@
  * updated in place. The slide's data never changes, and the set editor shows
  * the result.
  */
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Monitor } from "lucide-react";
@@ -28,13 +28,21 @@ import {
 import {
   isSetDocument,
   setPageDocument,
+  slidePhotoFor,
+  withSlidePhoto,
   type SetDocument,
+  type SlidePhoto,
 } from "@workspace/scorecard/kind-templates";
+import { ChangePhotoMenu } from "@/components/studio-editor/change-photo";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import { downloadSafeInput } from "@/components/studio-editor/export/share-download";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
-import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
+import {
+  isJuniorRule,
+  photoRuleFor,
+  useJuniorPhotoGuard,
+} from "@/components/studio-editor/junior-photos";
 import { withSlideDesign } from "@/components/studio-editor/set-doc";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { canEditSlideAlone, setDraftSlides } from "@/lib/set-draft";
@@ -118,6 +126,7 @@ export default function AdminSetSlideEditor() {
     <SlideEditor
       draft={safe?.draft ?? draftQ.data}
       design={safe?.design ?? designQ.data}
+      juniorStock={guard.juniorStock}
       slideKey={key}
       back={back}
       backLink={backLink}
@@ -129,6 +138,7 @@ export default function AdminSetSlideEditor() {
 function SlideEditor({
   draft,
   design,
+  juniorStock,
   slideKey,
   back,
   backLink,
@@ -136,6 +146,8 @@ function SlideEditor({
 }: {
   draft: SocialDraft;
   design: DraftSetDesign;
+  /** The club's approved junior stock: the only own photo a junior slide draws. */
+  juniorStock: ReadonlySet<number>;
   slideKey: string;
   back: string;
   backLink: React.ReactNode;
@@ -147,12 +159,27 @@ function SlideEditor({
   const content = useDraftContent(draft);
   const brand = design.layout === "pages" ? content.data : club;
   const opened = design.document as unknown as SetDocument;
-  const slide = useMemo(
-    () => setDraftSlides(draft, opened, brand).find((s) => s.key === slideKey),
-    [draft, opened, brand, slideKey],
-  );
   // The set as last saved here, and the page that draws the slide in it.
   const set = useRef(opened);
+  // The slide's own photo (Change photo), saved with the set as soon as it's picked.
+  const [photo, setPhoto] = useState<SlidePhoto | null>(() => slidePhotoFor(opened, slideKey));
+  const slides = useMemo(
+    () => setDraftSlides(draft, withSlidePhoto(opened, slideKey, photo), brand, { juniorStock }),
+    [draft, opened, brand, slideKey, photo, juniorStock],
+  );
+  const slide = slides.find((s) => s.key === slideKey);
+  const savePhoto = async (choice: SlidePhoto | null) => {
+    const next = withSlidePhoto(set.current, slideKey, choice);
+    await saveDraftSetDesign(draft.id, {
+      document: next,
+      ...(design.layout === "carousel" && design.size ? { size: design.size } : {}),
+    } as Parameters<typeof saveDraftSetDesign>[1]);
+    set.current = next;
+    setPhoto(choice);
+    void qc.invalidateQueries({ queryKey: getGetDraftSetDesignQueryKey(draft.id) });
+    void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
+    void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+  };
   const drawnBy = useRef(slide?.page.id ?? "");
   // It opens at the link's size, else the set's saved size (a queued
   // carousel's own size follows it), as the set editor does.
@@ -282,19 +309,32 @@ function SlideEditor({
         // Older sizes only where the set was made in them (round 9 B8).
         olderSizes: draft.olderSizes ?? [],
         actions: ({ document, size: shownSize, input, data }) => (
-          <DownloadMenu
-            card={{
-              // A junior slide shows a photo only behind the server's marker.
-              input: downloadSafeInput(input),
-              size: shownSize,
-              theme: null,
-              data,
-              packId: BLANK_PACK_ID,
-              junior: slide.junior,
-              adjustments: document as never,
-            }}
-            baseName={slide.label.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "slide"}
-          />
+          <>
+            {(photo || slide.data.photoUrl) && (
+              <ChangePhotoMenu
+                draftId={draft.id}
+                slideKey={slide.key}
+                junior={isJuniorRule(photoRuleFor({ slide, slides }))}
+                currentUrl={slide.data.photoUrl ?? null}
+                own={!!photo}
+                onPick={savePhoto}
+                onAuto={() => savePhoto(null)}
+              />
+            )}
+            <DownloadMenu
+              card={{
+                // A junior slide shows a photo only behind the server's marker.
+                input: downloadSafeInput(input),
+                size: shownSize,
+                theme: null,
+                data,
+                packId: BLANK_PACK_ID,
+                junior: slide.junior,
+                adjustments: document as never,
+              }}
+              baseName={slide.label.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "slide"}
+            />
+          </>
         ),
       }}
     />

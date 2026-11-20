@@ -73,6 +73,7 @@ import {
   type SetType,
 } from "./set-document";
 import { isColourTokenName, isPageBackground, sanitiseSvg } from "./svg";
+import { isSlidePhoto } from "./slide-photo";
 
 /** A v1 document's layer limit (the v1 editor's clipboard reads it too). */
 export const MAX_DOCUMENT_LAYERS = 300;
@@ -1162,7 +1163,12 @@ export function setDocumentErrors(doc: unknown, type: SetType): string[] {
     if (!isObject(a) || !keys(a.order) || !keys(a.removed))
       errors.push("The set's slide order must list slide keys.");
     else {
-      knownKeys(errors, "The slide order", a, new Set(["order", "removed", "pageFor", "photoFor"]));
+      knownKeys(
+        errors,
+        "The slide order",
+        a,
+        new Set(["order", "removed", "pageFor", "photoFor", "ownPhotos"]),
+      );
       // A slide's own layout (S9): slide key → a page id.
       if (
         a.pageFor !== undefined &&
@@ -1195,6 +1201,16 @@ export function setDocumentErrors(doc: unknown, type: SetType): string[] {
             for (const [id, bySize] of Object.entries(byLayer as Record<string, unknown>))
               photoPositions(errors, `The photo position of ${k.slice(0, 40)} (${id})`, bySize);
       }
+      // A slide's own photo ("Change photo"): slide key → a library photo choice.
+      if (
+        a.ownPhotos !== undefined &&
+        !(
+          isObject(a.ownPhotos) &&
+          Object.keys(a.ownPhotos).length <= 200 &&
+          Object.entries(a.ownPhotos).every(([k, v]) => SLIDE_KEY.test(k) && isSlidePhoto(v))
+        )
+      )
+        errors.push("The set's slide photos must each name a library photo.");
     }
   }
   if (!Array.isArray(doc.pages) || doc.pages.length === 0)

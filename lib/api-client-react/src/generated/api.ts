@@ -160,6 +160,7 @@ import type {
   DeleteClubPhotosRequest,
   DeleteJuniorLibraryPhotos200,
   DirectoryClub,
+  DraftPhotoPool,
   DraftSetDesign,
   DraftSweepRequest,
   DraftSweepResponse,
@@ -188,6 +189,7 @@ import type {
   FixturesResultsPage,
   GenerateCardSetBody,
   GetCarouselRoundsParams,
+  GetDraftPhotoPoolParams,
   GetFixtureForecastParams,
   GetFixturesResultsLadderParams,
   GetGradeDistributionParams,
@@ -27498,6 +27500,96 @@ export const useApproveSocialDraft = <TError = ErrorType<void>,
       > => {
       return useMutation(getApproveSocialDraftMutationOptions(options));
     }
+
+export const getGetDraftPhotoPoolUrl = (id: number,
+    params?: GetDraftPhotoPoolParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-drafts/${id}/photo-pool?${stringifiedParams}` : `/api/social-drafts/${id}/photo-pool`
+}
+
+/**
+ * For Change photo in the editors. A junior card or slide: the club's approved junior stock images only (ADR-007). Otherwise the automatic pick's pool: the slide's players' tagged library photos (a Team List's selected side, or the card's own player), else photos of its grade. Also the slide's linked players, whose tag boxes frame a photo.
+ * @summary The photos a draft's (or one set slide's) automatic photo is drawn from
+ */
+export const getDraftPhotoPool = async (id: number,
+    params?: GetDraftPhotoPoolParams, options?: RequestInit): Promise<DraftPhotoPool> => {
+
+  return customFetch<DraftPhotoPool>(getGetDraftPhotoPoolUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDraftPhotoPoolQueryKey = (id: number,
+    params?: GetDraftPhotoPoolParams,) => {
+    return [
+    `/api/social-drafts/${id}/photo-pool`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDraftPhotoPoolQueryOptions = <TData = Awaited<ReturnType<typeof getDraftPhotoPool>>, TError = ErrorType<void>>(id: number,
+    params?: GetDraftPhotoPoolParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDraftPhotoPool>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDraftPhotoPoolQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDraftPhotoPool>>> = ({ signal }) => getDraftPhotoPool(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDraftPhotoPool>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDraftPhotoPoolQueryResult = NonNullable<Awaited<ReturnType<typeof getDraftPhotoPool>>>
+export type GetDraftPhotoPoolQueryError = ErrorType<void>
+
+
+/**
+ * @summary The photos a draft's (or one set slide's) automatic photo is drawn from
+ */
+
+export function useGetDraftPhotoPool<TData = Awaited<ReturnType<typeof getDraftPhotoPool>>, TError = ErrorType<void>>(
+ id: number,
+    params?: GetDraftPhotoPoolParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDraftPhotoPool>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDraftPhotoPoolQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetDraftSetDesignUrl = (id: number,) => {
 

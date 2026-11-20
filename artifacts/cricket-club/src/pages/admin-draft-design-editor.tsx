@@ -19,6 +19,7 @@ import { StatusPill } from "@/components/admin-ui";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { DraftSetDialog } from "@/components/studio-editor/draft-set-dialog";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
+import { ChangePhotoMenu } from "@/components/studio-editor/change-photo";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
 import { useNewStudio } from "@/lib/entitlements";
 import {
@@ -26,6 +27,7 @@ import {
   draftHeading,
   draftStatus,
   editorStatusLabel,
+  isJuniorDraft,
 } from "@/components/social-queue/draft-meta";
 import { useBrand } from "@/lib/brand-context";
 import { draftEditorDocument } from "@/lib/draft-design";
@@ -125,6 +127,7 @@ export function DraftDesignEditor({
   };
 
   const status = draftStatus(draft);
+  const junior = isJuniorDraft(draft);
   const host: EditorHost<EditorTemplate> = {
     club: true,
     backHref: STUDIO,
@@ -156,6 +159,32 @@ export function DraftDesignEditor({
     olderSizes: draft.olderSizes ?? [],
     actions: ({ document, size, input: shown, data: shownData }) => (
       <>
+        {(draft.photoUrl || draft.photoSource === "manual") && (
+          <ChangePhotoMenu
+            draftId={draft.id}
+            slideKey={null}
+            junior={junior}
+            currentUrl={draft.photoUrl ?? null}
+            own={draft.photoSource === "manual"}
+            // A junior card's photo is the one the club cleared for it (ADR-007).
+            lockedReason={
+              junior
+                ? "This is a junior card: it shows only the photo the club has cleared for this player, so it can't be changed here."
+                : undefined
+            }
+            onPick={async (choice) => {
+              await updateSocialDraft(draft.id, {
+                photoUrl: choice.url,
+                photoPlayerId: choice.playerId ?? null,
+              });
+              refresh();
+            }}
+            onAuto={async () => {
+              await updateSocialDraft(draft.id, { photoAuto: true });
+              refresh();
+            }}
+          />
+        )}
         <button
           type="button"
           disabled={making}

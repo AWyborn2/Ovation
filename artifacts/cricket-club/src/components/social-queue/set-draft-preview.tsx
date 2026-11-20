@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { setDraftSlides, slideDocument, type SetDraftSource } from "@/lib/set-draft";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import { SIZES, type CardSize } from "@/lib/share-card";
 
 export function SetDraftPreview({
@@ -21,7 +22,9 @@ export function SetDraftPreview({
   size: CardSize;
 }) {
   const { data } = useKindTemplateData("matchDay", { photoUrl: null });
-  const slides = setDraftSlides(draft, document, data);
+  // A junior slide's own photo draws only while it is approved junior stock.
+  const { juniorStock } = useJuniorPhotoGuard();
+  const slides = setDraftSlides(draft, document, data, { juniorStock });
   const [index, setIndex] = useState(0);
   const current = Math.min(index, slides.length - 1);
   const slide = slides[current];

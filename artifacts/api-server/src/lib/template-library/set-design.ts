@@ -35,6 +35,7 @@ import {
   carouselSlideSlot,
   isRepeatSlot,
   layoutPageIds,
+  liveOwnPhotos,
   withoutStrandedLayouts,
   assembleSetDocument,
   isSetDocument,
@@ -283,8 +284,9 @@ export function isGameSlide(s: { id: string; input: Record<string, unknown> }): 
 /**
  * A queued carousel's stored design: its pages, and of its arrangement only
  * `pageFor` (a slide's own layout) and `photoFor` (a slide's own Photo
- * positions), kept for slides and pages the set still holds. The slide order
- * and deletions live in the payload's slides.
+ * positions), kept for slides and pages the set still holds, and `ownPhotos`
+ * (a slide's own photo) for slides it still holds. The slide order and
+ * deletions live in the payload's slides.
  */
 export function carouselSetDesign(
   doc: SetDocument,
@@ -305,13 +307,25 @@ export function carouselSetDesign(
   const photoFor = Object.fromEntries(
     Object.entries(arrangement?.photoFor ?? {}).filter(([k]) => ids.has(k)),
   );
+  // A slide's own photo ("Change photo") stays with its slide while the set holds it.
+  const ownPhotos = liveOwnPhotos(arrangement, ids);
   const own = {
     ...(Object.keys(pageFor).length ? { pageFor } : {}),
     ...(Object.keys(photoFor).length ? { photoFor } : {}),
+    ...(Object.keys(ownPhotos).length ? { ownPhotos } : {}),
   };
   return Object.keys(own).length
     ? { ...design, ...shed, arrangement: { order: [], removed: [], ...own } }
     : { ...design, ...shed };
+}
+
+/** A set design without its slides' own photos (`arrangement.ownPhotos`). */
+function withoutSlidePhotoChoices(document: unknown): unknown {
+  const doc = document as { arrangement?: { ownPhotos?: unknown } } | null;
+  if (!doc?.arrangement || typeof doc.arrangement !== "object" || !("ownPhotos" in doc.arrangement))
+    return document;
+  const { ownPhotos: _own, ...arrangement } = doc.arrangement;
+  return { ...doc, arrangement };
 }
 
 /** Save a draft's set design (and, for a queued carousel, its slides and size). */
@@ -327,7 +341,9 @@ export async function saveDraftSetDesign(
     throw new TemplateLibraryError(409, { error: "This draft can't be edited any more." });
   const errors = [
     ...templateDocumentErrors(body.document, setTemplateKind(kind.setType)),
-    ...libraryAssetPolicyErrors(body.document),
+    // A slide's own photo is the club's library photo, checked against the
+    // library by the route (`checkedSlidePhotos`), not a design asset.
+    ...libraryAssetPolicyErrors(withoutSlidePhotoChoices(body.document)),
   ];
   if (errors.length > 0) throw invalid(errors[0]!, errors.slice(0, 20));
   const doc = body.document as SetDocument;

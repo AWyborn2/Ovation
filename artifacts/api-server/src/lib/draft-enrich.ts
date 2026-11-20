@@ -1005,7 +1005,10 @@ async function teamListDraftPlayers(tenantId: number, d: SocialDraftRow): Promis
 }
 
 /** What an existing draft's photo pick needs, read back from the stored row. */
-async function draftPickOptions(tenantId: number, d: SocialDraftRow): Promise<PhotoPickOptions> {
+export async function draftPickOptions(
+  tenantId: number,
+  d: SocialDraftRow,
+): Promise<PhotoPickOptions> {
   const input = (d.cardInput ?? {}) as Record<string, unknown>;
   const kind = typeof input.kind === "string" ? input.kind : null;
   const playerId =

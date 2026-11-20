@@ -28,6 +28,8 @@ import {
   type SetPage,
   type SetRepeatSlot,
   type SetType,
+  type SlidePhoto,
+  withSlidePhotoArrangement,
 } from "@workspace/scorecard/kind-templates";
 import type { CardAdjustments, FreeLayer, PackCardData, PhotoPosition } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
@@ -728,4 +730,20 @@ export function keepAddedPages(
     kept: keep.length,
     dropped: added.length - keep.length,
   };
+}
+
+/**
+ * The set draft with slide `key`'s own photo set, or cleared (`null`, "Back to
+ * automatic photo"): `arrangement.ownPhotos`, every size at once. The other
+ * slides, their layouts and the slide order stay as they are.
+ */
+export function withSlidePhotoChoice(
+  doc: EditorTemplateDoc,
+  key: string,
+  choice: SlidePhoto | null,
+): EditorTemplateDoc {
+  const arrangement = withSlidePhotoArrangement(doc.setDesign?.arrangement, key, choice);
+  if (arrangement) return withArrangement(doc, arrangement);
+  const { arrangement: _gone, ...set } = doc.setDesign!;
+  return { ...doc, setDesign: set };
 }

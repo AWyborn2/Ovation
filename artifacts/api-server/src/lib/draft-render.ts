@@ -8,7 +8,9 @@ import {
 } from "@workspace/scorecard";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
+import { renderSlidePhotos } from "./slide-photos";
 import {
+  applySlidePhoto,
   expandSetSlides,
   isSetDocument,
   mapCarouselSlides,
@@ -283,16 +285,27 @@ export async function renderDraftSlides(
     if (set) {
       const mapped = mapCarouselSlides(set, carousel.slides);
       const byId = new Map(carousel.slides.map((s) => [s.id, s]));
+      // A slide's own photo ("Change photo"), as checked against the library now.
+      const own = await renderSlidePhotos(tenantId, draft, set);
       for (const size of sizes) {
         for (const [i, slide] of mapped.slides.entries()) {
           const stored = byId.get(slide.key)!;
+          const drawn = applySlidePhoto(
+            {
+              input: slide.input,
+              data: carouselSlideData(carousel, stored),
+              junior: stored.junior,
+            },
+            own.choices[slide.key],
+            own.juniorStock,
+          );
           const { buffer, warnings = [] } = await serialised(() =>
             renderer(
-              slide.input,
+              drawn.input,
               {
                 size,
                 packId: carouselPackId(carousel),
-                data: carouselSlideData(carousel, stored),
+                data: drawn.data,
                 junior: stored.junior,
                 sponsorsOn: stored.sponsorsOn,
                 strictImages: strict,
@@ -437,14 +450,22 @@ export async function renderDraftSlides(
       input: s.input as Record<string, unknown>,
     }));
     const slides = expandSetSlides(set, items, { sponsors: data.sponsors, junior });
+    // A slide's own photo ("Change photo"), as checked against the library now.
+    const own = await renderSlidePhotos(tenantId, draft, set);
     for (const size of sizes) {
       for (const [i, slide] of slides.entries()) {
         const slideJunior = junior || slide.input.junior === true;
         const slideAllowed = slide.input.juniorPhotoAllowed === true;
-        const slideData = slideJunior && !slideAllowed ? { ...data, photoUrl: null } : data;
+        const gated = slideJunior && !slideAllowed ? { ...data, photoUrl: null } : data;
+        const drawn = applySlidePhoto(
+          { input: slide.input, data: gated, junior: slideJunior },
+          own.choices[slide.key],
+          own.juniorStock,
+        );
+        const slideData = drawn.data;
         const { buffer, warnings } = await serialised(() =>
           renderer(
-            slide.input,
+            drawn.input,
             {
               size,
               sponsorsOn,

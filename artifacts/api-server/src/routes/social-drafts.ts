@@ -37,6 +37,7 @@ import {
   SaveDraftAsTemplateBody,
   SaveDraftSetDesignBody,
   UpdateSocialDraftBody,
+  GetDraftPhotoPoolQueryParams,
 } from "@workspace/api-zod";
 import { familyOfKind } from "../lib/social-families";
 import { loadWithheldJuniorNames, redactDraftRow } from "../lib/junior-name-redaction";
@@ -71,10 +72,14 @@ import {
 } from "../lib/template-library/draw";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
+import { isSetDocument } from "@workspace/scorecard/kind-templates";
+import { checkedSlidePhotos, SlidePhotoError, slidePhotoPool } from "../lib/slide-photos";
 import {
+  draftPickOptions,
   draftSubjectPlayerId,
   isAutoPhoto,
   photoColumns,
+  pickDraftPhoto,
   resolveDraftPack,
   type PhotoPick,
 } from "../lib/draft-enrich";
@@ -958,7 +963,18 @@ router.patch(
       res.status(409).json({ error: "Reopen the draft before editing it" });
       return;
     }
-    const { caption, photoUrl, photoPlayerId, playerOrder, designSize } = parsed.data;
+    const { caption, photoUrl, photoPlayerId, photoAuto, playerOrder, designSize } = parsed.data;
+    // Back to the automatic photo (Change photo): never with a photo of its own,
+    // and never on a junior card, whose photo is the server's already (ADR-007).
+    if (photoAuto === true && (photoUrl !== undefined || isJuniorDesignDraft(draft))) {
+      res.status(400).json({
+        error:
+          photoUrl !== undefined
+            ? "Pick a photo or go back to the automatic one, not both."
+            : "A junior card's photo is picked by the club's rules already.",
+      });
+      return;
+    }
     const cardInput = draft.cardInput as Record<string, unknown>;
     // A Team List design's own player order (build decision 16): this draft only.
     if (playerOrder !== undefined && cardInput.kind !== "teamList") {
@@ -1014,6 +1030,7 @@ router.patch(
       designSize !== undefined &&
       caption === undefined &&
       photoUrl === undefined &&
+      photoAuto !== true &&
       playerOrder === undefined &&
       adjustments === undefined
     ) {
@@ -1047,6 +1064,15 @@ router.patch(
       if (photoUrl !== draft.photoUrl || photoPlayerId !== undefined)
         patch.photoFocus = await draftPhotoFocus(tenantId, photoUrl, photoPlayerId ?? null);
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
+    }
+    if (photoAuto === true) {
+      // Picked again as a new draft's would be, and automatic from here on
+      // (re-picked with the draft, KTD6). Nothing found: no photo, still automatic.
+      const photo = await pickDraftPhoto(tenantId, await draftPickOptions(tenantId, draft));
+      Object.assign(patch, await photoColumns(tenantId, photo));
+      if (!photo) patch.photoSource = null;
+      // Sourced photo layers show their own photos again while it is automatic.
+      if (adjustments === undefined) patch.layerPhotos = await draftLayerPhotos(draft);
     }
     if (playerOrder !== undefined) {
       // Stored on the card input, where the renderer reads it; null follows the
@@ -1090,6 +1116,23 @@ router.patch(
     res.json(await presentSized(updated));
   },
 );
+
+// The pool a draft's (or one set slide's) automatic photo is drawn from ("Change photo").
+router.get("/social-drafts/:id/photo-pool", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  const query = GetDraftPhotoPoolQueryParams.safeParse(req.query);
+  if (id === null || !query.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const draft = await loadDraft(tenantId, id);
+  if (!draft) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json(await slidePhotoPool(tenantId, draft, query.data.slide ?? null));
+});
 
 // A carousel set draft as one multi-page design (carousel set editor plan, part 3).
 router.get("/social-drafts/:id/set-design", requireAdmin, async (req, res): Promise<void> => {
@@ -1138,8 +1181,22 @@ router.put(
       return;
     }
     try {
+      // A slide's own photo ("Change photo") is a club library photo, and on a
+      // junior slide approved junior stock: anything else is refused (fails closed).
+      let document: unknown = parsed.data.document;
+      if (isSetDocument(document)) {
+        try {
+          document = await checkedSlidePhotos(tenantId, draft, document);
+        } catch (err) {
+          if (err instanceof SlidePhotoError) {
+            res.status(400).json({ error: err.message });
+            return;
+          }
+          throw err;
+        }
+      }
       // A junior set's pages keep no club library photo but approved junior stock.
-      const safe = await juniorSafeDesign(tenantId, draft, parsed.data.document);
+      const safe = await juniorSafeDesign(tenantId, draft, document);
       if (safe.removed)
         req.log.info(
           { tenantId, removed: safe.removed },
