@@ -65,6 +65,15 @@ export function formatOptions(
   ];
 }
 
+/**
+ * The top bar's buttons (Change look, Layout, Share, Send to review and the
+ * rest): one height and style, so they line up. Save alone is filled.
+ */
+export const TOP_BAR_BUTTON =
+  "flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[var(--ed-line)] px-3 text-sm font-semibold text-[var(--ed-ink)] transition-colors hover:bg-[var(--ed-card)] disabled:pointer-events-none disabled:opacity-50";
+export const TOP_BAR_PRIMARY =
+  "flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[var(--ed-accent)] px-4 text-sm font-bold text-[var(--ed-on-accent)] transition-opacity disabled:opacity-60";
+
 const iconBtn =
   "grid h-8 w-8 place-items-center rounded-lg text-[var(--ed-ink2)] transition-colors hover:bg-[var(--ed-card)] hover:text-[var(--ed-ink)] disabled:pointer-events-none disabled:opacity-35";
 
@@ -119,79 +128,94 @@ export function EditorTopBar({
   formatLabel?: (f: CardSize) => string;
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--ed-line)] bg-[var(--ed-panel)] px-3">
-      <Link
-        href={backHref}
-        className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-[var(--ed-card)]"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Studio
-      </Link>
-      <span className="mx-1 h-6 w-px bg-[var(--ed-line)]" aria-hidden />
-      <label className="flex items-center gap-1.5 text-sm">
-        <Maximize2 className="h-4 w-4 text-[var(--ed-ink2)]" aria-hidden />
-        <span className="sr-only">Format</span>
-        <select
-          aria-label="Format"
-          value={format}
-          onChange={(e) => onFormat(e.target.value as CardSize)}
-          className="h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm font-semibold"
+    // The bar fits any width: the title gives way first (it truncates), then
+    // the buttons wrap onto a second row rather than run off the right edge.
+    <header
+      data-testid="editor-top-bar"
+      className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2.5"
+    >
+      <div className="flex shrink-0 items-center gap-2">
+        <Link
+          href={backHref}
+          className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-[var(--ed-card)]"
         >
-          {formatOptions(olderFormats, format, formats).map((f) => (
-            <option key={f.value} value={f.value}>
-              {f.label}
-              {f.older ? " (older size)" : ""}
-              {formatLabel
-                ? formatLabel(f.value)
-                : inheritedFormats.includes(f.value)
-                  ? " · review"
-                  : ""}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="button"
-        className={iconBtn}
-        onClick={onUndo}
-        disabled={!canUndo}
-        aria-label="Undo"
-      >
-        <Undo2 className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        className={iconBtn}
-        onClick={onRedo}
-        disabled={!canRedo}
-        aria-label="Redo"
-      >
-        <Redo2 className="h-4 w-4" />
-      </button>
-      <span className="hidden text-xs text-[var(--ed-ink2)] xl:inline">
-        {saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}
-      </span>
-
-      <div className="mx-auto flex min-w-[150px] items-center gap-2 overflow-hidden px-2">
-        <span className="max-w-[300px] truncate font-serif text-lg font-bold uppercase">
-          {title}
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Studio
+        </Link>
+        <span className="mx-1 h-6 w-px bg-[var(--ed-line)]" aria-hidden />
+        <label className="flex items-center gap-1.5 text-sm">
+          <Maximize2 className="h-4 w-4 text-[var(--ed-ink2)]" aria-hidden />
+          <span className="sr-only">Format</span>
+          <select
+            aria-label="Format"
+            value={format}
+            onChange={(e) => onFormat(e.target.value as CardSize)}
+            className="h-9 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm font-semibold"
+          >
+            {formatOptions(olderFormats, format, formats).map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+                {f.older ? " (older size)" : ""}
+                {formatLabel
+                  ? formatLabel(f.value)
+                  : inheritedFormats.includes(f.value)
+                    ? " · review"
+                    : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className={iconBtn}
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label="Undo"
+        >
+          <Undo2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          className={iconBtn}
+          onClick={onRedo}
+          disabled={!canRedo}
+          aria-label="Redo"
+        >
+          <Redo2 className="h-4 w-4" />
+        </button>
+        <span className="hidden whitespace-nowrap text-xs text-[var(--ed-ink2)] xl:inline">
+          {saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}
         </span>
-        {status}
       </div>
 
-      {actions}
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving || !dirty}
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[var(--ed-accent)] px-4 text-sm font-bold text-[var(--ed-on-accent)] transition-opacity disabled:opacity-60"
+      <div
+        data-testid="editor-top-title"
+        className="flex min-w-0 flex-1 basis-40 items-center justify-center gap-2 overflow-hidden"
       >
-        {saving ? (
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        ) : (
-          <Save className="h-4 w-4" aria-hidden />
-        )}
-        Save
-      </button>
+        <span className="min-w-0 truncate font-serif text-lg font-bold uppercase" title={title}>
+          {title}
+        </span>
+        <span className="hidden shrink-0 whitespace-nowrap min-[1400px]:block">{status}</span>
+      </div>
+
+      <div
+        data-testid="editor-top-actions"
+        className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2"
+      >
+        {actions}
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || !dirty}
+          className={TOP_BAR_PRIMARY}
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Save className="h-4 w-4" aria-hidden />
+          )}
+          Save
+        </button>
+      </div>
     </header>
   );
 }
@@ -327,9 +351,19 @@ export function EditorBottomBar({
   pagesView,
   onPagesView,
   pageCount,
+  zoomMin = 50,
+  zoomMax = 160,
+  onFit,
+  fitted = false,
 }: {
+  /** The zoom on show, in percent. */
   zoom: number;
   onZoom: (z: number) => void;
+  zoomMin?: number;
+  zoomMax?: number;
+  /** Fit the page to the space (New Studio); `fitted` while it is. */
+  onFit?: () => void;
+  fitted?: boolean;
   layersOpen?: boolean;
   /** The older editor's Layers drawer; the New Studio editors list layers in Position. */
   onToggleLayers?: () => void;
@@ -339,7 +373,7 @@ export function EditorBottomBar({
   /** "9 / 10" and the grid of every page, beside the toggle. */
   pageCount?: ReactNode;
 }) {
-  const set = (z: number) => onZoom(Math.min(160, Math.max(50, Math.round(z))));
+  const set = (z: number) => onZoom(Math.min(zoomMax, Math.max(zoomMin, Math.round(z))));
   const view = (v: PagesView, label: string, Icon: LucideIcon) => (
     <button
       type="button"
@@ -356,7 +390,10 @@ export function EditorBottomBar({
     </button>
   );
   return (
-    <footer className="flex h-14 shrink-0 items-center justify-end gap-3 border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4">
+    <footer
+      aria-label="Page and zoom"
+      className="flex h-14 shrink-0 items-center justify-end gap-3 border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4"
+    >
       {pageCount}
       {pagesView && onPagesView && (
         <div
@@ -381,7 +418,11 @@ export function EditorBottomBar({
           <Layers className="h-4 w-4" aria-hidden /> Layers
         </button>
       )}
-      <div className="flex items-center gap-2 rounded-lg border border-[var(--ed-line)] px-2 py-1">
+      <div
+        role="group"
+        aria-label="Zoom controls"
+        className="flex h-9 items-center gap-1 rounded-lg border border-[var(--ed-line)] px-1"
+      >
         <button
           type="button"
           className={iconBtn}
@@ -393,9 +434,9 @@ export function EditorBottomBar({
         <input
           type="range"
           aria-label="Zoom"
-          min={50}
-          max={160}
-          value={zoom}
+          min={zoomMin}
+          max={zoomMax}
+          value={Math.round(zoom)}
           onChange={(e) => set(Number(e.target.value))}
           className="w-28 accent-[var(--ed-accent)]"
         />
@@ -407,7 +448,25 @@ export function EditorBottomBar({
         >
           <Plus className="h-4 w-4" />
         </button>
-        <span className="w-11 text-right text-sm tabular-nums">{zoom}%</span>
+        <span className="w-11 text-right text-sm tabular-nums" aria-live="polite">
+          {Math.round(zoom)}%
+        </span>
+        {onFit && (
+          <button
+            type="button"
+            aria-pressed={fitted}
+            onClick={onFit}
+            title="Fit the page to the space"
+            className={cn(
+              "h-7 rounded-md px-2 text-xs font-semibold",
+              fitted
+                ? "bg-[var(--ed-card)] text-[var(--ed-ink)]"
+                : "text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]",
+            )}
+          >
+            Fit
+          </button>
+        )}
       </div>
     </footer>
   );

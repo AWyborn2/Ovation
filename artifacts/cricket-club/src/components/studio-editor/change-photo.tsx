@@ -14,6 +14,7 @@
  * The host stores the choice: a set draft in its design (`arrangement.ownPhotos`,
  * every size at once), a single card as its own photo.
  */
+import { TOP_BAR_BUTTON } from "./editor-shell";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Crosshair, Image as ImageIcon, Shuffle, Undo2 } from "lucide-react";
@@ -218,12 +219,8 @@ export function ChangePhotoPanel({
 /** The top bar's Change photo: it opens the Change photo panel beside the rail. */
 export function ChangePhotoButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
-    >
-      <ImageIcon className="h-3.5 w-3.5" aria-hidden /> Change photo
+    <button type="button" onClick={onClick} className={TOP_BAR_BUTTON}>
+      <ImageIcon className="h-4 w-4" aria-hidden /> Change photo
     </button>
   );
 }

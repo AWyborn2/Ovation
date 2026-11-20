@@ -6,6 +6,7 @@
  * Download, with what the canvas shows. Downloading never publishes anything and
  * never changes the draft's review state.
  */
+import { TOP_BAR_BUTTON } from "../editor-shell";
 import { useState } from "react";
 import { Loader2, Share2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -102,10 +103,7 @@ export function SharePanel({ set, name }: { set: SetShareContext; name: string }
   return (
     <Popover open={open} onOpenChange={(v) => !busy && setOpen(v)}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--ed-line)] px-3 text-sm font-semibold hover:bg-[var(--ed-card)]"
-        >
+        <button type="button" className={TOP_BAR_BUTTON}>
           <Share2 className="h-4 w-4" aria-hidden />
           Share
         </button>

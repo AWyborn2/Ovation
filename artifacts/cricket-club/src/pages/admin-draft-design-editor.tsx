@@ -10,6 +10,7 @@
  * set" turns the design into pages (stage 2), with the look's matching pages
  * to start from (D9).
  */
+import { TOP_BAR_BUTTON } from "@/components/studio-editor/editor-shell";
 import { useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { Layers, Monitor } from "lucide-react";
@@ -196,9 +197,9 @@ export function DraftDesignEditor({
           type="button"
           disabled={making}
           onClick={() => setSetFrom(document)}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:opacity-50"
+          className={TOP_BAR_BUTTON}
         >
-          <Layers className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
+          <Layers className="h-4 w-4" aria-hidden /> Make a carousel set
         </button>
         <DownloadMenu
           card={{

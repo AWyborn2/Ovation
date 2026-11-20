@@ -8,7 +8,7 @@
  * Scroll (every slide stacked), remembered in this browser.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route } from "wouter";
 import { assembleSetDocument } from "@workspace/scorecard/kind-templates";
 import { TemplateEditorV2, type EditorTemplate } from "@/pages/admin-template-editor";
@@ -18,7 +18,15 @@ import { buildPackData } from "@/lib/pack-card-data";
 import type { FreeLayer } from "@/lib/pack-render";
 import { packNativeSize } from "@/lib/pack-render/tokens";
 import { renderAt } from "@/test/render";
-import { EDITOR_PANEL, EDITOR_RAIL, editorLayout, overlaps } from "../canvas-fit";
+import {
+  EDITOR_PANEL,
+  EDITOR_RAIL,
+  TOOLBAR_STRIP,
+  boardWidth,
+  editorLayout,
+  estimateCanvasArea,
+  overlaps,
+} from "../canvas-fit";
 import TEAM_LIST from "../../../../../../lib/template-bundles/broadcast-dark/teamList.json";
 import MATCH_DAY from "../../../../../../lib/template-bundles/broadcast-dark/matchDay.json";
 import CARD_INPUT from "./fixtures/weekend-team-lists.json";
@@ -72,15 +80,29 @@ const FAR: FreeLayer = {
 };
 const CARD = { formatVersion: 2, pages: { card: { layers: [PHOTO, BAR, TITLE, FAR] } } };
 
+/** A signed-in platform (super) admin, as `/platform/auth/me` answers. */
+const PLATFORM_ADMIN = { id: 1, email: "ops@example.test", name: "Ops", createdAt: "2026-01-01" };
+
 function openCard(
   save: (doc: Record<string, unknown>) => void = () => undefined,
   photoPanel = true,
+  platformAdmin = false,
 ) {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString();
+      if (/platform\/auth\/me/.test(url))
+        return platformAdmin
+          ? new Response(JSON.stringify(PLATFORM_ADMIN), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            })
+          : new Response(JSON.stringify({ error: "Not signed in" }), {
+              status: 401,
+              headers: { "content-type": "application/json" },
+            });
       const payload = /social-settings/.test(url)
         ? { settings: {}, captionTemplates: [], activeSponsors: [] }
         : [];
@@ -478,8 +500,9 @@ const DRAFT = {
   adjustments: DOC,
 };
 
-function openSet() {
-  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
+function openSet(viewport = { w: 1440, h: 900 }) {
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: viewport.w });
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: viewport.h });
   const requests: Array<{ method: string; url: string; body: unknown }> = [];
   vi.stubGlobal(
     "fetch",
@@ -642,5 +665,249 @@ describe("the Pages view", () => {
     openCard();
     await waitFor(() => expect(overlay("title")).toBeTruthy());
     expect(screen.queryByRole("group", { name: "Pages" })).toBeNull();
+  });
+});
+
+// ── Bottom bar, strip, canvas and top bar (PR #698 polish) ──────────────────
+
+const artboardWidth = () => parseFloat(screen.getByTestId("editor-artboard").style.width);
+const zoomBar = () => screen.getByRole("group", { name: "Zoom controls" });
+const fitWidth = (viewport: { w: number; h: number }, panelOpen: boolean) =>
+  boardWidth(
+    estimateCanvasArea({ viewport, panelOpen, dockOpen: false, stripHeight: 0 }),
+    packNativeSize("portrait"),
+    100,
+  );
+
+describe("zoom", () => {
+  it("opens at Fit, and re-fits as the panel opens or closes and the window resizes", async () => {
+    openSet({ w: 1440, h: 900 });
+    await screen.findByRole("navigation", { name: "Slides" });
+    const fit = within(zoomBar()).getByRole("button", { name: "Fit" });
+    expect(fit.getAttribute("aria-pressed")).toBe("true");
+    expect(artboardWidth()).toBe(fitWidth({ w: 1440, h: 900 }, true));
+    // The readout is the fitted page's share of its real pixels.
+    const native = packNativeSize("portrait");
+    expect(
+      within(zoomBar()).getByText(`${Math.round((artboardWidth() / native.w) * 100)}%`),
+    ).toBeTruthy();
+
+    // Closing the panel gives the canvas its room.
+    fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
+    expect(artboardWidth()).toBe(fitWidth({ w: 1440, h: 900 }, false));
+    // Opening one takes it back.
+    fireEvent.click(screen.getByRole("button", { name: "Text" }));
+    expect(artboardWidth()).toBe(fitWidth({ w: 1440, h: 900 }, true));
+
+    // A bigger window re-fits.
+    act(() => {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: 1920 });
+      Object.defineProperty(window, "innerHeight", { configurable: true, value: 1080 });
+      window.dispatchEvent(new Event("resize"));
+    });
+    await waitFor(() => expect(artboardWidth()).toBe(fitWidth({ w: 1920, h: 1080 }, true)));
+    expect(fitWidth({ w: 1920, h: 1080 }, true)).toBeGreaterThan(
+      fitWidth({ w: 1440, h: 900 }, true),
+    );
+  });
+
+  it("zooms with + and −, and with the slider; Fit goes back", async () => {
+    openSet({ w: 1440, h: 900 });
+    await screen.findByRole("navigation", { name: "Slides" });
+    const native = packNativeSize("portrait");
+    const fitted = Math.round((artboardWidth() / native.w) * 100);
+    fireEvent.click(within(zoomBar()).getByRole("button", { name: "Zoom in" }));
+    expect(
+      within(zoomBar()).getByRole("button", { name: "Fit" }).getAttribute("aria-pressed"),
+    ).toBe("false");
+    expect(within(zoomBar()).getByText(`${fitted + 10}%`)).toBeTruthy();
+    expect(artboardWidth()).toBe(Math.round((native.w * (fitted + 10)) / 100));
+    fireEvent.click(within(zoomBar()).getByRole("button", { name: "Zoom out" }));
+    fireEvent.click(within(zoomBar()).getByRole("button", { name: "Zoom out" }));
+    expect(within(zoomBar()).getByText(`${fitted - 10}%`)).toBeTruthy();
+    expect(artboardWidth()).toBe(Math.round((native.w * (fitted - 10)) / 100));
+    fireEvent.change(within(zoomBar()).getByRole("slider", { name: "Zoom" }), {
+      target: { value: "50" },
+    });
+    expect(artboardWidth()).toBe(native.w / 2);
+    expect(within(zoomBar()).getByText("50%")).toBeTruthy();
+    // A zoom of its own stays put as the panel closes.
+    fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
+    expect(artboardWidth()).toBe(native.w / 2);
+    fireEvent.click(within(zoomBar()).getByRole("button", { name: "Fit" }));
+    expect(artboardWidth()).toBe(fitWidth({ w: 1440, h: 900 }, false));
+  });
+
+  it("the bottom bar holds the zoom, the Pages toggle, the count and the grid, right-aligned", async () => {
+    openSet();
+    await screen.findByRole("navigation", { name: "Slides" });
+    const bar = screen.getByRole("contentinfo", { name: "Page and zoom" });
+    expect(bar.className).toMatch(/justify-end/);
+    expect(within(bar).getByRole("group", { name: "Zoom controls" })).toBeTruthy();
+    expect(within(bar).getByRole("group", { name: "Pages" })).toBeTruthy();
+    expect(within(bar).getByText("1 / 3")).toBeTruthy();
+    expect(within(bar).getByRole("button", { name: "See all slides" })).toBeTruthy();
+    // None of them sits beside the strip any more.
+    const strip = screen.getByRole("navigation", { name: "Slides" });
+    expect(within(strip).queryByText("1 / 3")).toBeNull();
+    expect(within(strip).queryByRole("button", { name: "See all slides" })).toBeNull();
+  });
+});
+
+describe("the strip and the canvas", () => {
+  it("centres the strip and keeps the page being edited in view", async () => {
+    const seen: Element[] = [];
+    const before = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      seen.push(this);
+    };
+    try {
+      openSet();
+      const strip = await screen.findByRole("navigation", { name: "Slides" });
+      expect(strip.className).toContain("[justify-content:safe_center]");
+      expect(strip.className).toMatch(/overflow-x-auto/);
+      const third = within(strip).getByRole("button", { name: /^3\. Sponsors/ });
+      fireEvent.click(third);
+      await waitFor(() => expect(seen.at(-1)).toBe(third.closest("li")));
+      // Every tile is as wide as the next.
+      const widths = within(strip)
+        .getAllByRole("listitem")
+        .map((li) => (li as HTMLElement).style.width);
+      expect(new Set(widths).size).toBe(1);
+    } finally {
+      Element.prototype.scrollIntoView = before;
+    }
+  });
+
+  it("shows a tile's controls on the page being edited, and on the tile under the pointer", async () => {
+    openSet();
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    expect(within(strip).queryByRole("button", { name: "Delete Sponsors" })).toBeNull();
+    const tile = within(strip)
+      .getByRole("button", { name: /^3\. Sponsors/ })
+      .closest("li")!;
+    fireEvent.mouseEnter(tile);
+    expect(within(strip).getByRole("button", { name: "Delete Sponsors" })).toBeTruthy();
+    fireEvent.mouseLeave(tile);
+    expect(within(strip).queryByRole("button", { name: "Delete Sponsors" })).toBeNull();
+    expect(within(strip).getByRole("button", { name: "Delete Title page" })).toBeTruthy();
+  });
+
+  it("centres the canvas both ways, with a band under it as tall as the toolbar strip", async () => {
+    openSet();
+    await screen.findByRole("navigation", { name: "Slides" });
+    expect(screen.getByTestId("toolbar-strip").style.minHeight).toBe(`${TOOLBAR_STRIP}px`);
+    expect(screen.getByTestId("canvas-scroll").style.paddingBottom).toBe(`${TOOLBAR_STRIP}px`);
+    const stage = screen.getByTestId("canvas-stage");
+    expect(stage.className).toContain("grid-rows-[1fr_auto_1fr]");
+    expect(stage.className).toContain("justify-items-center");
+    // The canvas is the middle row; its notes take no height, so they can't push it.
+    expect(stage.children[1]).toBe(screen.getByTestId("canvas-centre"));
+    expect(
+      screen.getByTestId("canvas-centre").contains(screen.getByTestId("editor-artboard")),
+    ).toBe(true);
+    expect(screen.getByTestId("canvas-notes").className).toContain("h-0");
+    // Laid out, its centre is the centre of the area the panel leaves.
+    for (const viewport of [
+      { w: 1366, h: 768 },
+      { w: 1440, h: 900 },
+      { w: 1920, h: 1080 },
+    ])
+      for (const size of ["portrait", "story"] as const)
+        for (const panelOpen of [true, false]) {
+          const { area, canvas } = editorLayout({
+            viewport,
+            native: packNativeSize(size),
+            panelOpen,
+            dockOpen: false,
+          });
+          expect(canvas.x + canvas.w / 2).toBeCloseTo(area.x + area.w / 2, 0);
+          expect(canvas.y + canvas.h / 2).toBeCloseTo(area.y + area.h / 2, 0);
+          expect(canvas.x - area.x).toBeGreaterThanOrEqual(24);
+        }
+  });
+
+  it("no panel intersects the canvas at any of the checked sizes", () => {
+    for (const viewport of [
+      { w: 1366, h: 768 },
+      { w: 1440, h: 900 },
+      { w: 1872, h: 1000 },
+      { w: 1920, h: 1080 },
+    ])
+      for (const size of ["portrait", "story"] as const) {
+        const { canvas } = editorLayout({
+          viewport,
+          native: packNativeSize(size),
+          panelOpen: true,
+          dockOpen: false,
+        });
+        const panel = { x: EDITOR_RAIL, y: 56, w: EDITOR_PANEL, h: viewport.h - 112 };
+        const strip = { x: EDITOR_RAIL + EDITOR_PANEL, y: 56, w: viewport.w, h: TOOLBAR_STRIP };
+        expect(overlaps(panel, canvas)).toBe(false);
+        expect(overlaps(strip, canvas)).toBe(false);
+      }
+  });
+});
+
+describe("the top bar", () => {
+  it("has one button style and height, and wraps rather than running off the edge", async () => {
+    openSet({ w: 1872, h: 1000 });
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    // A team slide shows the most buttons ("Edit this slide" too).
+    fireEvent.click(within(strip).getByRole("button", { name: /^2\. A Grade/ }));
+    const bar = screen.getByTestId("editor-top-bar");
+    expect(bar.className).toMatch(/flex-wrap/);
+    expect(bar.className).toMatch(/min-h-14/);
+    const actions = screen.getByTestId("editor-top-actions");
+    expect(actions.className).toMatch(/flex-wrap/);
+    expect(actions.className).toMatch(/min-w-0/);
+    const title = screen.getByTestId("editor-top-title");
+    expect(title.className).toMatch(/min-w-0/);
+    expect(title.className).toMatch(/flex-1/);
+    expect(within(title).getByText(/TEAM LISTS|Team lists/i).className).toMatch(/truncate/);
+    const controls = within(actions)
+      .getAllByRole("button")
+      .concat(within(actions).getAllByRole("link"));
+    const names = controls.map((c) => c.textContent?.trim());
+    for (const name of [
+      "Change look",
+      "Layout",
+      "Edit this slide",
+      "Share",
+      "Send to review",
+      "Save",
+    ])
+      expect(names).toContain(name);
+    for (const c of controls) {
+      expect(c.className).toMatch(/\bh-9\b/);
+      expect(c.className).toMatch(/\brounded-lg\b/);
+      expect(c.className).toMatch(/\bwhitespace-nowrap\b/);
+    }
+  });
+
+  it("keeps Stress test out of the top bar, and out of sight for a club admin", async () => {
+    openCard();
+    await waitFor(() => expect(overlay("title")).toBeTruthy());
+    expect(screen.queryByRole("checkbox", { name: "Stress test" })).toBeNull();
+    const board = screen.getByTestId("editor-artboard");
+    fireEvent.pointerDown(board, { clientX: 1, clientY: 1 });
+    fireEvent.pointerUp(window, { clientX: 1, clientY: 1 });
+    await waitFor(() => expect(slot().getAttribute("data-panel")).toBe("page"));
+    expect(within(slot()).queryByRole("checkbox", { name: "Stress test" })).toBeNull();
+    expect(within(slot()).queryByRole("region", { name: "Platform tools" })).toBeNull();
+  });
+
+  it("offers Stress test to a platform admin, in Edit page", async () => {
+    openCard(undefined, true, true);
+    await waitFor(() => expect(overlay("title")).toBeTruthy());
+    const board = screen.getByTestId("editor-artboard");
+    fireEvent.pointerDown(board, { clientX: 1, clientY: 1 });
+    fireEvent.pointerUp(window, { clientX: 1, clientY: 1 });
+    await waitFor(() => expect(slot().getAttribute("data-panel")).toBe("page"));
+    const tools = await within(slot()).findByRole("region", { name: "Platform tools" });
+    const box = within(tools).getByRole("checkbox", { name: "Stress test" });
+    expect(within(screen.getByTestId("editor-top-bar")).queryByRole("checkbox")).toBeNull();
+    fireEvent.click(box);
+    expect((box as HTMLInputElement).checked).toBe(true);
   });
 });

@@ -5,6 +5,7 @@
  * switch the whole set to another look, change the size; saving keeps the
  * data snapshot and stores the design, and the queue shows the change.
  */
+import { TOP_BAR_BUTTON } from "@/components/studio-editor/editor-shell";
 import { useMemo, useRef, useState } from "react";
 import { useLocation, useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -316,9 +317,9 @@ function SetDraftEditor({
                   <button
                     type="button"
                     onClick={() => openPanel(LAYOUT_PANEL)}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
+                    className={TOP_BAR_BUTTON}
                   >
-                    <LayoutTemplate className="h-3.5 w-3.5" aria-hidden /> Layout
+                    <LayoutTemplate className="h-4 w-4" aria-hidden /> Layout
                   </button>
                 )}
               {set && <EditSlideButton draftId={draft.id} set={set} dirty={dirty} />}
@@ -346,12 +347,8 @@ function SetDraftEditor({
           olderSizes: draft.olderSizes ?? [],
           // A free set of pages has no look's set to switch to.
           actions: pages ? undefined : (
-            <button
-              type="button"
-              onClick={() => setLookOpen(true)}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
-            >
-              <Palette className="h-3.5 w-3.5" aria-hidden /> Change look
+            <button type="button" onClick={() => setLookOpen(true)} className={TOP_BAR_BUTTON}>
+              <Palette className="h-4 w-4" aria-hidden /> Change look
             </button>
           ),
         }}

@@ -5,7 +5,7 @@
  * and drag to reorder. A repeating page shows as a small stack: it is drawn
  * once per team, fixture, result or day, and editing it edits them all.
  */
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripVertical, Plus, Repeat2, Trash2 } from "lucide-react";
 import {
   DockPopover as Popover,
@@ -49,6 +49,7 @@ export function PageStrip({
   label = "Pages",
   overview: withOverview = true,
   onAddOpen,
+  centred = false,
 }: {
   items: StripItem[];
   current: string;
@@ -71,10 +72,24 @@ export function PageStrip({
    * panel beside the rail): the + button calls this instead of opening a menu.
    */
   onAddOpen?: () => void;
+  /**
+   * Centred under the canvas (the New Studio editors): the strip sits in the
+   * middle and scrolls sideways when it overflows, keeping the page being
+   * edited in view.
+   */
+  centred?: boolean;
 }) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  // A tile's controls show on the page being edited, or on the tile under the
+  // pointer (or holding focus).
+  const [hovered, setHovered] = useState<string | null>(null);
+  const tiles = useRef(new Map<string, HTMLElement>());
+  // The page being edited stays in view as it changes (a long set scrolls).
+  useEffect(() => {
+    tiles.current.get(current)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [current]);
   const h = Math.round(thumbWidth / aspect);
   const canDelete = !!onDelete && items.length > 1;
   // New Studio (preview): an "N / M" counter and a grid of every page.
@@ -92,7 +107,12 @@ export function PageStrip({
   return (
     <nav
       aria-label={label}
-      className="flex shrink-0 items-end gap-3 overflow-x-auto border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4 py-2"
+      data-testid="page-strip"
+      className={cn(
+        "flex shrink-0 items-end gap-3 overflow-x-auto border-t border-[var(--ed-line)] bg-[var(--ed-panel)] px-4 py-2",
+        // `safe`: an overflowing strip starts at its first page, not cut off on the left.
+        centred && "[justify-content:safe_center]",
+      )}
       onDragOver={(e) => onMove && e.preventDefault()}
       onDrop={() => drop(items.length)}
     >
@@ -103,7 +123,19 @@ export function PageStrip({
           return (
             <li
               key={item.id}
+              ref={(el) => {
+                if (el) tiles.current.set(item.id, el);
+                else tiles.current.delete(item.id);
+              }}
               className="flex flex-col items-center gap-1"
+              style={centred ? { width: Math.max(thumbWidth + 12, 96) } : undefined}
+              onMouseEnter={() => setHovered(item.id)}
+              onMouseLeave={() => setHovered((h) => (h === item.id ? null : h))}
+              onFocus={() => setHovered(item.id)}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                  setHovered((h) => (h === item.id ? null : h));
+              }}
               draggable={!!onMove}
               onDragStart={(e) => {
                 setDragging(item.id);
@@ -174,7 +206,7 @@ export function PageStrip({
                     </span>
                   )}
                 </button>
-                {on && (dup || canDelete || onMove) && (
+                {(on || hovered === item.id) && (dup || canDelete || onMove) && (
                   <span className="absolute -top-3 left-1/2 z-10 flex -translate-x-1/2 gap-0.5">
                     {onMove && (
                       <>
@@ -233,7 +265,7 @@ export function PageStrip({
               </div>
               <span
                 className={cn(
-                  "max-w-[110px] truncate text-[11px] font-semibold",
+                  "max-w-full truncate text-center text-[11px] font-semibold",
                   on ? "text-[var(--ed-ink)]" : "text-[var(--ed-ink2)]",
                   item.warn && "text-amber-300",
                 )}

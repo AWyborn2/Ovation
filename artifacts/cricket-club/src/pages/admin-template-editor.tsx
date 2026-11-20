@@ -48,6 +48,7 @@ import {
 import { LoadingState, QueryError } from "@/components/data-states";
 import { EditorCanvas } from "@/components/studio-editor/canvas";
 import {
+  TOP_BAR_BUTTON,
   EditorBottomBar,
   EditorPanel,
   EditorRail,
@@ -68,6 +69,7 @@ import { PositionPanel } from "@/components/studio-editor/position-panel";
 import { PageScroll } from "@/components/studio-editor/page-scroll";
 import { PageOverview } from "@/components/studio-editor/page-grid";
 import { useNewStudio } from "@/lib/entitlements";
+import { usePlatformAdmin } from "@/lib/platform-admin-auth";
 import { InDock } from "@/components/studio-editor/dock";
 import {
   boardWidth,
@@ -257,6 +259,8 @@ const PAGE_PANEL = "page";
 const ADD_PAGE_PANEL = "add-page";
 /** A page's header row in the Scroll view (px), taken from the room the canvas fits. */
 const SCROLL_PAGE_HEADER = 44;
+/** The strip's thumbnails are this tall at every size (px). */
+const STRIP_THUMB_HEIGHT = 112;
 /** The side panel a host gives for the photo on show (Change photo). */
 export const PHOTO_PANEL = "photo";
 
@@ -474,12 +478,8 @@ function ClubTemplateEditor({
             ? undefined
             : ({ dirty, selectLayer }) => (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setMaking(true)}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
-                  >
-                    <Layers3 className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
+                  <button type="button" onClick={() => setMaking(true)} className={TOP_BAR_BUTTON}>
+                    <Layers3 className="h-4 w-4" aria-hidden /> Make a carousel set
                   </button>
                   <button
                     type="button"
@@ -490,9 +490,9 @@ function ClubTemplateEditor({
                         ? "This is a library template you haven't changed yet"
                         : undefined
                     }
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:opacity-50"
+                    className={TOP_BAR_BUTTON}
                   >
-                    <Upload className="h-3.5 w-3.5" aria-hidden /> Publish
+                    <Upload className="h-4 w-4" aria-hidden /> Publish
                   </button>
                   <PublishDialog
                     copyId={current.id}
@@ -804,7 +804,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     writePagesView(v);
   };
   const newStudio = useNewStudio();
-  const [zoom, setZoom] = useState(100);
+  // Zoom: "fit" (the default) fits the page to the space the panel and the
+  // strip leave, and re-fits as they open, close or the window resizes; a
+  // number is a zoom of its own, in percent of the page's real pixels.
+  const [zoom, setZoom] = useState<"fit" | number>("fit");
+  const platformAdmin = usePlatformAdmin();
+  const isPlatformAdmin = typeof platformAdmin.data?.id === "number";
   const [stress, setStress] = useState(false);
   const [playing, setPlaying] = useState(0);
   const [addPrompt, setAddPrompt] = useState<{ ids: string[]; from: CardSize } | null>(null);
@@ -1492,11 +1497,13 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     measuredArea ??
     estimateCanvasArea({ viewport, panelOpen: !!panel, dockOpen: false, stripHeight: 0 });
   // In Scroll each page also has its header row above it.
-  const boardW = boardWidth(
+  const fitW = boardWidth(
     scrolling ? { w: area.w, h: area.h - SCROLL_PAGE_HEADER } : area,
     native,
-    zoom,
+    100,
   );
+  const zoomPercent = zoom === "fit" ? (fitW / native.w) * 100 : zoom;
+  const boardW = zoom === "fit" ? fitW : Math.max(120, Math.round((native.w * zoom) / 100));
   const fitStatus = fitLine(current);
   const status = host.status(baseVersion);
   const selectCls =
@@ -1849,6 +1856,20 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           {draftMode.pageSettings({ page: pageFull, setPage: editPage })}
         </section>
       )}
+      {isPlatformAdmin && (
+        <section aria-label="Platform tools" className="space-y-1.5">
+          <h3 className={pageTitle}>Platform tools</h3>
+          <label className="flex items-center gap-2 text-sm text-[var(--ed-ink)]">
+            <input
+              type="checkbox"
+              checked={stress}
+              onChange={(e) => setStress(e.target.checked)}
+              aria-label="Stress test"
+            />
+            Stress test (longest names and lists)
+          </label>
+        </section>
+      )}
       <section aria-label="Size" className="space-y-1">
         <h3 className={pageTitle}>Size</h3>
         <p className="text-sm text-[var(--ed-ink2)]">
@@ -2109,15 +2130,6 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 </select>
               </label>
             )}
-            <label className="flex items-center gap-1.5 px-2 text-xs font-semibold text-[var(--ed-ink2)]">
-              <input
-                type="checkbox"
-                checked={stress}
-                onChange={(e) => setStress(e.target.checked)}
-                aria-label="Stress test"
-              />
-              Stress test
-            </label>
           </>
         }
       />
@@ -2209,10 +2221,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           {/* Above the canvas, never on it: the toolbar, prompts and where you are.
             At least the strip's height, so a change of selection never moves the canvas. */}
           <div
-            className="flex shrink-0 flex-col items-center px-6 pt-4"
+            data-testid="toolbar-strip"
+            className="flex shrink-0 flex-col items-center px-6 pt-3"
             style={{ minHeight: TOOLBAR_STRIP }}
           >
-            <div className="mb-3 flex max-w-full flex-col items-center">
+            <div className="mb-2 flex max-w-full flex-col items-center">
               <EditorToolbar
                 selected={selected}
                 isGroup={isGroup}
@@ -2353,9 +2366,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             )}
           </div>
 
+          {/* The canvas, centred both ways in the space the panel leaves, with
+            the same padding on every side; its notes sit under it without
+            moving it off centre. */}
           <div
             data-testid="canvas-scroll"
-            className="flex min-h-0 flex-1 flex-col items-center overflow-auto px-6 pb-6 [align-items:safe_center]"
+            className="min-h-0 flex-1 overflow-auto px-6"
+            // The band under the canvas matches the toolbar strip above it.
+            style={{ paddingBottom: TOOLBAR_STRIP }}
           >
             {scrolling && pagesNav ? (
               <PageScroll
@@ -2382,10 +2400,19 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 }
               />
             ) : (
-              <>
-                {canvasNode}
-                {notesNode}
-              </>
+              <div
+                data-testid="canvas-stage"
+                className="grid min-h-full min-w-max grid-rows-[1fr_auto_1fr] justify-items-center"
+              >
+                <span aria-hidden />
+                <div data-testid="canvas-centre">{canvasNode}</div>
+                {/* No height of its own: the notes hang below the canvas in the
+                  space under it, so they never push the canvas off centre or
+                  change its fit. */}
+                <div className="h-0 w-full self-start" data-testid="canvas-notes">
+                  <div className="flex w-full justify-center">{notesNode}</div>
+                </div>
+              </div>
             )}
           </div>
         </main>
@@ -2405,6 +2432,9 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           onAdd={pagesNav.onAdd}
           onAddOpen={() => setPanel(ADD_PAGE_PANEL)}
           overview={false}
+          centred
+          // One height for every size, so Story's thumbnails don't take more of the canvas's room.
+          thumbWidth={Math.round((STRIP_THUMB_HEIGHT * native.w) / native.h)}
         />
       )}
       {full.setDesign && (
@@ -2434,8 +2464,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         />
       )}
       <EditorBottomBar
-        zoom={zoom}
+        zoom={zoomPercent}
         onZoom={setZoom}
+        zoomMin={10}
+        zoomMax={200}
+        fitted={zoom === "fit"}
+        onFit={() => setZoom("fit")}
         {...(pagesNav
           ? {
               pagesView,
