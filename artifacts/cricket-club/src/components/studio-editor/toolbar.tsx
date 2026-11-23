@@ -22,8 +22,9 @@ import { ArrangeMenu } from "./arrange-menu";
 import { TokenTextInput, type TokenField } from "./token-text-input";
 import { cn } from "@/lib/utils";
 
+/** A toolbar button: never under the 32px minimum target either way. */
 const btn =
-  "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:pointer-events-none disabled:opacity-35";
+  "flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:pointer-events-none disabled:opacity-35";
 
 /** Colours offered in the toolbar, all from the pack's own tokens so cards stay on brand. */
 const SWATCHES: { label: string; value: string }[] = [
@@ -32,6 +33,61 @@ const SWATCHES: { label: string; value: string }[] = [
   { label: "Dark", value: "var(--ink)" },
   { label: "Panel", value: "var(--panel)" },
 ];
+
+/**
+ * The quick colours for a text or shape layer: a custom colour and the
+ * pack's swatches. The older editor shows them in its toolbar; the New
+ * Studio shows them in the layer's Edit panel, well away from the toolbar's
+ * Edit and Position, so a slightly-off click can't recolour the layer.
+ */
+export function QuickColours({
+  layer,
+  onColour,
+  size = "sm",
+}: {
+  layer: FreeLayer;
+  onColour: (colour: string) => void;
+  /** "md": 32px targets (the Edit panel). */
+  size?: "sm" | "md";
+}) {
+  const current = layer.kind === "text" ? layer.style?.color : layer.style?.background;
+  const swatch = size === "md" ? "h-8 w-8" : "h-6 w-6";
+  return (
+    <div className={cn("flex items-center", size === "md" ? "gap-2" : "gap-1")}>
+      <input
+        type="color"
+        aria-label="Custom colour"
+        className={cn(
+          "cursor-pointer rounded border border-[var(--ed-line)] bg-transparent",
+          size === "md" ? "h-8 w-8" : "h-7 w-7",
+        )}
+        onChange={(e) => onColour(e.target.value)}
+      />
+      <div
+        className={cn("flex items-center px-1", size === "md" ? "gap-2" : "gap-1")}
+        role="group"
+        aria-label="Colour"
+      >
+        {SWATCHES.map((s) => (
+          <button
+            key={s.label}
+            type="button"
+            aria-label={s.label}
+            title={s.label}
+            aria-pressed={current === s.value}
+            onClick={() => onColour(s.value)}
+            className={cn(
+              swatch,
+              "rounded-full border border-[var(--ed-line)]",
+              current === s.value && "ring-2 ring-[var(--ed-accent)]",
+            )}
+            style={{ background: s.value === "inherit" ? "var(--ed-ink)" : s.value }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * The floating contextual toolbar (Social Studio U16): text content and colour
@@ -123,11 +179,15 @@ export function EditorToolbar({
   }
   const single = selected.length === 1 ? selected[0] : null;
   const locked = selected.every((l) => l.locked);
+  const newStudio = !!tools;
   return (
     <div
       role="toolbar"
       aria-label="Layer tools"
-      className="flex min-h-11 max-w-full flex-wrap items-center gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-1.5 py-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
+      className={cn(
+        "flex min-h-11 max-w-full flex-wrap items-center rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-1.5 py-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]",
+        newStudio ? "gap-1.5" : "gap-1",
+      )}
     >
       {tools && tools.length > 0 && (
         <>
@@ -170,35 +230,9 @@ export function EditorToolbar({
                 className="h-8 w-44 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm"
               />
             ))}
-          {(single.kind === "text" || single.kind === "shape") && (
-            <>
-              <input
-                type="color"
-                aria-label="Custom colour"
-                className="h-7 w-7 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent"
-                onChange={(e) => onColour(e.target.value)}
-              />
-              <div className="flex items-center gap-1 px-1" role="group" aria-label="Colour">
-                {SWATCHES.map((s) => {
-                  const current =
-                    single.kind === "text" ? single.style?.color : single.style?.background;
-                  return (
-                    <button
-                      key={s.label}
-                      type="button"
-                      aria-label={s.label}
-                      aria-pressed={current === s.value}
-                      onClick={() => onColour(s.value)}
-                      className={cn(
-                        "h-6 w-6 rounded-full border border-[var(--ed-line)]",
-                        current === s.value && "ring-2 ring-[var(--ed-accent)]",
-                      )}
-                      style={{ background: s.value === "inherit" ? "var(--ed-ink)" : s.value }}
-                    />
-                  );
-                })}
-              </div>
-            </>
+          {/* The New Studio has its colours in the Edit panel, never beside Edit / Position. */}
+          {!newStudio && (single.kind === "text" || single.kind === "shape") && (
+            <QuickColours layer={single} onColour={onColour} />
           )}
         </>
       ) : (

@@ -3,7 +3,8 @@
  * slide stacked down the canvas area, so the admin scrolls from one to the
  * next instead of using the thumbnail strip. Each has a header row ("Page 3 –
  * A Grade") with the strip's own actions under the strip's own rules: move
- * up or down, duplicate where the strip offers it, and delete (never the last
+ * up or down, duplicate where the strip offers it (a game slide shows it
+ * disabled, with why), and delete (never the last
  * page). Clicking a page makes it the one being edited; only that page is the
  * live canvas, the others draw as they post.
  */
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { StripAddOption, StripItem } from "./page-strip";
 
 const headBtn =
-  "grid h-7 w-7 place-items-center rounded-md text-[var(--ed-ink2)] hover:bg-[var(--ed-card)] hover:text-[var(--ed-ink)] disabled:pointer-events-none disabled:opacity-35";
+  "grid h-8 w-8 place-items-center rounded-md text-[var(--ed-ink2)] hover:bg-[var(--ed-card)] hover:text-[var(--ed-ink)] disabled:pointer-events-none disabled:opacity-35";
 
 export function PageScroll({
   items,
@@ -47,8 +48,13 @@ export function PageScroll({
     refs.current.get(current)?.scrollIntoView?.({ block: "nearest" });
   }, [current]);
   return (
-    <section aria-label={label} className="flex w-full flex-col items-center gap-8 pb-6">
-      <ol className="flex w-full flex-col items-center gap-8" aria-label={label}>
+    // The grey between pages is the canvas area's own (`data-canvas-empty`): a click there deselects.
+    <section
+      aria-label={label}
+      data-canvas-empty
+      className="flex w-full flex-col items-center gap-8 pb-6"
+    >
+      <ol className="flex w-full flex-col items-center gap-8" aria-label={label} data-canvas-empty>
         {items.map((item, i) => {
           const on = item.id === current;
           const dup = !!onDuplicate && item.canDuplicate !== false;
@@ -60,6 +66,7 @@ export function PageScroll({
                 else refs.current.delete(item.id);
               }}
               aria-current={on ? "page" : undefined}
+              data-canvas-empty
               className="flex max-w-full flex-col items-center gap-2"
               data-testid={`scroll-page-${i + 1}`}
             >
@@ -117,6 +124,22 @@ export function PageScroll({
                     aria-label={`Duplicate ${item.label}`}
                     title="Duplicate"
                     onClick={() => onDuplicate!(item.id)}
+                  >
+                    <Copy className="h-4 w-4" aria-hidden />
+                  </button>
+                )}
+                {/* Where the strip offers Duplicate but not for this page (a game
+                  slide), the button stays, disabled with the reason, so it
+                  never looks missing. aria-disabled keeps its tooltip working. */}
+                {!!onDuplicate && !dup && (
+                  <button
+                    type="button"
+                    className={cn(headBtn, "cursor-not-allowed opacity-35 hover:bg-transparent")}
+                    aria-label={`Duplicate ${item.label}`}
+                    aria-disabled="true"
+                    title={item.noDuplicateReason ?? "This page can't be duplicated"}
+                    data-testid={`scroll-no-duplicate-${i + 1}`}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <Copy className="h-4 w-4" aria-hidden />
                   </button>

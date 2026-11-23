@@ -644,8 +644,20 @@ describe("the Pages view", () => {
     const grade = "A Grade v Waroona Cricket Club";
     expect(within(list).getByRole("button", { name: "Move Title page up" })).toBeDisabled();
     expect(within(list).getByRole("button", { name: "Move Sponsors down" })).toBeDisabled();
-    // The strip offers Duplicate only for a page the set added; none of these is one.
-    expect(within(list).queryByRole("button", { name: /^Duplicate / })).toBeNull();
+    // The strip offers Duplicate only for a page the set added; none of these is
+    // one, so each header shows it disabled, with why, rather than leaving it out.
+    const dups = within(list).getAllByRole("button", { name: /^Duplicate / });
+    expect(dups.length).toBeGreaterThan(0);
+    for (const b of dups) expect(b.getAttribute("aria-disabled")).toBe("true");
+    expect(within(list).getByRole("button", { name: `Duplicate ${grade}` }).title).toBe(
+      "Game slides can't be duplicated",
+    );
+    expect(within(list).getByRole("button", { name: "Duplicate Title page" }).title).toBe(
+      "Only added or blank pages can be duplicated",
+    );
+    // A click does nothing.
+    fireEvent.click(within(list).getByRole("button", { name: `Duplicate ${grade}` }));
+    expect(within(list).getAllByRole("listitem")).toHaveLength(dups.length);
     fireEvent.click(within(list).getByRole("button", { name: `Move ${grade} up` }));
     expect(within(list).getByText(`Page 1 – ${grade}`)).toBeTruthy();
     expect(within(list).getByText("Page 2 – Title page")).toBeTruthy();

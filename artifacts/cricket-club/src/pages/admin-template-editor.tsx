@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Database,
+  FileText,
   ImageUp,
   Layers3,
   Monitor,
@@ -31,6 +32,7 @@ import {
   isContentKind,
   isSetDocument,
   kindFields,
+  layerOnSize,
   pageTokens,
   MAX_STACK_DEPTH,
   planTemplateSlides,
@@ -62,6 +64,7 @@ import { ElementsPanel, TextPanel } from "@/components/studio-editor/panels";
 import {
   EditorToolbar,
   PageColourOptions,
+  QuickColours,
   type ToolbarTool,
 } from "@/components/studio-editor/toolbar";
 import { TokenTextInput } from "@/components/studio-editor/token-text-input";
@@ -255,16 +258,38 @@ const RAIL: RailItem[] = [
 const EDIT_PANEL = "edit";
 const REPLACE_PANEL = "replace";
 const PAGE_PANEL = "page";
+/**
+ * Edit page in the rail: always on show, so there is a route to the page's
+ * own settings whatever is selected (a click on the page, Esc and a click
+ * off the card open it too).
+ */
+const PAGE_RAIL_ITEM: RailItem = { id: PAGE_PANEL, label: "Edit page", icon: FileText };
 /** The strip's Add a page, as a panel (its menu would open over the canvas). */
 const ADD_PAGE_PANEL = "add-page";
 /** A page's header row in the Scroll view (px), taken from the room the canvas fits. */
 const SCROLL_PAGE_HEADER = 44;
 /** The strip's thumbnails are this tall at every size (px). */
 const STRIP_THUMB_HEIGHT = 112;
+/** Why a set's data slide (one per game) has no Duplicate. */
+const GAME_SLIDE_NO_DUPLICATE = "Game slides can't be duplicated";
+/** Why the set's other own slides (its title, its sponsors) have none. */
+const SET_SLIDE_NO_DUPLICATE = "Only added or blank pages can be duplicated";
 /** The side panel a host gives for the photo on show (Change photo). */
 export const PHOTO_PANEL = "photo";
 
 const TEMPLATES = "/admin/social/template-library";
+
+/** The top-most shown photo layer among `layers` (bottom first), groups searched too. */
+function topPhotoLayer(layers: readonly FreeLayer[], size: CardSize): EditorLayer | null {
+  for (const l of [...layers].reverse()) {
+    if (l.hidden || !layerOnSize(l, size)) continue;
+    if (l.kind === "photo") return l as EditorLayer;
+    const kids = (l as EditorLayer).children;
+    const inner = kids ? topPhotoLayer(kids as FreeLayer[], size) : null;
+    if (inner) return inner;
+  }
+  return null;
+}
 
 /** What the breadcrumb calls a group, stack or list being edited. */
 const scopeName = (l: EditorLayer): string =>
@@ -1097,8 +1122,10 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             setInside(null);
             break;
           }
+          // On the page itself, Esc deselects and opens Edit page.
           setSelection([]);
           setInside(null);
+          setPanel(PAGE_PANEL);
           break;
         case "nudge":
           if (s.selection.length) edit(nudge(s.doc, s.format, s.selection, action.dx, action.dy));
@@ -1305,6 +1332,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             warn: layersOnSize(pageDoc(full, x.page.id), format).length === 0,
             // A design page duplicates with its page; a data slide has none of its own.
             canDuplicate: x.design,
+            ...(x.design
+              ? {}
+              : {
+                  noDuplicateReason:
+                    x.page.role === "repeat" ? GAME_SLIDE_NO_DUPLICATE : SET_SLIDE_NO_DUPLICATE,
+                }),
           })),
           current: slide?.key ?? "",
           onSelect: (key) => {
@@ -1541,6 +1574,17 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const photoLayer = focus?.kind === "photo" ? focus : null;
   const photoPos = photoLayer ? photoPositionFor(photoLayer) : undefined;
   const canReplace = !!photoLayer && (!!photoSide || !!photoPos);
+  // The slide-level Change photo (the top bar's, Edit page's) moves the same
+  // photo as the layer's Replace: the slide's photo layer, the selected one
+  // first, else the top-most on this size.
+  const slidePhotoLayer = photoLayer ?? topPhotoLayer(layersOnSize(doc, format), format);
+  const slidePhotoPos = slidePhotoLayer ? photoPositionFor(slidePhotoLayer) : undefined;
+  const slidePhotoBody = photoSide && (
+    <div className="space-y-4">
+      {photoSide.body}
+      {slidePhotoPos && <PhotoPositionSection control={slidePhotoPos} />}
+    </div>
+  );
   // A layer's panels follow the selection: Edit page with none, and a layer
   // picked while Edit page is open opens its Edit (the last click wins).
   const selKey = selection.join(" ");
@@ -1746,6 +1790,24 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           style={single.style}
           onStyle={(patch) => edit(setTextStyle(doc, single.id, patch))}
         />
+      )}
+      {single && (single.kind === "text" || single.kind === "shape") && (
+        <section aria-label="Quick colours" className="space-y-1.5">
+          <h3 className="text-[11px] font-semibold text-[var(--ed-ink2)]">
+            {single.kind === "text" ? "Text colour" : "Fill colour"}
+          </h3>
+          <QuickColours
+            layer={single as FreeLayer}
+            size="md"
+            onColour={(c) => {
+              const style =
+                single.kind === "text"
+                  ? { ...single.style, color: c }
+                  : { ...single.style, background: c };
+              edit(updateLayer(doc, single.id, { style }));
+            }}
+          />
+        </section>
       )}
       {single?.kind === "element" && (
         <ElementPropsEditor
@@ -2134,7 +2196,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         }
       />
       <div className="flex min-h-0 flex-1">
-        <EditorRail items={rail} active={panel} onSelect={setPanel} />
+        <EditorRail
+          items={[PAGE_RAIL_ITEM, ...rail]}
+          active={panel}
+          onSelect={(id) => {
+            // Edit page is always one click away: it deselects and leaves any group.
+            if (id === PAGE_PANEL) enterScope(null);
+            setPanel(id);
+          }}
+        />
         {panel && shownTitle && (
           <EditorPanel
             id={panel}
@@ -2185,7 +2255,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               {panel === EDIT_PANEL && editPanel}
               {panel === REPLACE_PANEL && replacePanel}
               {panel === PAGE_PANEL && pagePanel}
-              {sides.find((s) => s.id === panel)?.body}
+              {panel === PHOTO_PANEL ? slidePhotoBody : sides.find((s) => s.id === panel)?.body}
               {panel === ADD_PAGE_PANEL && pagesNav?.addOptions && pagesNav.onAdd && (
                 <div role="group" aria-label="Add a page" className="space-y-1">
                   {pagesNav.addOptions.map((o) => (
@@ -2222,6 +2292,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             At least the strip's height, so a change of selection never moves the canvas. */}
           <div
             data-testid="toolbar-strip"
+            data-canvas-empty
             className="flex shrink-0 flex-col items-center px-6 pt-3"
             style={{ minHeight: TOOLBAR_STRIP }}
           >
@@ -2371,6 +2442,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             moving it off centre. */}
           <div
             data-testid="canvas-scroll"
+            data-canvas-empty
             className="min-h-0 flex-1 overflow-auto px-6"
             // The band under the canvas matches the toolbar strip above it.
             style={{ paddingBottom: TOOLBAR_STRIP }}
@@ -2402,15 +2474,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             ) : (
               <div
                 data-testid="canvas-stage"
+                data-canvas-empty
                 className="grid min-h-full min-w-max grid-rows-[1fr_auto_1fr] justify-items-center"
               >
-                <span aria-hidden />
+                <span aria-hidden data-canvas-empty className="w-full" />
                 <div data-testid="canvas-centre">{canvasNode}</div>
                 {/* No height of its own: the notes hang below the canvas in the
                   space under it, so they never push the canvas off centre or
                   change its fit. */}
-                <div className="h-0 w-full self-start" data-testid="canvas-notes">
-                  <div className="flex w-full justify-center">{notesNode}</div>
+                <div className="h-0 w-full self-start" data-testid="canvas-notes" data-canvas-empty>
+                  <div className="flex w-full justify-center" data-canvas-empty>
+                    {notesNode}
+                  </div>
                 </div>
               </div>
             )}

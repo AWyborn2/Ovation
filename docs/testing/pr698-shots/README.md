@@ -44,3 +44,23 @@ PLAYWRIGHT_PATH=$(npm root -g)/playwright \
 ```
 
 `shoot.mjs` prints each shot's top-bar measurements (`barScroll`, `barClient`, `saveRight`).
+
+## Editor layout fixes (`editor/layout-fixes`)
+
+`after-fix-set-1366x768-*` are the set editor at 1366×768 after the layout fixes, taken with
+`harness/check-layout-fixes.mjs` (same fixtures and dev server as above):
+
+```sh
+PLAYWRIGHT_PATH=$(npm root -g)/playwright \
+  node docs/testing/pr698-shots/harness/check-layout-fixes.mjs /tmp/fx.json /tmp/shots
+```
+
+It prints what each click picked: a click on the card's corner (the page's base and the team
+page's whole-card scrim) opens Edit page; the first click on the photo selects the photo (Replace
+in the toolbar) and a repeat click moves down to its shading; Esc and a click on the grey beside
+the card open Edit page; the toolbar has no colour swatches and every button is at least 32px;
+and the Scroll headers show Duplicate disabled, with why, on the game and set slides.
+
+- `photo-selected`: the first click on the photo, through the scrim over it.
+- `edit-page`: after a click on the grey beside the card.
+- `scroll`: the Scroll view's headers.

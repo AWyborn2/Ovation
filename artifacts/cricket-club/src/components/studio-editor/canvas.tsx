@@ -17,6 +17,7 @@ import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
 import { boundsOf, snapMove, snapRotation, type Guide } from "./guides";
 import { contains, hasType, resizeBounds, resizeGroup, type ResizeHandle } from "./arrange";
 import { isContainer } from "./scope";
+import { clickOrder, pageBackgroundIds, type Point } from "./hit-test";
 
 type Handle = ResizeHandle;
 const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
@@ -95,6 +96,11 @@ const isCorner = (h: Handle) => h.length === 2;
  * bounds; a corner keeps proportions and scales the type), and a rotate
  * handle that snaps to 0/±90/180. Changes stream to `onChange(doc, false)` while dragging
  * and commit with `onChange(doc, true)` on release.
+ *
+ * What a click picks follows `hit-test.ts`: the page's full-bleed base is the
+ * page (`onSelect(null)`, Edit page), and a photo takes the first click over
+ * the scrim or shading on it, a repeat click on the same spot moving down to
+ * the overlay.
  *
  * Pointer events cover mouse, pen and touch alike; on a coarse pointer (a
  * tablet) the handles grow to a finger-sized target (kind templates, R23).
@@ -250,6 +256,8 @@ export function EditorCanvas({
   const singleBox = single ? boxOf(single, size) : null;
   const singleShown = single ? shownBox(single) : null;
   const frameBox = scopeId ? (measured[scopeId] ?? scopeBox) : null;
+  /** The page's base layers: a click on one is a click on the page (Edit page). */
+  const base = scopeId ? new Set<string>() : pageBackgroundIds(layers, shownBox);
 
   const rect = () => boardRef.current?.getBoundingClientRect();
   const toPct = (dxPx: number, dyPx: number) => {
@@ -288,13 +296,54 @@ export function EditorCanvas({
     return null;
   };
 
-  const onLayerPointerDown = (e: ReactPointerEvent, id: string) => {
+  /**
+   * What a click on the overlay `hit` can pick, first click first (`hit-test`):
+   * empty when it is on the page's base, so the page itself. Unmeasured (a
+   * board with no size), the point is the middle of the hit layer.
+   */
+  const orderAt = (hit: string, clientX: number, clientY: number): string[] => {
+    const r = rect();
+    let p: Point = { x: 0, y: 0 };
+    if (r && r.width > 0 && r.height > 0) p = pointPct(clientX, clientY);
+    else {
+      const own = layers.find((l) => l.id === hit);
+      const b = own ? shownBox(own) : null;
+      if (b) p = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+    }
+    // Inside a group there is no page base: every child is selectable.
+    return clickOrder(layers, shownBox, hit, p, { backgrounds: !scopeId });
+  };
+  /** The layer a repeat click last moved to, so the next click keeps it (and can drag it). */
+  const cycledTo = useRef<string | null>(null);
+  /** A click that may move down the stack when it ends without a drag. */
+  const repeatClick = useRef<{ x0: number; y0: number; order: string[]; id: string } | null>(null);
+
+  const onLayerPointerDown = (e: ReactPointerEvent, hit: string) => {
     e.stopPropagation();
+    repeatClick.current = null;
+    const order = orderAt(hit, e.clientX, e.clientY);
+    // The page's base: the click is on the page (Edit page), a drag a marquee.
+    if (!order.length) {
+      cycledTo.current = null;
+      onBoardPointerDown(e);
+      return;
+    }
+    // A photo under its scrim takes the first click; a repeat click on the
+    // same spot moves down the stack (only where the order isn't plain top-most).
+    const cycles = order[0] !== hit;
+    const kept = order.find(
+      (x) => selection.includes(x) && (x === order[0] || x === cycledTo.current),
+    );
+    const id = kept ?? order[0]!;
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       onToggle(id);
       return;
     }
-    if (!selection.includes(id)) onSelect(id);
+    if (cycles && kept) repeatClick.current = { x0: e.clientX, y0: e.clientY, order, id };
+    if (!selection.includes(id)) {
+      cycledTo.current = null;
+      onSelect(id);
+    }
     // A stack places its children itself, so they select but don't drag.
     if (fixed) return;
     // Selection updates next render; move whatever is (or becomes) selected.
@@ -364,13 +413,23 @@ export function EditorCanvas({
     }
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e: ReactPointerEvent) => {
     const d = drag.current;
     if (d?.kind === "marquee") return;
     drag.current = null;
     setGuides([]);
     setScalingType(false);
     if (d) onChange(doc, true);
+    // A repeat click (no drag) on a photo or its overlay: the next layer down.
+    const c = repeatClick.current;
+    repeatClick.current = null;
+    if (c && Math.abs(e.clientX - c.x0) < 3 && Math.abs(e.clientY - c.y0) < 3) {
+      const next = c.order[(c.order.indexOf(c.id) + 1) % c.order.length]!;
+      if (next !== c.id) {
+        cycledTo.current = next;
+        onSelect(next);
+      }
+    }
   };
 
   // The marquee follows the pointer through window listeners, so it can start
@@ -435,8 +494,12 @@ export function EditorCanvas({
   useEffect(() => {
     const area = marqueeArea?.current;
     if (!area || !marqueeOn) return;
+    // The area's own empty layout boxes (the scroll, the stage around the
+    // card) count as the area: a click on any grey off the card deselects.
     const down = (e: PointerEvent) => {
-      if (e.target === area && e.button === 0) startMarqueeRef.current(e);
+      const t = e.target;
+      const empty = t === area || (t instanceof HTMLElement && t.hasAttribute("data-canvas-empty"));
+      if (empty && e.button === 0) startMarqueeRef.current(e);
     };
     area.addEventListener("pointerdown", down);
     return () => area.removeEventListener("pointerdown", down);
@@ -543,9 +606,16 @@ export function EditorCanvas({
               key={l.id}
               data-testid={`layer-${l.id}`}
               aria-label={l.name ?? l.kind}
+              data-page-base={base.has(l.id) ? "" : undefined}
               className={cn(
                 "absolute",
-                l.locked ? "pointer-events-none" : fixed ? "cursor-pointer" : "cursor-move",
+                l.locked
+                  ? "pointer-events-none"
+                  : base.has(l.id)
+                    ? "cursor-default"
+                    : fixed
+                      ? "cursor-pointer"
+                      : "cursor-move",
                 isSel &&
                   selected.length > 1 &&
                   "outline outline-[1.5px] outline-[var(--ed-accent)]",
@@ -563,13 +633,17 @@ export function EditorCanvas({
               onPointerDown={(e) => onLayerPointerDown(e, l.id)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                if (isContainer(l)) {
+                // The layer a click there picks (never the page's base or a scrim).
+                const first = orderAt(l.id, e.clientX, e.clientY)[0];
+                const t = layers.find((x) => x.id === first);
+                if (!t) return;
+                if (isContainer(t)) {
                   onEnterGroup(
-                    l.id,
-                    childAt(l, e.clientX, e.clientY),
+                    t.id,
+                    childAt(t, e.clientX, e.clientY),
                     pointPct(e.clientX, e.clientY),
                   );
-                } else if (l.group) onEnterGroup(l.id);
+                } else if (t.group) onEnterGroup(t.id);
               }}
             />
           );
