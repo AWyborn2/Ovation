@@ -27,6 +27,8 @@ export type StripItem = {
   warn?: boolean;
   /** False: Duplicate isn't offered for this item (a set draft's data slide). */
   canDuplicate?: boolean;
+  /** Why Duplicate isn't offered (the Scroll view's tooltip on its disabled button). */
+  noDuplicateReason?: string;
 };
 
 export type StripAddOption = { id: string; label: string; detail?: string };
